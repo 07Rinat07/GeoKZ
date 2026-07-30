@@ -14,7 +14,6 @@ from app.models.enums import (
 )
 from app.models.source import Source
 
-
 SOURCES: list[dict[str, Any]] = [
     {
         "external_id": "geology-ussr-vol21-west-kazakhstan-book1-1970",
