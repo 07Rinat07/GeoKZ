@@ -1,5 +1,5 @@
 from datetime import date
-from uuid import UUID
+from typing import TYPE_CHECKING
 
 from sqlalchemy import CheckConstraint, SmallInteger, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
@@ -12,6 +12,9 @@ from app.models.enums import (
     SourceDocumentType,
     enum_type,
 )
+
+if TYPE_CHECKING:
+    from app.models.document import Document
 
 
 class Source(UUIDPrimaryKeyMixin, TimestampMixin, Base):
