@@ -1,3 +1,4 @@
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import Column, ForeignKey, String, Table, Text
@@ -6,6 +7,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 from app.models.enums import ConflictStatus, ConflictType, enum_type
+
+if TYPE_CHECKING:
+    from app.models.fact import Fact
 
 conflict_facts = Table(
     "conflict_facts",

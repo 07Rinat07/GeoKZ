@@ -1,8 +1,18 @@
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from geoalchemy2 import Geometry
-from sqlalchemy import Boolean, Column, ForeignKey, String, Table, Text, UniqueConstraint
-from sqlalchemy.dialects.postgresql import JSONB, UUID as PGUUID
+from sqlalchemy import (
+    Boolean,
+    Column,
+    ForeignKey,
+    String,
+    Table,
+    Text,
+    UniqueConstraint,
+)
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
@@ -12,6 +22,9 @@ from app.models.enums import (
     VerificationStatus,
     enum_type,
 )
+
+if TYPE_CHECKING:
+    from app.models.administrative_region import AdministrativeRegion
 
 geological_entity_administrative_regions = Table(
     "geological_entity_administrative_regions",
