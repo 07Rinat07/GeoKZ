@@ -1,12 +1,9 @@
 from enum import StrEnum
-from typing import TypeVar
 
 from sqlalchemy import Enum
 
-EnumT = TypeVar("EnumT", bound=StrEnum)
 
-
-def enum_type(enum_class: type[EnumT], name: str) -> Enum:
+def enum_type[EnumT: StrEnum](enum_class: type[EnumT], name: str) -> Enum:
     """Хранит строковые значения Enum, а не имена Python-констант."""
 
     return Enum(
