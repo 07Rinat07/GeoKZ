@@ -1,7 +1,6 @@
 import re
 import unicodedata
 from dataclasses import dataclass
-from typing import Any
 
 from app.integrations.errors import ExternalSourceProtocolError
 
@@ -35,7 +34,7 @@ class NormalizedOilGasField:
         }
 
 
-def normalize_oil_gas_field_record(record: dict[str, Any]) -> NormalizedOilGasField:
+def normalize_oil_gas_field_record(record: dict[str, object]) -> NormalizedOilGasField:
     source_field, raw_name = _extract_name(record)
     name = _clean_display_name(raw_name)
     if not name:
@@ -56,7 +55,7 @@ def normalize_entity_name(value: str) -> str:
     return " ".join(normalized.split())
 
 
-def _extract_name(record: dict[str, Any]) -> tuple[str, str]:
+def _extract_name(record: dict[str, object]) -> tuple[str, str]:
     normalized_keys = {_normalize_key(key): key for key in record}
     for alias in _NAME_ALIASES:
         actual_key = alias if alias in record else normalized_keys.get(_normalize_key(alias))
@@ -88,5 +87,5 @@ def _normalize_key(value: str) -> str:
     return "".join(character.casefold() for character in value if character.isalnum())
 
 
-def _is_scalar_name(value: Any) -> bool:
+def _is_scalar_name(value: object) -> bool:
     return isinstance(value, (str, int, float)) and bool(str(value).strip())
