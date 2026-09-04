@@ -108,8 +108,7 @@ async def list_kazakhstan_open_datasets(
         )
     )
     api_key_configured = bool(
-        settings.egov_api_key
-        and settings.egov_api_key.get_secret_value().strip()
+        settings.egov_api_key and settings.egov_api_key.get_secret_value().strip()
     )
     return [
         KazakhstanDatasetCatalogItem(
@@ -119,11 +118,14 @@ async def list_kazakhstan_open_datasets(
             name_en=dataset.name_en,
             display_name=_catalog_display_name(dataset, lang),
             description=_catalog_description(dataset, lang),
-            dataset=dataset.dataset,
+            api_uri=dataset.api_uri,
             version=dataset.version,
             record_type=dataset.record_type,
             official_url=dataset.official_url,
             metadata_url=dataset.metadata_url,
+            mapping_url=dataset.mapping_url,
+            data_url_template=dataset.data_url_template,
+            detailed_url_template=dataset.detailed_url_template,
             sync_interval_hours=dataset.sync_interval_hours,
             api_key_configured=api_key_configured,
             registered=dataset.code in registered_codes,
