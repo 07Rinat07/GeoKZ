@@ -1,9 +1,8 @@
+from dataclasses import dataclass
 import re
 import unicodedata
-from dataclasses import dataclass
 
 from app.integrations.errors import ExternalSourceProtocolError
-
 
 _NAME_ALIASES = (
     "Наименование месторождения",
