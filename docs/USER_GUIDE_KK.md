@@ -134,3 +134,14 @@ POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/c
 Күрделі өрістер үшін қысқа кеңес, кеңейтілген түсіндірме, қадамдық шебер және диагностикалық ескерту қолданылады. CRS, X/Y реті, MD/TVD/TVDSS, ҰГЗ, корреляция және сыртқы дереккөздерді баптау үшін контекстік көмек міндетті.
 
 Ағымдағы іске асыру мәртебесі: `docs/PROJECT_PLAN_V0_2_KK.md`.
+
+## Визуалды корреляциялық қима
+UI үшін бұрын есептелген корреляцияның үстінен backend-owned view-model қосылды; клиент геологиялық корреляцияны қайта есептемейді:
+
+```text
+POST /api/v1/correlation/wells/view
+```
+
+Backend ортақ depth scale-ды `TVDSS → TVD → MD` басымдығымен таңдайды. Таңдалған depth reference-ке қауіпсіз келмейтін реперлер мен интервалдар `renderable=false` болып қайтарылады және автоматты correlation line алмайды. `correlation_lines` ішінде `MARKER` және `HORIZON` сегменттері, ал `warnings` ішінде `DEPTH_REFERENCE_MISMATCH`, `NO_RENDERABLE_DATA`, `NO_CORRELATION_LINES` сияқты тұрақты diagnostic codes беріледі.
+
+Клиент `VerificationStatus` пен warnings-ті көрсетуі тиіс, бірақ depth conversion немесе жаңа correlation link логикасын өз ішінде жасамауы керек. Толық контракт: `docs/CROSS_SECTION_VIEW_CONTRACT_KK.md`.
