@@ -36,11 +36,15 @@ GeoKZ — Қазақстан геологиясы бойынша бірыңға�
 - ✅ `GET /api/v1/integrations/kazakhstan/{code}/schema` — external metadata/mapping тексеру endpoint-і.
 - ✅ `POST /api/v1/integrations/kazakhstan/register` — дереккөздерді жергілікті GeoKZ БД-сына тіркеу.
 - ✅ `POST /api/v1/integrations/kazakhstan/{code}/sync` — RAW/staging қабатына қолмен REST-синхрондау.
+- ✅ `stat_kgn_117` normalizer тек dataset растайтын кен орны атауын шығарады; RAW өзгертілмейді.
+- ✅ мұнай-газ кен орындарын `GeologicalEntity(object_type="field")` және `EntityName` aliases арқылы matching.
+- ✅ exact/alias matches тек `ExternalEntityLink(status=REVIEW_REQUIRED)` жасайды; ambiguous/unmatched review үшін сақталады; reviewer қойған VERIFIED/REJECTED links автоматты түрде өзгертілмейді.
+- ✅ `POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process` — RAW sync кейін normalize + match.
 - ✅ дереккөздер `AUTOMATIC`, 168 сағаттық интервалмен тіркеледі; нақты scheduler әлі іске асырылмаған.
 - ✅ API key тек `GEOKZ_EGOV_API_KEY` арқылы оқылады; кілт болмаса жергілікті база жұмысын жалғастырады.
 - ✅ API кілттерін алу және баптау туралы RU/KK/EN нұсқаулықтары.
 - ✅ Kazakhstan Open Data resource naming және connection туралы RU/KK/EN жеке нұсқаулықтар.
-- ✅ README ішінде API key, `apiUri` contract және resource onboarding ережелері бар.
+- ✅ README ішінде API key, `apiUri` contract, processing endpoint және resource onboarding ережелері бар.
 - ✅ RU/KK/EN user guides/roadmaps және documentation CI contract.
 
 ## Жақын P0
@@ -50,16 +54,16 @@ GeoKZ — Қазақстан геологиясы бойынша бірыңға�
 4. Correlation distance query ішіндегі SQLAlchemy cartesian-product warning-ті жою.
 5. Lithology/markers/property kinds/units controlled vocabularies.
 6. Сыртқы дереккөздерді мерзімді синхрондау scheduler-і және «Барлығын жаңарту» функциясы.
-7. Kazakhstan Open Data жазбаларын GeoKZ GeologicalEntity/кен орындарымен нормализациялау және matching.
-8. Metadata/mapping/license/data quality тексерілгеннен кейін Қазақстанның келесі ресми resources қосу.
+7. `ExternalEntityLink` үшін review API/UI: confirm, reject, manual link және unmatched candidate-тан жаңа DRAFT field тек пайдаланушының нақты әрекетімен жасалады.
+8. Metadata/mapping/license/data quality тексерілгеннен кейін келесі ресми Қазақстан resources қосу; келесі кандидат — геологиялық лицензиялар.
 9. Core Dataset manifest/importer.
 10. Audit log/revisions.
 
 ## Релиздер
-- `v0.2`: platform/integration/help/spatial/subsurface/correlation foundation + Қазақстанның алғашқы ресми REST integrations.
-- `v0.3`: visual correlation data contract, CRS/local settings, complete demo workflow, scheduled external sync.
+- `v0.2`: platform/integration/help/spatial/subsurface/correlation foundation + Қазақстанның алғашқы ресми REST integrations + safe oil/gas-field normalization/matching.
+- `v0.3`: visual correlation data contract, CRS/local settings, complete demo workflow, scheduled external sync және review workflow.
 - `v0.4`: PDF/DOCX/LAS/DLIS/WITSML/SEG-Y.
-- `v0.5`: external source matching/review/audit.
+- `v0.5`: external source matching/review/audit кеңейту.
 - `v0.6`: unified RU/KK/EN search.
 - `v0.7`: GIS/PySide6 + visual correlation viewer.
 - `v0.8`: geological model hardening / GeoSciML alignment.
