@@ -36,11 +36,15 @@ GeoKZ — единое рабочее окно по геологии Казах�
 - ✅ `GET /api/v1/integrations/kazakhstan/{code}/schema` — проверка metadata/mapping внешнего ресурса до импорта.
 - ✅ `POST /api/v1/integrations/kazakhstan/register` — регистрация источников в локальной БД.
 - ✅ `POST /api/v1/integrations/kazakhstan/{code}/sync` — ручная REST-синхронизация в RAW/staging.
+- ✅ `stat_kgn_117` normalizer: извлекается подтверждённое набором название месторождения, RAW остаётся неизменным.
+- ✅ matching нефтегазовых месторождений с `GeologicalEntity(object_type="field")` и `EntityName` aliases.
+- ✅ exact/alias matches создают только `ExternalEntityLink(status=REVIEW_REQUIRED)`; ambiguous/unmatched сохраняются для review; VERIFIED/REJECTED reviewer links не перезаписываются.
+- ✅ `POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process` — normalize + match после RAW sync.
 - ✅ источники регистрируются как `AUTOMATIC` с интервалом 168 часов; фактический scheduler ещё не реализован.
 - ✅ API key хранится только в `GEOKZ_EGOV_API_KEY`; без ключа локальная база продолжает работать.
 - ✅ отдельные инструкции по получению/настройке API-ключей на RU/KK/EN: `EXTERNAL_API_KEYS_RU.md`, `EXTERNAL_API_KEYS_KK.md`, `EXTERNAL_API_KEYS_EN.md`.
 - ✅ отдельные инструкции по подключению и naming conventions Kazakhstan Open Data на RU/KK/EN.
-- ✅ README содержит краткую инструкцию по получению ключа `data.egov.kz`, официальный `apiUri` contract и правила подключения ресурсов.
+- ✅ README содержит краткую инструкцию по получению ключа `data.egov.kz`, официальный `apiUri` contract, processing endpoint и правила подключения ресурсов.
 - ✅ USER_GUIDE и roadmap на RU/KK/EN + documentation CI contract.
 
 ## Ближайший P0
@@ -50,16 +54,16 @@ GeoKZ — единое рабочее окно по геологии Казах�
 4. Устранить SQLAlchemy cartesian-product warning в distance query корреляции.
 5. Controlled vocabularies для lithology/markers/property kinds/units.
 6. Scheduler периодической синхронизации внешних источников и кнопка «Обновить всё».
-7. Нормализация и matching записей Kazakhstan Open Data с GeologicalEntity/месторождениями GeoKZ.
-8. Добавление следующих официальных наборов Казахстана после проверки metadata/mapping/license/data quality.
+7. Review API/UI для подтверждения, отклонения и ручного связывания `ExternalEntityLink`, включая создание нового DRAFT field из unmatched-кандидата только по явному действию пользователя.
+8. Добавление следующих официальных наборов Казахстана после проверки metadata/mapping/license/data quality; следующий кандидат — геологические лицензии.
 9. Core Dataset manifest/importer.
 10. Audit log/revisions.
 
 ## Релизы
-- `v0.2`: platform/integration/help/spatial/subsurface/correlation foundation + первые официальные REST integrations Казахстана.
-- `v0.3`: visual correlation data contract, CRS/local settings, complete demo workflow, scheduled external sync.
+- `v0.2`: platform/integration/help/spatial/subsurface/correlation foundation + первые официальные REST integrations Казахстана + safe oil/gas-field normalization/matching.
+- `v0.3`: visual correlation data contract, CRS/local settings, complete demo workflow, scheduled external sync и review workflow.
 - `v0.4`: PDF/DOCX/LAS/DLIS/WITSML/SEG-Y.
-- `v0.5`: matching/review/audit для внешних источников.
+- `v0.5`: расширенный matching/review/audit для внешних источников.
 - `v0.6`: unified RU/KK/EN search.
 - `v0.7`: GIS/PySide6 + visual correlation viewer.
 - `v0.8`: geological model hardening / GeoSciML alignment.
