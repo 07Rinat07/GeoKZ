@@ -35,6 +35,8 @@ GeoKZ is a single working window for geology in Kazakhstan: territory/coordinate
 - ✅ `POST /api/v1/integrations/kazakhstan/{code}/sync` — manual REST synchronization into RAW/staging.
 - ✅ sources are registered as `AUTOMATIC` with a 168-hour interval; the actual scheduler is still pending.
 - ✅ the API key is read only from `GEOKZ_EGOV_API_KEY`; the local database remains usable without it.
+- ✅ dedicated RU/KK/EN API-key acquisition and setup guides: `EXTERNAL_API_KEYS_RU.md`, `EXTERNAL_API_KEYS_KK.md`, `EXTERNAL_API_KEYS_EN.md`.
+- ✅ README includes a concise `data.egov.kz` key acquisition and secure `.env` configuration guide.
 - ✅ RU/KK/EN user guides/roadmaps and documentation CI contract.
 
 ## Near-term P0
