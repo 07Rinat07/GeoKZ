@@ -74,7 +74,8 @@ async def test_oil_gas_field_processing_creates_review_candidate() -> None:
             session.add(record)
             await session.commit()
 
-            summary = await KazakhstanOilGasFieldProcessingService(session).process()
+            service = KazakhstanOilGasFieldProcessingService(session)
+            summary = await service.process()
 
             await session.refresh(record)
             link = await session.scalar(
@@ -94,6 +95,19 @@ async def test_oil_gas_field_processing_creates_review_candidate() -> None:
             assert link.match_method == MatchMethod.EXACT_NAME
             assert link.match_confidence == 1.0
             assert link.status == EntityLinkStatus.REVIEW_REQUIRED
+
+            second_summary = await service.process()
+            links = list(
+                await session.scalars(
+                    select(ExternalEntityLink).where(
+                        ExternalEntityLink.external_record_id == record.id,
+                        ExternalEntityLink.geological_entity_id == entity.id,
+                    )
+                )
+            )
+            assert second_summary.normalized >= 1
+            assert len(links) == 1
+            assert links[0].status == EntityLinkStatus.REVIEW_REQUIRED
     finally:
         await engine.dispose()
 
