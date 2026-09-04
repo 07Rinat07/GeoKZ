@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.kazakhstan_open_data import (
     KazakhstanDatasetNotFoundError,
+    KazakhstanDatasetProcessingNotSupportedError,
     KazakhstanOpenDataService,
 )
 from app.core.config import Settings, get_settings
@@ -21,6 +22,7 @@ from app.schemas.integration import (
     ExternalDataSourceRead,
     KazakhstanDatasetCatalogItem,
     KazakhstanDatasetInspectionResponse,
+    KazakhstanDatasetProcessingResponse,
     KazakhstanDatasetSyncResponse,
 )
 
@@ -210,4 +212,38 @@ async def sync_kazakhstan_open_dataset(
         records_updated=summary.records_updated,
         records_unchanged=summary.records_unchanged,
         records_rejected=summary.records_rejected,
+    )
+
+
+@router.post(
+    "/kazakhstan/{code}/process",
+    response_model=KazakhstanDatasetProcessingResponse,
+)
+async def process_kazakhstan_open_dataset(
+    code: str,
+    session: AsyncSession = Depends(get_session),
+    settings: Settings = Depends(get_settings),
+) -> KazakhstanDatasetProcessingResponse:
+    try:
+        summary = await KazakhstanOpenDataService(session, settings).process(code)
+    except KazakhstanDatasetNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Набор данных не найден") from error
+    except KazakhstanDatasetProcessingNotSupportedError as error:
+        raise HTTPException(
+            status_code=422,
+            detail="Для этого набора normalizer/matcher ещё не реализован",
+        ) from error
+    except LookupError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+
+    return KazakhstanDatasetProcessingResponse(
+        source_id=summary.source_id,
+        processed=summary.processed,
+        normalized=summary.normalized,
+        exact_matches=summary.exact_matches,
+        alias_matches=summary.alias_matches,
+        ambiguous=summary.ambiguous,
+        unmatched=summary.unmatched,
+        normalization_errors=summary.normalization_errors,
+        reviewer_locked=summary.reviewer_locked,
     )
