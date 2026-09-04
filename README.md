@@ -1,159 +1,258 @@
-# GeoKZ Backend v0.1
+# GeoKZ v0.2-dev
 
-Запускаемый каркас доказательного геологического справочника Казахстана.
+GeoKZ — доказательная геологическая информационная система Казахстана и единое рабочее окно для информации по территории, месторождению, структуре и скважине.
 
-## Что входит
+## Основные возможности проекта
 
-- FastAPI API;
+- RU / KK / EN во всём пользовательском продукте;
+- территория → объект → скважина → интервал → источник;
+- поиск по области/району и координатам;
+- ввод geographic latitude/longitude и projected X/Y;
+- PostGIS-поиск ближайших скважин, объектов и сейсмики;
+- паспорт геологического объекта;
+- полный паспорт скважины;
+- траектория MD/TVD/TVDSS;
+- литология, стратиграфия, коллекторы, нефть/газ/вода;
+- ГИС/well logs, испытания, керн;
+- 2D/3D seismic catalog;
+- корреляция разрезов соседних скважин по реперам и интервалам;
+- evidence/provenance и конфликты источников;
+- встроенный GeoKZ Core Dataset + обновляемые внешние источники;
+- контекстные подсказки и помощники RU/KK/EN.
+
+## Ключевые правила
+
+- **Evidence-first:** факт и интерпретация прослеживаются до источника.
+- **Human-in-the-loop:** внешние API и ИИ не переписывают verified master data автоматически.
+- **Offline-capable core:** базовая информация доступна без обязательного интернета.
+- **Data provenance:** сохраняются источник, версия набора, дата получения, checksum и RAW payload.
+- **GIS-first:** PostgreSQL/PostGIS, далее GeoPackage, OGC API Features и QGIS.
+- **Safe depth/CRS handling:** MD/TVD/TVDSS и разные CRS не смешиваются молча.
+- **Documentation-as-code:** пользовательские инструкции и roadmap поддерживаются на RU/KK/EN и проверяются CI-контрактом.
+
+## Текущий стек
+
+- Python 3.12;
+- FastAPI;
 - PostgreSQL 17 + PostGIS 3.5;
-- асинхронный SQLAlchemy 2;
-- Alembic и начальная миграция;
-- расширения `postgis`, `pg_trgm`, `unaccent`;
-- модели источников, документов, страниц, геологических объектов, фактов,
-  доказательств, скважин, интервалов и конфликтов;
-- базовые CRUD-маршруты;
-- пилотное заполнение для Прикаспийской впадины и Даулеталы;
-- подготовленная граница между backend и будущим Windows-клиентом.
+- SQLAlchemy 2 async;
+- Alembic;
+- Pydantic;
+- Docker Compose;
+- GitHub Actions CI;
+- PySide6 запланирован для Windows-клиента.
 
-## Архитектурное правило
+## Внешние источники
 
-Рабочая база не зависит от нейросети. ИИ может готовить черновые JSON/CSV/JSONL,
-но публикация фактов выполняется только после проверки человеком.
+Приоритет интеграции:
+
+1. Kazakhstan Open Data (`data.egov.kz`);
+2. другие официальные открытые казахстанские datasets/GIS services;
+3. USGS;
+4. Macrostrat;
+5. OneGeology / OGC;
+6. Copernicus;
+7. корпоративные WITSML/OSDU endpoints — только при предоставленном организацией доступе.
+
+Внешние данные проходят RAW → checksum/diff → normalization → matching → review → verified master view.
+
+### Официальные Kazakhstan Open Data resources
+
+На этапе `v0.2-dev` подключён реестр:
+
+- `kz-egov-oil-gas-fields` — нефтегазовые месторождения Республики Казахстан;
+- `kz-egov-geological-study-licenses` — лицензии на геологическое изучение недр.
+
+GeoKZ использует официальную терминологию `data.egov.kz`:
 
 ```text
-Windows-клиент / Web-клиент
-            │
-            ▼
-         FastAPI
-            │
-            ▼
-SQLAlchemy + PostgreSQL/PostGIS
+apiUri   = технический индекс ресурса на портале
+version  = версия ресурса, например v10
+fields   = технические имена полей
+source   = JSON-параметр API v4 для from/size/query/sort
 ```
 
-## Быстрый запуск в Windows через Docker Desktop
+Пример:
 
-Требования для разработки:
+```text
+GeoKZ code:  kz-egov-oil-gas-fields
+apiUri:      stat_kgn_117
+version:     v10
+record_type: oil_gas_field
+```
 
-- Git;
-- Docker Desktop с командой `docker compose`.
+`GeoKZ code` — стабильный внутренний slug connector-а. Официальный `apiUri` не переводится, не сокращается и хранится отдельно от версии.
 
-В PowerShell:
+Официальные формы endpoint-ов:
+
+```text
+GET /meta/{apiUri}/{version}
+GET /api/v4/mapping/{apiUri}/{version}
+GET /api/v4/{apiUri}/{version}?source={JSON}
+GET /api/detailed/{apiUri}/{version}?source={JSON}
+```
+
+Перед подключением нового набора GeoKZ должен сначала прочитать metadata и mapping, сверить имена/типы полей, выполнить небольшой sample-запрос, а только затем добавлять normalization/matching.
+
+Каталог GeoKZ:
+
+```text
+GET /api/v1/integrations/kazakhstan/catalog
+```
+
+Проверка официальных metadata + mapping до импорта:
+
+```text
+GET /api/v1/integrations/kazakhstan/{code}/schema
+```
+
+Регистрация известных источников:
+
+```text
+POST /api/v1/integrations/kazakhstan/register
+```
+
+Ручная синхронизация конкретного источника:
+
+```text
+POST /api/v1/integrations/kazakhstan/{code}/sync
+```
+
+Нормализация и безопасное сопоставление нефтегазовых месторождений после RAW-синхронизации:
+
+```text
+POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process
+```
+
+Этот шаг извлекает название месторождения, сопоставляет его с существующими `GeologicalEntity(object_type="field")` и `EntityName` aliases и создаёт только review-кандидаты. `VERIFIED` master data автоматически не изменяются.
+
+Очередь экспертной проверки:
+
+```text
+GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review
+```
+
+Поддерживаются явные действия review:
+
+```text
+POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/links/{link_id}/confirm
+POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/links/{link_id}/reject
+POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/manual-link
+POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/create-draft-field
+```
+
+Ключевое правило: `ExternalEntityLink(status=VERIFIED)` подтверждает связь внешней записи с объектом, но не делает сам `GeologicalEntity` проверенным автоматически. Новый объект из `UNMATCHED` создаётся только как `DRAFT`.
+
+Подробная документация:
+
+- RU: [`docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md`](docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md)
+- KK: [`docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_KK.md`](docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_KK.md)
+- EN: [`docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_EN.md`](docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_EN.md)
+- review RU: [`docs/KAZAKHSTAN_FIELD_REVIEW_RU.md`](docs/KAZAKHSTAN_FIELD_REVIEW_RU.md)
+- review KK: [`docs/KAZAKHSTAN_FIELD_REVIEW_KK.md`](docs/KAZAKHSTAN_FIELD_REVIEW_KK.md)
+- review EN: [`docs/KAZAKHSTAN_FIELD_REVIEW_EN.md`](docs/KAZAKHSTAN_FIELD_REVIEW_EN.md)
+
+### Как получить API-ключ data.egov.kz
+
+Фактическая загрузка данных с `data.egov.kz` требует персонального API-ключа разработчика.
+
+1. Откройте официальный портал: `https://data.egov.kz/`.
+2. Авторизуйтесь через доступный способ входа eGov.
+3. Перейдите в раздел **«Разработчикам»**.
+4. Откройте **«Кабинет разработчика»**.
+5. Создайте или скопируйте свой API key.
+6. В корне GeoKZ создайте локальный `.env`:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+7. Запишите ключ только в локальный `.env`:
+
+```env
+GEOKZ_EGOV_API_KEY=ВАШ_РЕАЛЬНЫЙ_КЛЮЧ
+```
+
+8. Перезапустите GeoKZ API / Docker Compose.
+9. В Swagger проверьте `GET /api/v1/integrations/kazakhstan/catalog`: поле `api_key_configured=true` означает, что GeoKZ видит настроенный ключ.
+10. Выполните `POST /api/v1/integrations/kazakhstan/register`, затем тестовую синхронизацию нужного набора.
+
+**Безопасность:** реальный ключ нельзя коммитить в Git, вставлять в README/исходный код, issue/PR, публиковать на скриншотах или отправлять в чат. В репозитории остаётся только пустой шаблон `GEOKZ_EGOV_API_KEY=`.
+
+Подробные инструкции:
+
+- RU: [`docs/EXTERNAL_API_KEYS_RU.md`](docs/EXTERNAL_API_KEYS_RU.md)
+- KK: [`docs/EXTERNAL_API_KEYS_KK.md`](docs/EXTERNAL_API_KEYS_KK.md)
+- EN: [`docs/EXTERNAL_API_KEYS_EN.md`](docs/EXTERNAL_API_KEYS_EN.md)
+
+## Разработка
 
 ```powershell
 Copy-Item .env.example .env
 ./scripts/dev.ps1
 ```
 
-Либо вручную:
+или:
 
 ```powershell
 docker compose up --build
 ```
 
-После запуска:
+Полезные endpoints:
 
 - Swagger UI: `http://localhost:8000/docs`
 - ReDoc: `http://localhost:8000/redoc`
-- проверка процесса: `http://localhost:8000/health/live`
-- проверка БД и PostGIS: `http://localhost:8000/health/ready`
+- live: `http://localhost:8000/health/live`
+- ready/PostGIS: `http://localhost:8000/health/ready`
+- about: `/api/v1/about?lang=ru`
+- help: `/api/v1/help/topics?lang=ru`
+- external sources: `/api/v1/integrations/sources`
+- Kazakhstan catalog: `/api/v1/integrations/kazakhstan/catalog`
+- Kazakhstan resource schema: `/api/v1/integrations/kazakhstan/{code}/schema`
+- Kazakhstan sync: `/api/v1/integrations/kazakhstan/{code}/sync`
+- Kazakhstan process/match: `/api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process`
+- Kazakhstan field review: `/api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review`
+- well passport: `/api/v1/wells/{well_id}/passport`
+- correlation: `/api/v1/correlation/wells/{reference_well_id}`
 
-## Пилотные данные
+## Документация
 
-```powershell
-docker compose exec api python -m scripts.seed_pilot
-```
+### Roadmap
+- RU: [`docs/PROJECT_PLAN_V0_2.md`](docs/PROJECT_PLAN_V0_2.md)
+- KK: [`docs/PROJECT_PLAN_V0_2_KK.md`](docs/PROJECT_PLAN_V0_2_KK.md)
+- EN: [`docs/PROJECT_PLAN_V0_2_EN.md`](docs/PROJECT_PLAN_V0_2_EN.md)
 
-Скрипт добавляет:
+### Руководства пользователя
+- RU: [`docs/USER_GUIDE_RU.md`](docs/USER_GUIDE_RU.md)
+- KK: [`docs/USER_GUIDE_KK.md`](docs/USER_GUIDE_KK.md)
+- EN: [`docs/USER_GUIDE_EN.md`](docs/USER_GUIDE_EN.md)
 
-- том XXI «Геология СССР. Западный Казахстан», книги 1 и 2;
-- документ 2017 года по Даулеталы;
-- Прикаспийскую впадину;
-- Южно-Эмбинское поднятие;
-- месторождение Даулеталы.
+### API-ключи внешних источников
+- RU: [`docs/EXTERNAL_API_KEYS_RU.md`](docs/EXTERNAL_API_KEYS_RU.md)
+- KK: [`docs/EXTERNAL_API_KEYS_KK.md`](docs/EXTERNAL_API_KEYS_KK.md)
+- EN: [`docs/EXTERNAL_API_KEYS_EN.md`](docs/EXTERNAL_API_KEYS_EN.md)
 
-Скрипт идемпотентный: повторный запуск не создаёт дубликаты.
+### Интеграция Kazakhstan Open Data
+- RU: [`docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md`](docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md)
+- KK: [`docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_KK.md`](docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_KK.md)
+- EN: [`docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_EN.md`](docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_EN.md)
 
-## Основные команды
+### Review внешних месторождений
+- RU: [`docs/KAZAKHSTAN_FIELD_REVIEW_RU.md`](docs/KAZAKHSTAN_FIELD_REVIEW_RU.md)
+- KK: [`docs/KAZAKHSTAN_FIELD_REVIEW_KK.md`](docs/KAZAKHSTAN_FIELD_REVIEW_KK.md)
+- EN: [`docs/KAZAKHSTAN_FIELD_REVIEW_EN.md`](docs/KAZAKHSTAN_FIELD_REVIEW_EN.md)
 
-```powershell
-# Запуск
-docker compose up --build
+### Другие документы
+- [`docs/BUSINESS_DOMAIN.md`](docs/BUSINESS_DOMAIN.md) — предметная модель;
+- [`docs/I18N.md`](docs/I18N.md) — правила RU/KK/EN;
+- [`docs/DOCUMENTATION_POLICY.md`](docs/DOCUMENTATION_POLICY.md) — обязательное сопровождение документации;
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — архитектура;
+- [`docs/WINDOWS_DESKTOP_PLAN.md`](docs/WINDOWS_DESKTOP_PLAN.md) — Windows/PySide6;
+- [`docs/ABOUT.md`](docs/ABOUT.md) — о проекте.
 
-# Остановка
-docker compose down
+## Автор
 
-# Остановка с удалением тестовой базы
-docker compose down -v
+**Sarmuldin Rinat**  
+Email: **ura07srr@gmail.com**
 
-# Применение миграций
-docker compose exec api alembic upgrade head
-
-# Текущая миграция
-docker compose exec api alembic current
-
-# Новая миграция после изменения моделей
-docker compose exec api alembic revision --autogenerate -m "описание"
-
-# Тесты
-docker compose exec api pytest
-
-# Линтер
-docker compose exec api ruff check .
-```
-
-## Локальный запуск Python без контейнера API
-
-Базу можно оставить в Docker, а API запустить из виртуального окружения:
-
-```powershell
-Copy-Item .env.example .env
-# В .env оставить host=localhost в GEOKZ_DATABASE_URL.
-
-docker compose up -d db
-py -3.12 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -e ".[dev]"
-alembic upgrade head
-uvicorn app.main:app --reload
-```
-
-## Структура
-
-```text
-app/
-├── api/                 HTTP-маршруты
-├── core/                конфигурация и подключение к БД
-├── models/              SQLAlchemy-модели
-└── schemas/             Pydantic-схемы
-migrations/              Alembic
-scripts/                 служебные и seed-скрипты
-docs/                    архитектура и Windows-план
-packaging/windows/       заготовка установщика
-```
-
-## Будущее Windows-приложение
-
-Docker используется только разработчиками. План конечной поставки:
-
-1. интерфейс на PySide6;
-2. клиент общается с тем же FastAPI-контрактом;
-3. сборка `GeoKZ.exe` через `pyside6-deploy` или PyInstaller;
-4. установщик через Inno Setup либо MSIX;
-5. два режима работы:
-   - локальная база PostgreSQL/PostGIS на одном компьютере;
-   - подключение к центральному серверу организации.
-
-Подробности: [`docs/WINDOWS_DESKTOP_PLAN.md`](docs/WINDOWS_DESKTOP_PLAN.md).
-
-## Важное ограничение версии 0.1
-
-Это backend-каркас, а не готовый пользовательский справочник. В нём ещё нет:
-
-- полноценного интерфейса;
-- импорта PDF/DOCX;
-- редакторской панели проверки;
-- геологической карты;
-- авторизации и ролей;
-- хранения файлов в объектном хранилище.
-
-Эти модули можно добавлять независимо, не меняя базовый контракт данных.
+Repository: `07Rinat07/GeoKZ`

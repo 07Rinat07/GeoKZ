@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     )
     sql_echo: bool = False
     cors_origins: list[str] = ["http://localhost:3000"]
+
+    # Необязательный ключ бесплатного API Open Data Kazakhstan.
+    # Отсутствие ключа не мешает работе локальной базы GeoKZ.
+    egov_api_key: SecretStr | None = None
+    external_http_timeout_seconds: float = Field(default=30.0, gt=0, le=300)
 
 
 @lru_cache(maxsize=1)

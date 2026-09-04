@@ -1,6 +1,7 @@
 from app.models.administrative_region import AdministrativeRegion
 from app.models.base import Base
 from app.models.conflict import ConflictRecord, conflict_facts
+from app.models.correlation import WellMarker
 from app.models.document import Document, DocumentPage
 from app.models.entity import (
     EntityName,
@@ -8,22 +9,53 @@ from app.models.entity import (
     geological_entity_administrative_regions,
 )
 from app.models.fact import Fact, FactEvidence
+from app.models.integration import (
+    ExternalDataSource,
+    ExternalEntityLink,
+    ExternalRecord,
+    ExternalSyncRun,
+)
 from app.models.source import Source
+from app.models.subsurface import (
+    CoreRun,
+    CoreSample,
+    SeismicLine,
+    SeismicSurvey,
+    SeismicVolume,
+    WellLogCurve,
+    WellLogRun,
+    WellTest,
+    WellTrajectoryPoint,
+)
 from app.models.well import Well, WellInterval
 
 __all__ = [
     "AdministrativeRegion",
     "Base",
     "ConflictRecord",
+    "CoreRun",
+    "CoreSample",
     "Document",
     "DocumentPage",
     "EntityName",
+    "ExternalDataSource",
+    "ExternalEntityLink",
+    "ExternalRecord",
+    "ExternalSyncRun",
     "Fact",
     "FactEvidence",
     "GeologicalEntity",
+    "SeismicLine",
+    "SeismicSurvey",
+    "SeismicVolume",
     "Source",
     "Well",
     "WellInterval",
+    "WellLogCurve",
+    "WellLogRun",
+    "WellMarker",
+    "WellTest",
+    "WellTrajectoryPoint",
     "conflict_facts",
     "geological_entity_administrative_regions",
 ]

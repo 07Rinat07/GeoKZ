@@ -1,12 +1,35 @@
 from fastapi import APIRouter
 
-from app.api.routes import entities, facts, health, sources
+from app.api.routes import (
+    about,
+    correlation,
+    entities,
+    explorer,
+    facts,
+    health,
+    help,
+    integration_review,
+    integrations,
+    sources,
+    spatial,
+    wells,
+)
 from app.core.config import get_settings
 
 settings = get_settings()
 
 api_router = APIRouter()
 api_router.include_router(health.router)
+api_router.include_router(
+    about.router,
+    prefix=f"{settings.api_prefix}/about",
+    tags=["about"],
+)
+api_router.include_router(
+    help.router,
+    prefix=f"{settings.api_prefix}/help",
+    tags=["help"],
+)
 api_router.include_router(
     sources.router,
     prefix=f"{settings.api_prefix}/sources",
@@ -18,7 +41,42 @@ api_router.include_router(
     tags=["entities"],
 )
 api_router.include_router(
+    explorer.entities_router,
+    prefix=f"{settings.api_prefix}/entities",
+    tags=["entities"],
+)
+api_router.include_router(
+    explorer.territories_router,
+    prefix=f"{settings.api_prefix}/territories",
+    tags=["territories"],
+)
+api_router.include_router(
+    spatial.router,
+    prefix=f"{settings.api_prefix}/spatial",
+    tags=["spatial"],
+)
+api_router.include_router(
     facts.router,
     prefix=f"{settings.api_prefix}/facts",
     tags=["facts"],
+)
+api_router.include_router(
+    wells.router,
+    prefix=f"{settings.api_prefix}/wells",
+    tags=["wells"],
+)
+api_router.include_router(
+    correlation.router,
+    prefix=f"{settings.api_prefix}/correlation",
+    tags=["correlation"],
+)
+api_router.include_router(
+    integrations.router,
+    prefix=f"{settings.api_prefix}/integrations",
+    tags=["integrations"],
+)
+api_router.include_router(
+    integration_review.router,
+    prefix=f"{settings.api_prefix}/integrations",
+    tags=["integration-review"],
 )
