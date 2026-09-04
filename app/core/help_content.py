@@ -93,6 +93,7 @@ _HELP_TOPICS: dict[str, dict[SupportedLanguage, HelpTopic]] = {
             ),
             level=HelpLevel.CONTEXT,
             language="ru",
+            related_codes=["correlation.depth"],
         ),
         "kk": HelpTopic(
             code="depth.reference",
@@ -104,6 +105,7 @@ _HELP_TOPICS: dict[str, dict[SupportedLanguage, HelpTopic]] = {
             ),
             level=HelpLevel.CONTEXT,
             language="kk",
+            related_codes=["correlation.depth"],
         ),
         "en": HelpTopic(
             code="depth.reference",
@@ -115,6 +117,7 @@ _HELP_TOPICS: dict[str, dict[SupportedLanguage, HelpTopic]] = {
             ),
             level=HelpLevel.CONTEXT,
             language="en",
+            related_codes=["correlation.depth"],
         ),
     },
     "well.logs": {
@@ -128,6 +131,7 @@ _HELP_TOPICS: dict[str, dict[SupportedLanguage, HelpTopic]] = {
             ),
             level=HelpLevel.CONTEXT,
             language="ru",
+            related_codes=["correlation.marker"],
         ),
         "kk": HelpTopic(
             code="well.logs",
@@ -139,6 +143,7 @@ _HELP_TOPICS: dict[str, dict[SupportedLanguage, HelpTopic]] = {
             ),
             level=HelpLevel.CONTEXT,
             language="kk",
+            related_codes=["correlation.marker"],
         ),
         "en": HelpTopic(
             code="well.logs",
@@ -150,6 +155,83 @@ _HELP_TOPICS: dict[str, dict[SupportedLanguage, HelpTopic]] = {
             ),
             level=HelpLevel.CONTEXT,
             language="en",
+            related_codes=["correlation.marker"],
+        ),
+    },
+    "correlation.marker": {
+        "ru": HelpTopic(
+            code="correlation.marker",
+            title="Репер в корреляции",
+            short_hint="Репер — узнаваемая стратиграфическая или геофизическая отметка для сопоставления скважин.",
+            details=(
+                "GeoKZ хранит код и название репера, глубину, метод интерпретации, источник, достоверность и "
+                "статус проверки. Автоматическая линия корреляции должна быть прослеживаема до этих данных."
+            ),
+            level=HelpLevel.CONTEXT,
+            language="ru",
+            related_codes=["correlation.depth", "well.logs"],
+        ),
+        "kk": HelpTopic(
+            code="correlation.marker",
+            title="Корреляциядағы репер",
+            short_hint="Репер — ұңғымаларды салыстыруға қолданылатын танылатын стратиграфиялық немесе геофизикалық белгі.",
+            details=(
+                "GeoKZ репер кодын/атауын, тереңдігін, интерпретация әдісін, дереккөзін, сенімділігін және "
+                "тексеру мәртебесін сақтайды. Автоматты корреляциялық сызық осы деректерге дейін қадағалануы тиіс."
+            ),
+            level=HelpLevel.CONTEXT,
+            language="kk",
+            related_codes=["correlation.depth", "well.logs"],
+        ),
+        "en": HelpTopic(
+            code="correlation.marker",
+            title="Correlation marker",
+            short_hint="A marker is a recognizable stratigraphic or geophysical pick used to correlate wells.",
+            details=(
+                "GeoKZ stores the marker code/name, depth, interpretation method, source, confidence and "
+                "verification status. An automatic correlation line must remain traceable to this evidence."
+            ),
+            level=HelpLevel.CONTEXT,
+            language="en",
+            related_codes=["correlation.depth", "well.logs"],
+        ),
+    },
+    "correlation.depth": {
+        "ru": HelpTopic(
+            code="correlation.depth",
+            title="Система глубин при корреляции",
+            short_hint="Для соседних скважин предпочтительно сравнивать реперы по TVDSS.",
+            details=(
+                "TVDSS позволяет сравнивать вертикальные отметки относительно общего уровня. MD зависит от "
+                "траектории ствола. Если системы глубин несовместимы, GeoKZ предупреждает и не строит ложную линию."
+            ),
+            level=HelpLevel.WARNING,
+            language="ru",
+            related_codes=["depth.reference", "correlation.marker"],
+        ),
+        "kk": HelpTopic(
+            code="correlation.depth",
+            title="Корреляция кезіндегі тереңдік жүйесі",
+            short_hint="Көршілес ұңғымалар үшін реперлерді TVDSS бойынша салыстырған дұрыс.",
+            details=(
+                "TVDSS ортақ деңгейге қатысты тік белгілерді салыстыруға мүмкіндік береді. MD ұңғыма "
+                "траекториясына тәуелді. Тереңдік жүйелері үйлеспесе, GeoKZ ескерту көрсетіп, жалған сызық құрмайды."
+            ),
+            level=HelpLevel.WARNING,
+            language="kk",
+            related_codes=["depth.reference", "correlation.marker"],
+        ),
+        "en": HelpTopic(
+            code="correlation.depth",
+            title="Depth reference for correlation",
+            short_hint="TVDSS is preferred when comparing markers between nearby wells.",
+            details=(
+                "TVDSS compares vertical positions against a common datum, while MD depends on wellbore "
+                "trajectory. If depth references are incompatible, GeoKZ warns the user and avoids a false line."
+            ),
+            level=HelpLevel.WARNING,
+            language="en",
+            related_codes=["depth.reference", "correlation.marker"],
         ),
     },
     "data.provenance": {
