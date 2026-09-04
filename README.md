@@ -56,6 +56,64 @@ GeoKZ — доказательная геологическая информац
 
 Внешние данные проходят RAW → checksum/diff → normalization → matching → review → verified master view.
 
+### Официальные Kazakhstan Open Data datasets
+
+На этапе `v0.2-dev` подключён реестр:
+
+- `kz-egov-oil-gas-fields` — нефтегазовые месторождения Республики Казахстан;
+- `kz-egov-geological-study-licenses` — лицензии на геологическое изучение недр.
+
+Каталог доступен через:
+
+```text
+GET /api/v1/integrations/kazakhstan/catalog
+```
+
+Регистрация известных источников:
+
+```text
+POST /api/v1/integrations/kazakhstan/register
+```
+
+Ручная синхронизация конкретного источника:
+
+```text
+POST /api/v1/integrations/kazakhstan/{code}/sync
+```
+
+### Как получить API-ключ data.egov.kz
+
+Фактическая загрузка данных с `data.egov.kz` требует персонального API-ключа разработчика.
+
+1. Откройте официальный портал: `https://data.egov.kz/`.
+2. Авторизуйтесь через доступный способ входа eGov.
+3. Перейдите в раздел **«Разработчикам»**.
+4. Откройте **«Кабинет разработчика»**.
+5. Создайте или скопируйте свой API key.
+6. В корне GeoKZ создайте локальный `.env`:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+7. Запишите ключ только в локальный `.env`:
+
+```env
+GEOKZ_EGOV_API_KEY=ВАШ_РЕАЛЬНЫЙ_КЛЮЧ
+```
+
+8. Перезапустите GeoKZ API / Docker Compose.
+9. В Swagger проверьте `GET /api/v1/integrations/kazakhstan/catalog`: поле `api_key_configured=true` означает, что GeoKZ видит настроенный ключ.
+10. Выполните `POST /api/v1/integrations/kazakhstan/register`, затем тестовую синхронизацию нужного набора.
+
+**Безопасность:** реальный ключ нельзя коммитить в Git, вставлять в README/исходный код, issue/PR, публиковать на скриншотах или отправлять в чат. В репозитории остаётся только пустой шаблон `GEOKZ_EGOV_API_KEY=`.
+
+Подробные инструкции:
+
+- RU: [`docs/EXTERNAL_API_KEYS_RU.md`](docs/EXTERNAL_API_KEYS_RU.md)
+- KK: [`docs/EXTERNAL_API_KEYS_KK.md`](docs/EXTERNAL_API_KEYS_KK.md)
+- EN: [`docs/EXTERNAL_API_KEYS_EN.md`](docs/EXTERNAL_API_KEYS_EN.md)
+
 ## Разработка
 
 ```powershell
@@ -78,6 +136,7 @@ docker compose up --build
 - about: `/api/v1/about?lang=ru`
 - help: `/api/v1/help/topics?lang=ru`
 - external sources: `/api/v1/integrations/sources`
+- Kazakhstan catalog: `/api/v1/integrations/kazakhstan/catalog`
 - well passport: `/api/v1/wells/{well_id}/passport`
 - correlation: `/api/v1/correlation/wells/{reference_well_id}`
 
@@ -92,6 +151,11 @@ docker compose up --build
 - RU: [`docs/USER_GUIDE_RU.md`](docs/USER_GUIDE_RU.md)
 - KK: [`docs/USER_GUIDE_KK.md`](docs/USER_GUIDE_KK.md)
 - EN: [`docs/USER_GUIDE_EN.md`](docs/USER_GUIDE_EN.md)
+
+### API-ключи внешних источников
+- RU: [`docs/EXTERNAL_API_KEYS_RU.md`](docs/EXTERNAL_API_KEYS_RU.md)
+- KK: [`docs/EXTERNAL_API_KEYS_KK.md`](docs/EXTERNAL_API_KEYS_KK.md)
+- EN: [`docs/EXTERNAL_API_KEYS_EN.md`](docs/EXTERNAL_API_KEYS_EN.md)
 
 ### Другие документы
 - [`docs/BUSINESS_DOMAIN.md`](docs/BUSINESS_DOMAIN.md) — предметная модель;
