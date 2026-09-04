@@ -145,3 +145,16 @@ POST /api/v1/correlation/wells/view
 Backend ортақ depth scale-ды `TVDSS → TVD → MD` басымдығымен таңдайды. Таңдалған depth reference-ке қауіпсіз келмейтін реперлер мен интервалдар `renderable=false` болып қайтарылады және автоматты correlation line алмайды. `correlation_lines` ішінде `MARKER` және `HORIZON` сегменттері, ал `warnings` ішінде `DEPTH_REFERENCE_MISMATCH`, `NO_RENDERABLE_DATA`, `NO_CORRELATION_LINES` сияқты тұрақты diagnostic codes беріледі.
 
 Клиент `VerificationStatus` пен warnings-ті көрсетуі тиіс, бірақ depth conversion немесе жаңа correlation link логикасын өз ішінде жасамауы керек. Толық контракт: `docs/CROSS_SECTION_VIEW_CONTRACT_KK.md`.
+
+## Толық demo correlation workflow
+Интерфейсті production data-мен араластырмай тексеру үшін бір endpoint қолданылады:
+
+```text
+POST /api/v1/correlation/demo/workflow
+```
+
+Алғашқы request coordinate/radius береді және `stage=DISCOVERY`, `nearby_demo_wells`, `suggested_reference_well_id`, `can_build_cross_section`, міндетті `synthetic=true` қайтарады. Содан кейін UI ағымдағы `nearby_demo_wells` ішінен бір reference well және 1–20 compared wells таңдап, сол endpoint-ті `reference_well_id` және `well_ids` арқылы қайта шақырады. Дұрыс selection кезінде `stage=CROSS_SECTION_READY` және дайын `cross_section` қайтарылады.
+
+`synthetic-correlation-demo-v1` dataset кәдімгі wells-тен қатаң бөлінген: дәл сол координатадағы production well demo selection-ға кірмейді. Incomplete selection, duplicate UUID, reference well-дің `well_ids` ішінде болуы немесе ағымдағы discovery тізімінен тыс UUID HTTP `422` арқылы қабылданбайды. Demo dataset `python -m scripts.seed_correlation_demo` командасымен жасалады және өндірістік геологиялық факт көзі емес.
+
+Толық қадамдық contract: `docs/DEMO_CORRELATION_WORKFLOW_KK.md`.
