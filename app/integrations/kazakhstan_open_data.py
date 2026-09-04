@@ -16,18 +16,21 @@ class KazakhstanOpenDataDataset:
     description_ru: str
     description_kk: str
     description_en: str
-    dataset: str
+    api_uri: str
     version: str
     record_type: str
     identity_alias_groups: tuple[tuple[str, ...], ...]
     official_url: str
     metadata_url: str
+    mapping_url: str
+    data_url_template: str
+    detailed_url_template: str
     sync_interval_hours: int = 168
 
     def connector_config(self) -> EgovDatasetConfig:
         return EgovDatasetConfig(
             source_code=self.code,
-            dataset=self.dataset,
+            dataset=self.api_uri,
             version=self.version,
             record_type=self.record_type,
             identity_alias_groups=self.identity_alias_groups,
@@ -54,7 +57,7 @@ KAZAKHSTAN_OPEN_DATASETS: tuple[KazakhstanOpenDataDataset, ...] = (
             "Official list of oil and gas fields of the Republic of Kazakhstan "
             "published on the Open Data portal."
         ),
-        dataset="stat_kgn_117",
+        api_uri="stat_kgn_117",
         version="v10",
         record_type="oil_gas_field",
         identity_alias_groups=(
@@ -68,6 +71,13 @@ KAZAKHSTAN_OPEN_DATASETS: tuple[KazakhstanOpenDataDataset, ...] = (
         ),
         official_url="https://data.egov.kz/datasets/view?index=stat_kgn_117",
         metadata_url="https://data.egov.kz/meta/stat_kgn_117/v10",
+        mapping_url="https://data.egov.kz/api/v4/mapping/stat_kgn_117/v10",
+        data_url_template=(
+            "https://data.egov.kz/api/v4/stat_kgn_117/v10?source={source}"
+        ),
+        detailed_url_template=(
+            "https://data.egov.kz/api/detailed/stat_kgn_117/v10?source={source}"
+        ),
     ),
     KazakhstanOpenDataDataset(
         code="kz-egov-geological-study-licenses",
@@ -86,7 +96,7 @@ KAZAKHSTAN_OPEN_DATASETS: tuple[KazakhstanOpenDataDataset, ...] = (
             "Official register of licenses issued for geological exploration of "
             "subsoil in the Republic of Kazakhstan."
         ),
-        dataset="zher_koinauyn_geologiyalyk_zer2",
+        api_uri="zher_koinauyn_geologiyalyk_zer2",
         version="v6",
         record_type="geological_study_license",
         identity_alias_groups=(
@@ -104,6 +114,18 @@ KAZAKHSTAN_OPEN_DATASETS: tuple[KazakhstanOpenDataDataset, ...] = (
         ),
         metadata_url=(
             "https://data.egov.kz/meta/zher_koinauyn_geologiyalyk_zer2/v6"
+        ),
+        mapping_url=(
+            "https://data.egov.kz/api/v4/mapping/"
+            "zher_koinauyn_geologiyalyk_zer2/v6"
+        ),
+        data_url_template=(
+            "https://data.egov.kz/api/v4/"
+            "zher_koinauyn_geologiyalyk_zer2/v6?source={source}"
+        ),
+        detailed_url_template=(
+            "https://data.egov.kz/api/detailed/"
+            "zher_koinauyn_geologiyalyk_zer2/v6?source={source}"
         ),
     ),
 )
