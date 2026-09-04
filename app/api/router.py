@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.routes import about, entities, facts, health, integrations, sources
+from app.api.routes import about, entities, facts, health, integrations, sources, wells
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -26,6 +26,11 @@ api_router.include_router(
     facts.router,
     prefix=f"{settings.api_prefix}/facts",
     tags=["facts"],
+)
+api_router.include_router(
+    wells.router,
+    prefix=f"{settings.api_prefix}/wells",
+    tags=["wells"],
 )
 api_router.include_router(
     integrations.router,
