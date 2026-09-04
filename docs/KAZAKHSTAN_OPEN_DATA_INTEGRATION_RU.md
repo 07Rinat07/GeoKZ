@@ -237,3 +237,26 @@ record_type: geological_study_license
 - `docs/USER_GUIDE_RU.md` — пользовательская работа с источниками;
 - `docs/PROJECT_PLAN_V0_2.md` — актуальный roadmap;
 - `docs/DOCUMENTATION_POLICY.md` — правило синхронного обновления RU/KK/EN документации.
+
+## 10. Нормализация и matching нефтегазовых месторождений
+
+Для `kz-egov-oil-gas-fields` реализован следующий шаг после RAW-синхронизации:
+
+```text
+POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process
+```
+
+GeoKZ извлекает только подтверждённое этим набором поле — наименование месторождения. RAW payload сохраняется без изменений. Нормализованное представление содержит `entity_type=field`, `name_ru`, ключ сопоставления и имя исходного поля.
+
+Сопоставление выполняется с существующими `GeologicalEntity(object_type="field")` по нормализованному имени и зарегистрированным `EntityName` aliases. Регистр, типографские кавычки, повторные пробелы и `ё/е` нормализуются для сравнения, но исходное значение не переписывается.
+
+Правила безопасности:
+
+- точное совпадение создаёт только `ExternalEntityLink(status=REVIEW_REQUIRED)`;
+- совпадение с alias также требует review;
+- несколько кандидатов получают статус `AMBIGUOUS`;
+- отсутствие кандидата получает статус `UNMATCHED`;
+- ранее `VERIFIED` или `REJECTED` человеком связь считается reviewer-locked и автоматически не меняется;
+- внешний набор не создаёт и не публикует новый verified `GeologicalEntity` автоматически.
+
+Ответ endpoint-а содержит счётчики `processed`, `normalized`, `exact_matches`, `alias_matches`, `ambiguous`, `unmatched`, `normalization_errors` и `reviewer_locked`.
