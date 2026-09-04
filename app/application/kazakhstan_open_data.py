@@ -5,6 +5,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.external_sync import ExternalSyncService, SyncSummary
+from app.application.kazakhstan_field_processing import (
+    OIL_GAS_FIELDS_SOURCE_CODE,
+    KazakhstanOilGasFieldProcessingService,
+    OilGasFieldProcessingSummary,
+)
 from app.core.config import Settings
 from app.integrations.kazakhstan_open_data import (
     KAZAKHSTAN_OPEN_DATASETS,
@@ -17,6 +22,10 @@ from app.models.integration import ExternalDataSource
 
 
 class KazakhstanDatasetNotFoundError(LookupError):
+    pass
+
+
+class KazakhstanDatasetProcessingNotSupportedError(ValueError):
     pass
 
 
@@ -110,3 +119,10 @@ class KazakhstanOpenDataService:
         await self.session.commit()
         connector = build_kazakhstan_connector(dataset, self.settings)
         return await ExternalSyncService(self.session).sync(source.id, connector)
+
+    async def process(self, code: str) -> OilGasFieldProcessingSummary:
+        if get_kazakhstan_dataset(code) is None:
+            raise KazakhstanDatasetNotFoundError(code)
+        if code != OIL_GAS_FIELDS_SOURCE_CODE:
+            raise KazakhstanDatasetProcessingNotSupportedError(code)
+        return await KazakhstanOilGasFieldProcessingService(self.session).process()
