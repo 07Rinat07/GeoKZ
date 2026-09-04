@@ -21,6 +21,7 @@ GeoKZ — единое рабочее окно по геологии Казах�
 - ✅ координаты: latitude/longitude и projected X/Y; точка/запятая; CRS; два порядка X/Y.
 - ✅ `CoordinateResolver` на pyproj/PROJ и преобразование в WGS84.
 - ✅ `POST /api/v1/spatial/nearby` для поиска ближайших объектов, скважин и сейсмики.
+- ✅ HTTP integration test `/api/v1/spatial/nearby` на реальной PostGIS базе.
 - ✅ модели trajectory, well logs, tests, core, seismic.
 - ✅ Well Correlation: WellMarker, TVDSS-preferred comparison, реперы, интервалы, thickness/net pay, porosity/permeability, lithology/fluid/hydrocarbon differences.
 - ✅ реальный PostGIS integration test корреляции.
@@ -30,15 +31,14 @@ GeoKZ — единое рабочее окно по геологии Казах�
 
 ## Ближайший P0
 1. Связать coordinate search → выбор ближайших скважин → запуск корреляции.
-2. Integration test полного `POST /api/v1/spatial/nearby` workflow.
-3. Каталог CRS Казахстана и настраиваемые локальные CRS.
-4. Устранить SQLAlchemy warning в distance query корреляции.
-5. API-модель для визуального cross-section viewer.
-6. Demo workflow: координата → 4 скважины → корреляция.
-7. External sync persistence + manual/scheduled sync.
-8. Registry официальных Kazakhstan Open Data datasets.
-9. Core Dataset manifest/importer.
-10. Controlled vocabularies + audit/revisions.
+2. Каталог CRS Казахстана и настраиваемые локальные CRS.
+3. Устранить SQLAlchemy warning в distance query корреляции.
+4. API-модель для визуального cross-section viewer.
+5. Demo workflow: координата → 4 скважины → корреляция.
+6. External sync persistence + manual/scheduled sync.
+7. Registry официальных Kazakhstan Open Data datasets.
+8. Core Dataset manifest/importer.
+9. Controlled vocabularies + audit/revisions.
 
 ## Релизы
 - `v0.2`: platform/integration/help/spatial/subsurface/correlation foundation.
