@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -51,6 +52,14 @@ class KazakhstanDatasetCatalogItem(BaseModel):
     api_key_required: bool = True
     api_key_configured: bool
     registered: bool
+
+
+class KazakhstanDatasetInspectionResponse(BaseModel):
+    code: str
+    api_uri: str
+    version: str
+    metadata: dict[str, Any]
+    mapping: dict[str, Any]
 
 
 class KazakhstanDatasetSyncResponse(BaseModel):
