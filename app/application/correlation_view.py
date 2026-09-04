@@ -8,7 +8,6 @@ from app.application.correlation import WellCorrelationService
 from app.core.project_info import SupportedLanguage
 from app.models.enums import DepthReference
 from app.schemas.correlation import (
-    CorrelationInterval,
     CorrelationMarker,
     CrossSectionCorrelationLine,
     CrossSectionDepthAxis,
