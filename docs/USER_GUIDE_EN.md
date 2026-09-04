@@ -17,13 +17,15 @@ Projected input example: `X=5085125.325`, `Y=711157.665`. The form `5085125,325 
 
 Large metric X/Y values require the source CRS: EPSG, UTM zone, SK-42/Gauss-Kruger or a configured local company CRS. The axis order is explicit as X=Easting/Y=Northing or X=Northing/Y=Easting. GeoKZ never guesses the CRS from numbers alone.
 
-After input, GeoKZ resolves the working point to WGS84 and searches within the selected radius. Results include administrative context, nearby geological objects/fields, drilled wells with distance and known intervals, and nearby or covering seismic surveys. A full well passport can be opened, and multiple wells can then be selected for correlation.
+The CRS helper lists WGS84 and UTM zones 38N–45N covering Kazakhstan's longitude range. The longitude hint only narrows the choice; it does not prove the CRS of the source document. SK-42/Gauss-Kruger and company-local systems require a confirmed EPSG/WKT/PROJ definition.
+
+After input, GeoKZ resolves the working point to WGS84 and searches within the selected radius. Results include administrative context, nearby geological objects/fields, drilled wells with distance and known intervals, and nearby or covering seismic surveys.
 
 ## Well passport
 The well passport includes coordinates, type/operator/status, dates, total depth, MD/TVD/TVDSS trajectory, geological intervals, stratigraphy, lithology, oil/gas/water indications, porosity/permeability, well logs, tests, flow rates, pressure/temperature, core/samples and related documents.
 
 ## Cross-well section correlation
-For a reference well and nearby wells, GeoKZ compares markers, lithology, reservoirs, oil/gas/water, depth, thickness, net pay, porosity and permeability in visual and textual form.
+After coordinate search, the user selects the wells to compare, chooses one reference well and starts correlation. GeoKZ compares markers, lithology, reservoirs, oil/gas/water, depth, thickness, net pay, porosity and permeability in visual and textual form.
 
 TVDSS is preferred. Incompatible depth references are not connected by an automatic line. Each marker retains its source, interpretation method and verification status.
 
