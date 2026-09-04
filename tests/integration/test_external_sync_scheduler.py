@@ -74,14 +74,17 @@ async def test_active_run_blocks_second_sync() -> None:
             )
             session.add(active)
             await session.commit()
+            active_id = active.id
+            source_id = source.id
+            source_code = source.code
 
             with pytest.raises(ExternalSyncAlreadyRunningError) as error_info:
                 await ExternalSyncService(
                     session,
                     running_timeout_hours=6,
-                ).sync(source.id, FakeConnector(source.code))
+                ).sync(source_id, FakeConnector(source_code))
 
-            assert error_info.value.run_id == active.id
+            assert error_info.value.run_id == active_id
             await session.refresh(active)
             assert active.status == SyncRunStatus.RUNNING
     finally:
