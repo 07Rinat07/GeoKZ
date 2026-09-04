@@ -4,7 +4,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 
 from app.core.project_info import SupportedLanguage
-from app.integrations.types import SyncMode
+from app.integrations.types import SyncMode, SyncRunStatus
 
 
 class ExternalDataSourceRead(BaseModel):
@@ -30,3 +30,32 @@ class ExternalDataSourceRead(BaseModel):
     last_success_at: datetime | None
     last_error_at: datetime | None
     last_error: str | None
+
+
+class KazakhstanDatasetCatalogItem(BaseModel):
+    code: str
+    name_ru: str
+    name_kk: str
+    name_en: str
+    display_name: str
+    description: str
+    dataset: str
+    version: str
+    record_type: str
+    official_url: str
+    metadata_url: str
+    sync_interval_hours: int
+    api_key_required: bool = True
+    api_key_configured: bool
+    registered: bool
+
+
+class KazakhstanDatasetSyncResponse(BaseModel):
+    run_id: UUID
+    source_id: UUID
+    status: SyncRunStatus
+    records_received: int
+    records_created: int
+    records_updated: int
+    records_unchanged: int
+    records_rejected: int
