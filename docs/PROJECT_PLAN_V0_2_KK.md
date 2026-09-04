@@ -21,6 +21,7 @@ GeoKZ — Қазақстан геологиясы бойынша бірыңға�
 - ✅ latitude/longitude және projected X/Y; нүкте/үтір; CRS; екі X/Y axis order.
 - ✅ pyproj/PROJ негізіндегі `CoordinateResolver`, WGS84 түрлендіруі.
 - ✅ `POST /api/v1/spatial/nearby` — жақын объектілерді, ұңғымаларды және сейсмиканы іздеу.
+- ✅ `/api/v1/spatial/nearby` HTTP integration test нақты PostGIS базасында өтті.
 - ✅ trajectory, well logs, tests, core, seismic модельдері.
 - ✅ Well Correlation: реперлер, TVDSS, thickness/net pay, porosity/permeability, lithology/fluid/hydrocarbon differences.
 - ✅ нақты PostGIS correlation integration test.
@@ -30,15 +31,14 @@ GeoKZ — Қазақстан геологиясы бойынша бірыңға�
 
 ## Жақын P0
 1. Coordinate search нәтижесін жақын ұңғымаларды таңдаумен және correlation іске қосумен байланыстыру.
-2. `POST /api/v1/spatial/nearby` толық integration test.
-3. Қазақстан CRS каталогы және ұйымның local CRS баптауы.
-4. Correlation distance query ішіндегі SQLAlchemy warning-ті жою.
-5. Visual cross-section viewer үшін API data model.
-6. Demo workflow: координата → 4 ұңғыма → корреляция.
-7. External sync persistence + manual/scheduled sync.
-8. Ресми Kazakhstan Open Data dataset registry.
-9. Core Dataset manifest/importer.
-10. Controlled vocabularies + audit/revisions.
+2. Қазақстан CRS каталогы және ұйымның local CRS баптауы.
+3. Correlation distance query ішіндегі SQLAlchemy warning-ті жою.
+4. Visual cross-section viewer үшін API data model.
+5. Demo workflow: координата → 4 ұңғыма → корреляция.
+6. External sync persistence + manual/scheduled sync.
+7. Ресми Kazakhstan Open Data dataset registry.
+8. Core Dataset manifest/importer.
+9. Controlled vocabularies + audit/revisions.
 
 ## Релиздер
 - `v0.2`: platform/integration/help/spatial/subsurface/correlation foundation.
