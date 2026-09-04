@@ -37,6 +37,19 @@ GeoKZ — Қазақстан геологиясына арналған дәле�
 - ✅ local CRS registry unit tests және нақты PostgreSQL/PostGIS API integration test арқылы тексерілді.
 - ✅ `LOCAL_CRS_REGISTRY_*` RU/KK/EN documentation қосылды.
 
+## Тұрақты API contracts
+- `POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process` — RAW field normalize + match.
+- `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review` — technical review queue.
+- `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view` — UI-ready review view-model.
+- `POST /api/v1/integrations/sync-all` — manual Update All.
+- `GET /api/v1/integrations/scheduler/status` — scheduler state.
+- `POST /api/v1/integrations/scheduler/run-due` — scheduled-due pass.
+- `POST /api/v1/correlation/wells/view` — visual cross-section view-model.
+- `POST /api/v1/correlation/demo/workflow` — complete synthetic demo workflow.
+- `GET /api/v1/spatial/crs-definitions` — organization CRS list.
+- `POST /api/v1/spatial/crs-definitions` — unconfirmed CRS create.
+- `POST /api/v1/spatial/crs-definitions/{definition_id}/confirm` — explicit confirmation.
+
 ## Жақын P0
 1. Correlation distance query ішіндегі қалған SQLAlchemy cartesian-product warning-ті PostGIS distance нәтижесін өзгертпей жою.
 2. Lithology/markers/property kinds/units controlled vocabularies.
