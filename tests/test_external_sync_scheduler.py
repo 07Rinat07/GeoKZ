@@ -39,7 +39,7 @@ def test_new_automatic_source_is_due_immediately() -> None:
 
     next_due_at = calculate_next_due_at(source, failure_retry_hours=6)
 
-    assert next_due_at == datetime.min.replace(tzinfo=UTC)
+    assert next_due_at is None
     assert is_source_due(source, now=now, failure_retry_hours=6) is True
 
 
