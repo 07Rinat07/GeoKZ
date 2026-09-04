@@ -39,5 +39,21 @@ services:
       timeout: 5s
       retries: 10
 
+  external-sync-scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: geokz-external-sync-scheduler
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      GEOKZ_DATABASE_URL: >-
+        postgresql+asyncpg://${POSTGRES_USER:-geokz}:${POSTGRES_PASSWORD:-change_me_for_real_use}@db:5432/${POSTGRES_DB:-geokz}
+    depends_on:
+      api:
+        condition: service_healthy
+    command: ["python", "-m", "scripts.external_sync_scheduler"]
+
 volumes:
   geokz_postgres_data:

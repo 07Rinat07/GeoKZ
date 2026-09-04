@@ -13,6 +13,21 @@ class SyncRunStatus(StrEnum):
     FAILED = "FAILED"
 
 
+class SyncBatchMode(StrEnum):
+    MANUAL_ALL = "MANUAL_ALL"
+    SCHEDULED_DUE = "SCHEDULED_DUE"
+
+
+class SyncDispatchStatus(StrEnum):
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"
+    ALREADY_RUNNING = "ALREADY_RUNNING"
+    SKIPPED_NOT_DUE = "SKIPPED_NOT_DUE"
+    SKIPPED_DISABLED = "SKIPPED_DISABLED"
+    SKIPPED_MANUAL = "SKIPPED_MANUAL"
+    SKIPPED_UNSUPPORTED = "SKIPPED_UNSUPPORTED"
+
+
 class ExternalRecordStatus(StrEnum):
     STAGED = "STAGED"
     UNCHANGED = "UNCHANGED"

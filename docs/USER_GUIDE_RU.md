@@ -43,6 +43,32 @@ GeoKZ сохраняет официальные `apiUri` и `version` отдел
 
 Источники регистрируются с автоматическим интервалом обновления 168 часов (раз в неделю), при этом ручное обновление доступно в любое время.
 
+### «Обновить всё» и плановая синхронизация
+
+Для ручного обновления всех включённых источников используется:
+
+```text
+POST /api/v1/integrations/sync-all
+```
+
+GeoKZ возвращает общий batch summary и отдельный результат для каждого source. Ошибка одного provider не отменяет остальные обновления. Возможны `SUCCESS`, `FAILED`, `ALREADY_RUNNING`, `SKIPPED_DISABLED` и `SKIPPED_UNSUPPORTED`.
+
+Состояние периодической синхронизации:
+
+```text
+GET /api/v1/integrations/scheduler/status
+```
+
+Поля `next_due_at`, `due` и `running_run_id` позволяют будущему PySide6 UI показать, когда источник будет проверен снова и выполняется ли обновление сейчас.
+
+Отдельный scheduler process выполняет только просроченные `AUTOMATIC` источники:
+
+```text
+POST /api/v1/integrations/scheduler/run-due
+```
+
+В Docker он запускается как `geokz-external-sync-scheduler`; background loop внутри FastAPI workers не используется. PostgreSQL row lock защищает источник от двух параллельных `RUNNING` run. Слишком старый `RUNNING` после configurable timeout переводится в `FAILED`, после чего источник можно синхронизировать снова.
+
 После синхронизации `kz-egov-oil-gas-fields` можно запустить обработку `process`. GeoKZ извлекает название месторождения и ищет совпадение среди уже существующих месторождений и их алиасов. Совпадение не считается подтверждённым автоматически: создаётся кандидат со статусом `REVIEW_REQUIRED`. Неоднозначные и ненайденные записи остаются для последующей экспертной проверки.
 
 ## Экспертная проверка месторождений из внешнего источника
@@ -82,23 +108,27 @@ POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/c
 
 ## REST API GeoKZ
 
+- `GET /api/v1/integrations/sources` — зарегистрированные внешние источники и последнее состояние;
+- `GET /api/v1/integrations/scheduler/status` — due/running/error состояние scheduler;
+- `POST /api/v1/integrations/sync-all` — ручное «Обновить всё»;
+- `POST /api/v1/integrations/scheduler/run-due` — выполнить scheduled due алгоритм один раз;
 - `GET /api/v1/integrations/kazakhstan/catalog` — показать доступные официальные ресурсы, их `api_uri`, версию и endpoint-ы;
 - `GET /api/v1/integrations/kazakhstan/{code}/schema` — получить официальные metadata и mapping ресурса до импорта;
 - `POST /api/v1/integrations/kazakhstan/register` — зарегистрировать их в локальной БД GeoKZ;
 - `POST /api/v1/integrations/kazakhstan/{code}/sync` — выполнить ручную синхронизацию выбранного ресурса;
 - `POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process` — нормализовать и сопоставить RAW-записи месторождений с объектами GeoKZ, не публикуя совпадения автоматически;
 - `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review` — показать техническую очередь экспертной проверки;
-- `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view` — получить локализованный UI/view-model contract очереди review;
-- `GET /api/v1/integrations/sources` — показать зарегистрированные внешние источники и состояние последней синхронизации.
+- `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view` — получить локализованный UI/view-model contract очереди review.
 
-Для загрузки данных портал требует API-ключ разработчика. Ключ задаётся только через переменную окружения `GEOKZ_EGOV_API_KEY` и не должен сохраняться в Git. Без ключа GeoKZ продолжает полностью работать с локальной базой, а каталог источников остаётся доступным.
+Для загрузки данных портал требует API-ключ разработчика. Ключ задаётся только через переменную окружения `GEOKZ_EGOV_API_KEY` и не должен сохраняться в Git. Без ключа GeoKZ продолжает полностью работать с локальной базой, а scheduler фиксирует ошибку конкретного source без остановки приложения.
 
 Подробно:
 
 - `docs/EXTERNAL_API_KEYS_RU.md` — получение и настройка ключа;
 - `docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md` — официальные `apiUri`, mapping, endpoint-ы, processing и правила именования ресурсов GeoKZ;
 - `docs/KAZAKHSTAN_FIELD_REVIEW_RU.md` — confirm/reject/manual-link/create-draft-field и правила безопасности review;
-- `docs/EXTERNAL_REVIEW_UI_CONTRACT_RU.md` — стабильная схема review queue для PySide6/web UI.
+- `docs/EXTERNAL_REVIEW_UI_CONTRACT_RU.md` — стабильная схема review queue для PySide6/web UI;
+- `docs/EXTERNAL_SYNC_SCHEDULER_RU.md` — scheduler, Update All, due/retry и защита от параллельных run.
 
 ## Подсказки и помощники
 Для сложных полей используются короткая подсказка, расширенное объяснение, пошаговый мастер и диагностическое предупреждение. Особенно важны подсказки для CRS, порядка X/Y, MD/TVD/TVDSS, ГИС, корреляции и настройки внешних источников.

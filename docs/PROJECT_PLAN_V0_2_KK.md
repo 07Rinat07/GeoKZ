@@ -1,6 +1,6 @@
 # GeoKZ — v0.2+ өзекті даму жоспары
 
-Мәртебе: `2026-09-04`, тармақ `feature/external-review-ui-contract-v0.3`. v0.2 негізі жасыл CI-ден кейін `main` тармағына біріктірілді.
+Мәртебе: `2026-09-04`, тармақ `feature/external-sync-scheduler-v0.3`. v0.2 негізі және review UI contract жасыл CI-ден кейін `main` тармағына біріктірілді.
 
 ## Мақсаты
 GeoKZ — Қазақстан геологиясы бойынша бірыңғай жұмыс терезесі: аумақ/координата → кен орындары мен ұңғымалар → толық паспорт → литология/стратиграфия/ҰГЗ/керн/сынақ/мұнай-газ-су → көршілес ұңғымалар корреляциясы → дереккөз және дәлел.
@@ -13,6 +13,7 @@ GeoKZ — Қазақстан геологиясы бойынша бірыңға�
 - Core Dataset интернетсіз де жұмыс істейді.
 - Demo/synthetic деректер өндірістік факт ретінде пайдаланылмайды және айқын белгіленеді.
 - UI backend business rules логикасын қайталамайды: review action availability және required fields backend view-model арқылы беріледі.
+- Periodic external sync әр FastAPI worker ішінде емес, dedicated process/service ретінде орындалады.
 
 ## Іске асырылды
 - ✅ FastAPI + PostgreSQL/PostGIS + Alembic.
@@ -36,32 +37,39 @@ GeoKZ — Қазақстан геологиясы бойынша бірыңға�
 - ✅ review actions: candidate confirm/reject, existing field-пен `manual-link`, тек `UNMATCHED` үшін explicit `create-draft-field`.
 - ✅ сыртқы record-тан жасалған жаңа `GeologicalEntity` тек `DRAFT`; verified link объектіні автоматты түрде VERIFIED етпейді.
 - ✅ reviewer және comment ExternalEntityLink ішінде сақталады; толық authentication/AuditLog кейін қосылады.
-- ✅ review/matching backend бір head-та жасыл `Python quality checks` және PostgreSQL/PostGIS integration tests арқылы расталып, `main` тармағына біріктірілді.
+- ✅ review/matching backend жасыл `Python quality checks` және PostgreSQL/PostGIS integration tests арқылы расталып, `main` тармағына біріктірілді.
 - ✅ review queue UI/view-model contract: `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view`.
 - ✅ view-model RU/KK/EN title/policy note, `total_pending`, pagination, локализацияланған candidate name, жеке `entity_verification_status` және тұрақты `matching_status` қайтарады.
 - ✅ `CONFIRM_LINK`, `REJECT_LINK`, `MANUAL_LINK`, `CREATE_DRAFT_FIELD` action descriptor-лары `enabled`, `disabled_reason`, `required_fields`, `optional_fields` және нақты `path` береді.
 - ✅ `UNKNOWN` matching status болашақ жаңа мәндер үшін safe fallback.
 - ✅ review view-model үшін unit tests және нақты PostgreSQL HTTP integration test қосылды.
-- ✅ sources `AUTOMATIC`, 168 сағаттық interval; нақты scheduler әлі жоқ.
-- ✅ API key тек `GEOKZ_EGOV_API_KEY` арқылы оқылады.
-- ✅ API keys, Open Data onboarding/naming, field review және review UI contract үшін RU/KK/EN құжаттары бар.
+- ✅ periodic external sync scheduler жеке `python -m scripts.external_sync_scheduler` process/service ретінде іске асырылады.
+- ✅ қолмен «Барлығын жаңарту»: `POST /api/v1/integrations/sync-all`, әр source үшін тәуелсіз result және бір provider қатесі қалған batch-ті тоқтатпайды.
+- ✅ scheduled due dispatch: `POST /api/v1/integrations/scheduler/run-due`; status: `GET /api/v1/integrations/scheduler/status`.
+- ✅ due/retry `sync_interval_hours`, `last_success_at` және соңғы error бойынша есептеледі; жаңа `AUTOMATIC` source бірден due болады.
+- ✅ PostgreSQL `SELECT ... FOR UPDATE` sync run reservation-ды сериализациялайды, сыртқы HTTP transfer кезінде row lock сақталмайды.
+- ✅ екінші қатар sync `ALREADY_RUNNING`; configurable timeout-тан ескі `RUNNING` автоматты түрде `FAILED` болады.
+- ✅ Docker Compose ішінде жеке `geokz-external-sync-scheduler` service бар; FastAPI worker scheduler loop іске қоспайды.
+- ✅ scheduler policy unit tests және нақты PostgreSQL active-run/stale-run integration tests арқылы тексеріледі.
+- ✅ API key тек `GEOKZ_EGOV_API_KEY` арқылы оқылады; key жоқ болса local DB жұмысын жалғастырады, provider error тек source деңгейінде сақталады.
+- ✅ API keys, Open Data, field review, review UI contract және external sync scheduler үшін RU/KK/EN құжаттары бар.
 - ✅ README, user guides және roadmaps documentation CI арқылы бақыланады.
 
 ## Жақын P0
-1. Scheduled external sync + «Барлығын жаңарту», параллель sync іске қосылуынан қорғау және әр source үшін status/error reporting.
-2. Visual cross-section viewer API/view-model: well columns, depth scale, markers, intervals және correlation lines.
-3. Координата → жақын demo-ұңғымалар → таңдау → correlation section толық сценарийі.
-4. Ұйымның configurable local CRS жүйелері; СК-42/Гаусс–Крюгер тек расталған EPSG/WKT/PROJ арқылы.
-5. Correlation distance query ішіндегі қалған SQLAlchemy cartesian-product warning-ті PostGIS distance нәтижесін өзгертпей жою.
-6. Lithology/markers/property kinds/units controlled vocabularies.
-7. Геологиялық лицензиялар ресурсына normalizer/review қосу — mapping/license/data quality тексерілгеннен кейін.
-8. Core Dataset manifest/importer.
-9. Review және master data өзгерістері үшін Authentication + AuditLog/revisions.
-10. Тұрақты backend view-model негізінде production PySide6 external review screen.
+1. Visual cross-section viewer API/view-model: well columns, depth scale, markers, intervals және correlation lines.
+2. Координата → жақын demo-ұңғымалар → таңдау → correlation section толық сценарийі.
+3. Ұйымның configurable local CRS жүйелері; СК-42/Гаусс–Крюгер тек расталған EPSG/WKT/PROJ арқылы.
+4. Correlation distance query ішіндегі қалған SQLAlchemy cartesian-product warning-ті PostGIS distance нәтижесін өзгертпей жою.
+5. Lithology/markers/property kinds/units controlled vocabularies.
+6. Геологиялық лицензиялар ресурсына normalizer/review қосу — mapping/license/data quality тексерілгеннен кейін.
+7. Core Dataset manifest/importer.
+8. Review және master data өзгерістері үшін Authentication + AuditLog/revisions.
+9. Тұрақты backend view-model негізінде production PySide6 external review screen.
+10. USGS/Macrostrat/OneGeology provider registry кеңейту — licence/contract жеке тексерілгеннен кейін ғана.
 
 ## Релиздер
 - `v0.2`: platform/integration/help/spatial/subsurface/correlation + алғашқы Kazakhstan REST integrations + safe oil/gas-field normalization/matching/review — `main` тармағына біріктірілді.
-- `v0.3`: review UI contract, visual correlation contract, CRS/local settings, complete demo workflow және scheduled sync.
+- `v0.3`: review UI contract, dedicated scheduled external sync/Update All, visual correlation contract, CRS/local settings және complete demo workflow.
 - `v0.4`: PDF/DOCX/LAS/DLIS/WITSML/SEG-Y.
 - `v0.5`: expanded external matching/review/audit.
 - `v0.6`: unified RU/KK/EN search.

@@ -29,6 +29,7 @@ GeoKZ — доказательная геологическая информац
 - **GIS-first:** PostgreSQL/PostGIS, далее GeoPackage, OGC API Features и QGIS.
 - **Safe depth/CRS handling:** MD/TVD/TVDSS и разные CRS не смешиваются молча.
 - **Server-owned review rules:** PySide6/web UI получает готовые action descriptors и не дублирует backend business rules.
+- **Dedicated sync scheduler:** periodic external sync выполняется отдельным process/service, не background loop внутри FastAPI workers.
 - **Documentation-as-code:** пользовательские инструкции и roadmap поддерживаются на RU/KK/EN и проверяются CI-контрактом.
 
 ## Текущий стек
@@ -119,6 +120,38 @@ POST /api/v1/integrations/kazakhstan/register
 POST /api/v1/integrations/kazakhstan/{code}/sync
 ```
 
+### Scheduler и «Обновить всё»
+
+Ручной batch всех включённых источников:
+
+```text
+POST /api/v1/integrations/sync-all
+```
+
+Состояние due/running/error:
+
+```text
+GET /api/v1/integrations/scheduler/status
+```
+
+Однократный запуск scheduled-due алгоритма:
+
+```text
+POST /api/v1/integrations/scheduler/run-due
+```
+
+В Docker Compose scheduler работает отдельным сервисом `geokz-external-sync-scheduler` и запускает `python -m scripts.external_sync_scheduler`. FastAPI workers не содержат фонового scheduler loop. Резервирование `RUNNING` run защищено PostgreSQL row lock; второй параллельный запуск получает `ALREADY_RUNNING`, а stale `RUNNING` после configurable timeout переводится в `FAILED`.
+
+Настройки:
+
+```env
+GEOKZ_EXTERNAL_SCHEDULER_POLL_SECONDS=300
+GEOKZ_EXTERNAL_SYNC_FAILURE_RETRY_HOURS=6
+GEOKZ_EXTERNAL_SYNC_RUNNING_TIMEOUT_HOURS=6
+```
+
+Ошибка одного source не отменяет batch для остальных; per-source результат содержит `SUCCESS`, `FAILED`, `ALREADY_RUNNING` или один из `SKIPPED_*` status.
+
 Нормализация и безопасное сопоставление нефтегазовых месторождений после RAW-синхронизации:
 
 ```text
@@ -172,6 +205,9 @@ POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/c
 - review UI contract RU: [`docs/EXTERNAL_REVIEW_UI_CONTRACT_RU.md`](docs/EXTERNAL_REVIEW_UI_CONTRACT_RU.md)
 - review UI contract KK: [`docs/EXTERNAL_REVIEW_UI_CONTRACT_KK.md`](docs/EXTERNAL_REVIEW_UI_CONTRACT_KK.md)
 - review UI contract EN: [`docs/EXTERNAL_REVIEW_UI_CONTRACT_EN.md`](docs/EXTERNAL_REVIEW_UI_CONTRACT_EN.md)
+- scheduler RU: [`docs/EXTERNAL_SYNC_SCHEDULER_RU.md`](docs/EXTERNAL_SYNC_SCHEDULER_RU.md)
+- scheduler KK: [`docs/EXTERNAL_SYNC_SCHEDULER_KK.md`](docs/EXTERNAL_SYNC_SCHEDULER_KK.md)
+- scheduler EN: [`docs/EXTERNAL_SYNC_SCHEDULER_EN.md`](docs/EXTERNAL_SYNC_SCHEDULER_EN.md)
 
 ### Как получить API-ключ data.egov.kz
 
@@ -228,6 +264,9 @@ docker compose up --build
 - about: `/api/v1/about?lang=ru`
 - help: `/api/v1/help/topics?lang=ru`
 - external sources: `/api/v1/integrations/sources`
+- external scheduler status: `/api/v1/integrations/scheduler/status`
+- external Update All: `/api/v1/integrations/sync-all`
+- external run due: `/api/v1/integrations/scheduler/run-due`
 - Kazakhstan catalog: `/api/v1/integrations/kazakhstan/catalog`
 - Kazakhstan resource schema: `/api/v1/integrations/kazakhstan/{code}/schema`
 - Kazakhstan sync: `/api/v1/integrations/kazakhstan/{code}/sync`
@@ -268,6 +307,11 @@ docker compose up --build
 - RU: [`docs/EXTERNAL_REVIEW_UI_CONTRACT_RU.md`](docs/EXTERNAL_REVIEW_UI_CONTRACT_RU.md)
 - KK: [`docs/EXTERNAL_REVIEW_UI_CONTRACT_KK.md`](docs/EXTERNAL_REVIEW_UI_CONTRACT_KK.md)
 - EN: [`docs/EXTERNAL_REVIEW_UI_CONTRACT_EN.md`](docs/EXTERNAL_REVIEW_UI_CONTRACT_EN.md)
+
+### Scheduler внешней синхронизации
+- RU: [`docs/EXTERNAL_SYNC_SCHEDULER_RU.md`](docs/EXTERNAL_SYNC_SCHEDULER_RU.md)
+- KK: [`docs/EXTERNAL_SYNC_SCHEDULER_KK.md`](docs/EXTERNAL_SYNC_SCHEDULER_KK.md)
+- EN: [`docs/EXTERNAL_SYNC_SCHEDULER_EN.md`](docs/EXTERNAL_SYNC_SCHEDULER_EN.md)
 
 ### Другие документы
 - [`docs/BUSINESS_DOMAIN.md`](docs/BUSINESS_DOMAIN.md) — предметная модель;

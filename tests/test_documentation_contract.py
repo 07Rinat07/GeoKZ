@@ -39,11 +39,20 @@ TRILINGUAL_REVIEW_UI_CONTRACTS = (
     DOCS / "EXTERNAL_REVIEW_UI_CONTRACT_EN.md",
 )
 
+TRILINGUAL_SYNC_SCHEDULER_GUIDES = (
+    DOCS / "EXTERNAL_SYNC_SCHEDULER_RU.md",
+    DOCS / "EXTERNAL_SYNC_SCHEDULER_KK.md",
+    DOCS / "EXTERNAL_SYNC_SCHEDULER_EN.md",
+)
+
 PROCESS_ENDPOINT = "/api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process"
 REVIEW_ENDPOINT = "/api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review"
 REVIEW_VIEW_ENDPOINT = (
     "/api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view"
 )
+SYNC_ALL_ENDPOINT = "/api/v1/integrations/sync-all"
+SCHEDULER_STATUS_ENDPOINT = "/api/v1/integrations/scheduler/status"
+RUN_DUE_ENDPOINT = "/api/v1/integrations/scheduler/run-due"
 
 
 def test_trilingual_user_guides_exist_and_are_not_empty() -> None:
@@ -54,6 +63,8 @@ def test_trilingual_user_guides_exist_and_are_not_empty() -> None:
         assert PROCESS_ENDPOINT in content
         assert REVIEW_ENDPOINT in content
         assert REVIEW_VIEW_ENDPOINT in content
+        assert SYNC_ALL_ENDPOINT in content
+        assert SCHEDULER_STATUS_ENDPOINT in content
 
 
 def test_trilingual_roadmaps_exist_and_are_not_empty() -> None:
@@ -64,6 +75,8 @@ def test_trilingual_roadmaps_exist_and_are_not_empty() -> None:
         assert PROCESS_ENDPOINT in content
         assert REVIEW_ENDPOINT in content
         assert REVIEW_VIEW_ENDPOINT in content
+        assert SYNC_ALL_ENDPOINT in content
+        assert RUN_DUE_ENDPOINT in content
 
 
 def test_trilingual_api_key_guides_exist_and_are_not_empty() -> None:
@@ -118,6 +131,23 @@ def test_trilingual_review_ui_contracts_exist_and_follow_action_contract() -> No
         assert "VERIFIED" in content
 
 
+def test_trilingual_sync_scheduler_guides_exist_and_follow_safety_contract() -> None:
+    for path in TRILINGUAL_SYNC_SCHEDULER_GUIDES:
+        assert path.is_file(), f"Missing sync scheduler guide: {path.name}"
+        content = path.read_text(encoding="utf-8").strip()
+        assert len(content) > 2500
+        assert SYNC_ALL_ENDPOINT in content
+        assert SCHEDULER_STATUS_ENDPOINT in content
+        assert RUN_DUE_ENDPOINT in content
+        assert "ALREADY_RUNNING" in content
+        assert "SKIPPED_NOT_DUE" in content
+        assert "GEOKZ_EXTERNAL_SCHEDULER_POLL_SECONDS" in content
+        assert "GEOKZ_EXTERNAL_SYNC_RUNNING_TIMEOUT_HOURS" in content
+        assert "python -m scripts.external_sync_scheduler" in content
+        assert "RUNNING" in content
+        assert "FAILED" in content
+
+
 def test_documentation_policy_exists() -> None:
     policy = DOCS / "DOCUMENTATION_POLICY.md"
     assert policy.is_file()
@@ -139,3 +169,6 @@ def test_documentation_policy_exists() -> None:
     assert "EXTERNAL_REVIEW_UI_CONTRACT_RU.md" in content
     assert "EXTERNAL_REVIEW_UI_CONTRACT_KK.md" in content
     assert "EXTERNAL_REVIEW_UI_CONTRACT_EN.md" in content
+    assert "EXTERNAL_SYNC_SCHEDULER_RU.md" in content
+    assert "EXTERNAL_SYNC_SCHEDULER_KK.md" in content
+    assert "EXTERNAL_SYNC_SCHEDULER_EN.md" in content
