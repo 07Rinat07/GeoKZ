@@ -26,11 +26,19 @@ class EgovDatasetConfig:
         if self.page_size < 1 or self.page_size > 10_000:
             raise ValueError("page_size must be between 1 and 10000")
         if self.identity_fields and self.identity_alias_groups:
-            raise ValueError(
-                "Use identity_fields or identity_alias_groups, not both"
-            )
+            raise ValueError("Use identity_fields or identity_alias_groups, not both")
         if any(not group for group in self.identity_alias_groups):
             raise ValueError("identity alias groups must not be empty")
+
+    @property
+    def api_uri(self) -> str:
+        """Официальный apiUri/index набора data.egov.kz.
+
+        ``dataset`` сохранён внутри connector для обратной совместимости раннего
+        v0.2-кода. Во внешних GeoKZ-контрактах используется термин ``api_uri``.
+        """
+
+        return self.dataset
 
 
 class EgovOpenDataConnector(ExternalDataConnector):
@@ -57,7 +65,7 @@ class EgovOpenDataConnector(ExternalDataConnector):
 
     async def check_availability(self) -> bool:
         response = await self._request(
-            f"/meta/{self._config.dataset}/{self._config.version}",
+            f"/meta/{self._config.api_uri}/{self._config.version}",
             params=None,
             requires_api_key=False,
         )
@@ -65,6 +73,38 @@ class EgovOpenDataConnector(ExternalDataConnector):
 
     async def get_dataset_version(self) -> str | None:
         return self._config.version
+
+    async def get_metadata(self) -> dict[str, Any]:
+        """Получить meta-информацию набора по официальному /meta контракту."""
+
+        response = await self._request(
+            f"/meta/{self._config.api_uri}/{self._config.version}",
+            params=None,
+            requires_api_key=False,
+        )
+        response.raise_for_status()
+        payload = response.json()
+        if not isinstance(payload, dict):
+            raise ExternalSourceProtocolError(
+                "data.egov.kz metadata имеет неожиданный формат: ожидался JSON-объект"
+            )
+        return payload
+
+    async def get_mapping(self) -> dict[str, Any]:
+        """Получить mapping-схему и типы полей набора data.egov.kz."""
+
+        response = await self._request(
+            f"/api/v4/mapping/{self._config.api_uri}/{self._config.version}",
+            params=None,
+            requires_api_key=False,
+        )
+        response.raise_for_status()
+        payload = response.json()
+        if not isinstance(payload, dict):
+            raise ExternalSourceProtocolError(
+                "data.egov.kz mapping имеет неожиданный формат: ожидался JSON-объект"
+            )
+        return payload
 
     async def fetch_records(
         self,
@@ -86,7 +126,7 @@ class EgovOpenDataConnector(ExternalDataConnector):
                 "size": self._config.page_size,
             }
             response = await self._request(
-                f"/api/v4/{self._config.dataset}/{self._config.version}",
+                f"/api/v4/{self._config.api_uri}/{self._config.version}",
                 params={
                     "apiKey": self._api_key,
                     "source": json.dumps(
