@@ -126,11 +126,31 @@ POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process
 
 Этот шаг извлекает название месторождения, сопоставляет его с существующими `GeologicalEntity(object_type="field")` и `EntityName` aliases и создаёт только review-кандидаты. `VERIFIED` master data автоматически не изменяются.
 
-Подробная инструкция по подключению, именованию ресурсов и добавлению новых datasets:
+Очередь экспертной проверки:
+
+```text
+GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review
+```
+
+Поддерживаются явные действия review:
+
+```text
+POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/links/{link_id}/confirm
+POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/links/{link_id}/reject
+POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/manual-link
+POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/create-draft-field
+```
+
+Ключевое правило: `ExternalEntityLink(status=VERIFIED)` подтверждает связь внешней записи с объектом, но не делает сам `GeologicalEntity` проверенным автоматически. Новый объект из `UNMATCHED` создаётся только как `DRAFT`.
+
+Подробная документация:
 
 - RU: [`docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md`](docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md)
 - KK: [`docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_KK.md`](docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_KK.md)
 - EN: [`docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_EN.md`](docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_EN.md)
+- review RU: [`docs/KAZAKHSTAN_FIELD_REVIEW_RU.md`](docs/KAZAKHSTAN_FIELD_REVIEW_RU.md)
+- review KK: [`docs/KAZAKHSTAN_FIELD_REVIEW_KK.md`](docs/KAZAKHSTAN_FIELD_REVIEW_KK.md)
+- review EN: [`docs/KAZAKHSTAN_FIELD_REVIEW_EN.md`](docs/KAZAKHSTAN_FIELD_REVIEW_EN.md)
 
 ### Как получить API-ключ data.egov.kz
 
@@ -190,7 +210,8 @@ docker compose up --build
 - Kazakhstan catalog: `/api/v1/integrations/kazakhstan/catalog`
 - Kazakhstan resource schema: `/api/v1/integrations/kazakhstan/{code}/schema`
 - Kazakhstan sync: `/api/v1/integrations/kazakhstan/{code}/sync`
-- Kazakhstan process/match: `/api/v1/integrations/kazakhstan/{code}/process`
+- Kazakhstan process/match: `/api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process`
+- Kazakhstan field review: `/api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review`
 - well passport: `/api/v1/wells/{well_id}/passport`
 - correlation: `/api/v1/correlation/wells/{reference_well_id}`
 
@@ -215,6 +236,11 @@ docker compose up --build
 - RU: [`docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md`](docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md)
 - KK: [`docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_KK.md`](docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_KK.md)
 - EN: [`docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_EN.md`](docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_EN.md)
+
+### Review внешних месторождений
+- RU: [`docs/KAZAKHSTAN_FIELD_REVIEW_RU.md`](docs/KAZAKHSTAN_FIELD_REVIEW_RU.md)
+- KK: [`docs/KAZAKHSTAN_FIELD_REVIEW_KK.md`](docs/KAZAKHSTAN_FIELD_REVIEW_KK.md)
+- EN: [`docs/KAZAKHSTAN_FIELD_REVIEW_EN.md`](docs/KAZAKHSTAN_FIELD_REVIEW_EN.md)
 
 ### Другие документы
 - [`docs/BUSINESS_DOMAIN.md`](docs/BUSINESS_DOMAIN.md) — предметная модель;
