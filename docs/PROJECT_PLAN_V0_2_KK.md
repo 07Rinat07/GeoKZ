@@ -1,93 +1,55 @@
 # GeoKZ — v0.2+ өзекті даму жоспары
 
-Құжат мәртебесі: `2026-09-04`, тармақ `feature/external-data-sync-v0.2`.
+Мәртебе: `2026-09-04`, тармақ `feature/external-data-sync-v0.2`.
 
-Белгілер: `✅` іске асырылған; `🧪` интеграциялық тексеру қажет; `⬜` жоспарланған.
+## Мақсаты
+GeoKZ — Қазақстан геологиясы бойынша бірыңғай жұмыс терезесі: аумақ/координата → кен орындары мен ұңғымалар → толық паспорт → литология/стратиграфия/ҰГЗ/керн/сынақ/мұнай-газ-су → көршілес ұңғымалар корреляциясы → дереккөз және дәлел.
 
-## 1. Өнімнің мақсаты
-GeoKZ — Қазақстан геологиясы бойынша бірыңғай жұмыс терезесі: аумақ/координата → объект → ұңғыма → интервал/ҰГЗ/керн/сынақ → көршілес ұңғымалар корреляциясы → дереккөз/дәлел.
+## Міндетті қағидалар
+- RU/KK/EN барлық пайдаланушы функциялары мен құжаттамасында.
+- Verified data сыртқы API немесе AI арқылы review-сіз өзгертілмейді.
+- RAW, бастапқы құжаттар, LAS/DLIS/SEG-Y интерпретациядан бөлек сақталады.
+- CRS, axis order, MD/TVD/TVDSS және units әрқашан анық көрсетіледі.
+- Core Dataset интернетсіз де жұмыс істейді.
+- Demo/synthetic деректер өндірістік факт ретінде пайдаланылмайды және айқын белгіленеді.
 
-## 2. Міндетті қағидалар
-- RU/KK/EN барлық пайдаланушы функцияларында;
-- құжаттама Definition of Done бөлігі;
-- provenance және verification status;
-- RAW/бастапқы материал интерпретациямен алмастырылмайды;
-- verified master data сыртқы API/AI арқылы автоматты өзгермейді;
-- Core Dataset интернетсіз жұмыс істейді;
-- CRS және MD/TVD/TVDSS анық көрсетіледі;
-- measurements units/reference system сақтайды.
+## Іске асырылды
+- ✅ FastAPI + PostgreSQL/PostGIS + Alembic.
+- ✅ RU/KK/EN About/Help және автор Sarmuldin Rinat / ura07srr@gmail.com.
+- ✅ PostgreSQL/PostGIS CI: таза БД, `0001 → 0004` миграциялары, PostGIS/pg_trgm/unaccent, geography distance.
+- ✅ Territory Explorer, Geological Entity Passport, Well Passport.
+- ✅ latitude/longitude және projected X/Y; нүкте/үтір; CRS; екі X/Y axis order.
+- ✅ pyproj/PROJ негізіндегі `CoordinateResolver`, WGS84 түрлендіруі.
+- ✅ `POST /api/v1/spatial/nearby` — жақын объектілерді, ұңғымаларды және сейсмиканы іздеу.
+- ✅ trajectory, well logs, tests, core, seismic модельдері.
+- ✅ Well Correlation: реперлер, TVDSS, thickness/net pay, porosity/permeability, lithology/fluid/hydrocarbon differences.
+- ✅ нақты PostGIS correlation integration test.
+- ✅ 4 көршілес ұңғымадан, R1/R2 және J-II-ден тұратын synthetic demo dataset.
+- ✅ Kazakhstan Open Data API v4 connector және external integration foundation.
+- ✅ RU/KK/EN user guides/roadmaps және documentation CI contract.
 
-## 3. Негізгі домендер
-- Territory / Spatial: аймақ, координаталар, X/Y, CRS, жақын объектілер;
-- Field / Geological Object: геология, тектоника, стратиграфия, литология, коллекторлар, мұнай/газ/су;
-- Well / Wellbore: паспорт, траектория, интервалдар, ҰГЗ, керн, сынақтар;
-- Well Correlation: реперлер, коллекторлар, визуалды/мәтіндік салыстыру;
-- Seismic / Geophysics: 2D/3D, lines/volumes, SEG-Y;
-- Documents / Evidence және Integrations.
+## Жақын P0
+1. Coordinate search нәтижесін жақын ұңғымаларды таңдаумен және correlation іске қосумен байланыстыру.
+2. `POST /api/v1/spatial/nearby` толық integration test.
+3. Қазақстан CRS каталогы және ұйымның local CRS баптауы.
+4. Correlation distance query ішіндегі SQLAlchemy warning-ті жою.
+5. Visual cross-section viewer үшін API data model.
+6. Demo workflow: координата → 4 ұңғыма → корреляция.
+7. External sync persistence + manual/scheduled sync.
+8. Ресми Kazakhstan Open Data dataset registry.
+9. Core Dataset manifest/importer.
+10. Controlled vocabularies + audit/revisions.
 
-## 4. Ағымдағы мәртебе
-
-### Platform
-- ✅ FastAPI/PostGIS, Evidence, About RU/KK/EN, Help RU/KK/EN;
-- ✅ ағымдағы head GitHub Actions ішінде `compileall`, Ruff және pytest тексерулерінен өтті.
-
-### External data
-- ✅ ExternalDataSource/Record/SyncRun/EntityLink;
-- ✅ ExternalDataConnector және Kazakhstan Open Data API v4 connector;
-- ⬜ persistence/manual/scheduled sync және басқа connectors.
-
-### Spatial
-- ✅ Territory Explorer / Geological Entity Passport;
-- ✅ PostGIS nearby search;
-- ✅ нүкте/үтір coordinate models;
-- ✅ projected X/Y + CRS + axis order;
-- 🧪 толық HTTP coordinate workflow;
-- ⬜ PROJ/pyproj және Kazakhstan/local CRS presets.
-
-### Subsurface
-- ✅ trajectory, well logs, tests, core, seismic models;
-- ✅ Well Passport API;
-- 🧪 PostgreSQL/PostGIS migration/integration validation;
-- ⬜ LAS/DLIS/WITSML және SEG-Y import.
-
-### Well Correlation
-- ✅ WellMarker + migration 0004;
-- ✅ correlation API/service;
-- ✅ TVDSS-preferred marker comparison және depth-reference safety;
-- ✅ marker depth delta;
-- ✅ бірдей local horizons салыстыру;
-- ✅ thickness және net-pay delta;
-- ✅ porosity/permeability, lithology, fluid және hydrocarbon-status differences;
-- ✅ unit-level CI өтті;
-- 🧪 PostGIS integration tests;
-- ⬜ log-curve assisted correlation;
-- ⬜ PySide6 cross-section viewer.
-
-### Documentation
-- ✅ RU/KK/EN user guides;
-- ✅ RU/KK/EN roadmaps;
-- ✅ Documentation Policy;
-- ✅ CI documentation-contract test.
-
-## 5. Жақын P0 backlog
-1. PostgreSQL/PostGIS integration + migration-to-head test.
-2. Coordinate search HTTP endpoint және PROJ/pyproj.
-3. External sync persistence/manual endpoint.
-4. Kazakhstan Open Data dataset registry.
-5. Correlation integration tests және demo markers/intervals.
-6. Unit tests marker/reservoir comparison.
-7. Core Dataset manifest және controlled vocabularies.
-8. Audit/revisions.
-9. PySide6 correlation-viewer data model prototype.
-
-## 6. Релиздер
-- `v0.2`: platform/integration/help/spatial/subsurface/correlation foundation;
-- `v0.3`: CRS + correlation hardening;
-- `v0.4`: PDF/DOCX/LAS/DLIS/WITSML/SEG-Y;
-- `v0.5`: scheduled sync/matching/review;
-- `v0.6`: unified RU/KK/EN search;
-- `v0.7`: GIS/PySide6 + correlation viewer;
+## Релиздер
+- `v0.2`: platform/integration/help/spatial/subsurface/correlation foundation.
+- `v0.3`: coordinate/CRS hardening + correlation demo workflow.
+- `v0.4`: PDF/DOCX/LAS/DLIS/WITSML/SEG-Y.
+- `v0.5`: scheduled sync/matching/review/audit.
+- `v0.6`: unified RU/KK/EN search.
+- `v0.7`: GIS/PySide6 + visual correlation viewer.
+- `v0.8`: geological model hardening / GeoSciML alignment.
+- `v0.9`: AI candidates + human review.
 - `v1.0`: production GeoKZ Desktop.
 
-## 7. Definition of Done
-Функция implementation, validation, tests, migration, RU/KK/EN help, үш user guide, үш roadmap, provenance және жасыл CI болған кезде ғана аяқталды деп саналады.
+## Definition of Done
+Пайдаланушы функциясы implementation, validation, tests, қажет migration, RU/KK/EN help/docs, provenance/verification және жасыл CI болған кезде ғана аяқталған болып есептеледі.
