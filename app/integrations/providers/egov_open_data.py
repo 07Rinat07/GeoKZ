@@ -1,3 +1,4 @@
+import hashlib
 import json
 from dataclasses import dataclass
 from datetime import datetime
@@ -16,15 +17,20 @@ class EgovDatasetConfig:
     dataset: str
     version: str
     record_type: str
-    identity_fields: tuple[str, ...]
+    identity_fields: tuple[str, ...] = ()
+    identity_alias_groups: tuple[tuple[str, ...], ...] = ()
     language: SupportedLanguage | None = None
     page_size: int = 500
 
     def __post_init__(self) -> None:
-        if not self.identity_fields:
-            raise ValueError("identity_fields must contain at least one field")
         if self.page_size < 1 or self.page_size > 10_000:
             raise ValueError("page_size must be between 1 and 10000")
+        if self.identity_fields and self.identity_alias_groups:
+            raise ValueError(
+                "Use identity_fields or identity_alias_groups, not both"
+            )
+        if any(not group for group in self.identity_alias_groups):
+            raise ValueError("identity alias groups must not be empty")
 
 
 class EgovOpenDataConnector(ExternalDataConnector):
@@ -83,7 +89,11 @@ class EgovOpenDataConnector(ExternalDataConnector):
                 f"/api/v4/{self._config.dataset}/{self._config.version}",
                 params={
                     "apiKey": self._api_key,
-                    "source": json.dumps(source_query, ensure_ascii=False, separators=(",", ":")),
+                    "source": json.dumps(
+                        source_query,
+                        ensure_ascii=False,
+                        separators=(",", ":"),
+                    ),
                 },
                 requires_api_key=True,
             )
@@ -138,15 +148,54 @@ class EgovOpenDataConnector(ExternalDataConnector):
         return payload
 
     def _build_external_id(self, record: dict[str, Any]) -> str:
-        values: list[str] = []
-        for field in self._config.identity_fields:
-            value = record.get(field)
-            if value is None or str(value).strip() == "":
-                raise ExternalSourceProtocolError(
-                    f"В записи data.egov.kz отсутствует обязательное identity-поле: {field}"
+        if self._config.identity_fields:
+            return "|".join(
+                self._required_value(record, (field,))
+                for field in self._config.identity_fields
+            )
+
+        if self._config.identity_alias_groups:
+            try:
+                return "|".join(
+                    self._required_value(record, aliases)
+                    for aliases in self._config.identity_alias_groups
                 )
-            values.append(str(value).strip())
-        return "|".join(values)
+            except ExternalSourceProtocolError:
+                # Схемы открытых наборов иногда меняют технические имена колонок.
+                # Не останавливаем весь импорт: RAW-запись получает детерминированный id.
+                pass
+
+        canonical = json.dumps(
+            record,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            default=str,
+        ).encode("utf-8")
+        return f"sha256:{hashlib.sha256(canonical).hexdigest()}"
+
+    @staticmethod
+    def _required_value(record: dict[str, Any], aliases: tuple[str, ...]) -> str:
+        normalized_keys = {
+            EgovOpenDataConnector._normalize_key(key): key for key in record
+        }
+        for alias in aliases:
+            actual_key = alias if alias in record else normalized_keys.get(
+                EgovOpenDataConnector._normalize_key(alias)
+            )
+            if actual_key is None:
+                continue
+            value = record.get(actual_key)
+            if value is not None and str(value).strip():
+                return str(value).strip()
+        raise ExternalSourceProtocolError(
+            "В записи data.egov.kz отсутствует обязательное identity-поле; "
+            f"ожидалось одно из: {', '.join(aliases)}"
+        )
+
+    @staticmethod
+    def _normalize_key(value: str) -> str:
+        return "".join(character.casefold() for character in value if character.isalnum())
 
     @staticmethod
     def _parse_cursor(cursor: str | None) -> int:
@@ -155,7 +204,9 @@ class EgovOpenDataConnector(ExternalDataConnector):
         try:
             offset = int(cursor)
         except ValueError as error:
-            raise ConnectorConfigurationError("Некорректный cursor для data.egov.kz") from error
+            raise ConnectorConfigurationError(
+                "Некорректный cursor для data.egov.kz"
+            ) from error
         if offset < 0:
             raise ConnectorConfigurationError("Cursor не может быть отрицательным")
         return offset
