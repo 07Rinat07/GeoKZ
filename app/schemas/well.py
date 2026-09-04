@@ -12,6 +12,7 @@ from app.models.enums import (
     VerificationStatus,
     WellType,
 )
+from app.schemas.common import ORMModel
 
 
 class LocalizedName(BaseModel):
@@ -40,7 +41,7 @@ class WellHeader(BaseModel):
     verification_status: VerificationStatus
 
 
-class WellIntervalSummary(BaseModel):
+class WellIntervalSummary(ORMModel):
     id: UUID
     external_id: str
     top_depth_m: Decimal
@@ -62,7 +63,7 @@ class WellIntervalSummary(BaseModel):
     verification_status: VerificationStatus
 
 
-class WellTrajectoryPointSummary(BaseModel):
+class WellTrajectoryPointSummary(ORMModel):
     id: UUID
     station_index: int
     measured_depth_m: Decimal
@@ -74,7 +75,7 @@ class WellTrajectoryPointSummary(BaseModel):
     verification_status: VerificationStatus
 
 
-class WellLogCurveSummary(BaseModel):
+class WellLogCurveSummary(ORMModel):
     id: UUID
     log_run_id: UUID
     mnemonic_original: str
@@ -87,7 +88,7 @@ class WellLogCurveSummary(BaseModel):
     max_value: Decimal | None
 
 
-class WellLogRunSummary(BaseModel):
+class WellLogRunSummary(ORMModel):
     id: UUID
     external_id: str
     name: str
@@ -106,7 +107,7 @@ class WellLogRunSummary(BaseModel):
     verification_status: VerificationStatus
 
 
-class WellTestSummary(BaseModel):
+class WellTestSummary(ORMModel):
     id: UUID
     external_id: str
     test_type: str
@@ -129,7 +130,7 @@ class WellTestSummary(BaseModel):
     verification_status: VerificationStatus
 
 
-class CoreRunSummary(BaseModel):
+class CoreRunSummary(ORMModel):
     id: UUID
     external_id: str
     top_depth_m: Decimal
@@ -140,7 +141,7 @@ class CoreRunSummary(BaseModel):
     source_id: UUID | None
 
 
-class CoreSampleSummary(BaseModel):
+class CoreSampleSummary(ORMModel):
     id: UUID
     core_run_id: UUID
     sample_code: str | None
