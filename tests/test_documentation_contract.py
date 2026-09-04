@@ -21,6 +21,12 @@ TRILINGUAL_API_KEY_GUIDES = (
     DOCS / "EXTERNAL_API_KEYS_EN.md",
 )
 
+TRILINGUAL_KZ_OPEN_DATA_GUIDES = (
+    DOCS / "KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md",
+    DOCS / "KAZAKHSTAN_OPEN_DATA_INTEGRATION_KK.md",
+    DOCS / "KAZAKHSTAN_OPEN_DATA_INTEGRATION_EN.md",
+)
+
 
 def test_trilingual_user_guides_exist_and_are_not_empty() -> None:
     for path in TRILINGUAL_USER_GUIDES:
@@ -43,6 +49,17 @@ def test_trilingual_api_key_guides_exist_and_are_not_empty() -> None:
         assert "data.egov.kz" in content
 
 
+def test_trilingual_kazakhstan_open_data_guides_exist_and_follow_contract() -> None:
+    for path in TRILINGUAL_KZ_OPEN_DATA_GUIDES:
+        assert path.is_file(), f"Missing Kazakhstan Open Data guide: {path.name}"
+        content = path.read_text(encoding="utf-8").strip()
+        assert len(content) > 2500
+        assert "apiUri" in content
+        assert "record_type" in content
+        assert "/api/v4/mapping/{apiUri}/{version}" in content
+        assert "/api/v1/integrations/kazakhstan/{code}/schema" in content
+
+
 def test_documentation_policy_exists() -> None:
     policy = DOCS / "DOCUMENTATION_POLICY.md"
     assert policy.is_file()
@@ -55,3 +72,6 @@ def test_documentation_policy_exists() -> None:
     assert "EXTERNAL_API_KEYS_RU.md" in content
     assert "EXTERNAL_API_KEYS_KK.md" in content
     assert "EXTERNAL_API_KEYS_EN.md" in content
+    assert "KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md" in content
+    assert "KAZAKHSTAN_OPEN_DATA_INTEGRATION_KK.md" in content
+    assert "KAZAKHSTAN_OPEN_DATA_INTEGRATION_EN.md" in content
