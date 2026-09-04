@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.application.external_sync_coordinator import ExternalSyncCoordinator
 from app.application.kazakhstan_open_data import (
     KazakhstanDatasetNotFoundError,
     KazakhstanDatasetProcessingNotSupportedError,
@@ -15,11 +16,14 @@ from app.core.database import get_session
 from app.integrations.errors import (
     ConnectorConfigurationError,
     ExternalSourceProtocolError,
+    ExternalSyncAlreadyRunningError,
 )
 from app.integrations.kazakhstan_open_data import KAZAKHSTAN_OPEN_DATASETS
 from app.models.integration import ExternalDataSource
 from app.schemas.integration import (
     ExternalDataSourceRead,
+    ExternalSyncBatchResponse,
+    ExternalSyncSchedulerStatusRead,
     KazakhstanDatasetCatalogItem,
     KazakhstanDatasetInspectionResponse,
     KazakhstanDatasetProcessingResponse,
@@ -90,6 +94,51 @@ async def list_external_sources(
 
     sources = list(await session.scalars(statement))
     return [_to_read_model(source, lang) for source in sources]
+
+
+@router.get(
+    "/scheduler/status",
+    response_model=ExternalSyncSchedulerStatusRead,
+)
+async def get_external_sync_scheduler_status(
+    session: AsyncSession = Depends(get_session),
+    settings: Settings = Depends(get_settings),
+) -> ExternalSyncSchedulerStatusRead:
+    sources = await ExternalSyncCoordinator(session, settings).schedule_status()
+    return ExternalSyncSchedulerStatusRead(
+        poll_seconds=settings.external_scheduler_poll_seconds,
+        failure_retry_hours=settings.external_sync_failure_retry_hours,
+        running_timeout_hours=settings.external_sync_running_timeout_hours,
+        sources=sources,
+    )
+
+
+@router.post(
+    "/sync-all",
+    response_model=ExternalSyncBatchResponse,
+)
+async def sync_all_external_sources(
+    session: AsyncSession = Depends(get_session),
+    settings: Settings = Depends(get_settings),
+) -> ExternalSyncBatchResponse:
+    # Built-in official sources are registered locally before dispatch. This operation
+    # performs no external HTTP request and keeps Update All usable on a fresh database.
+    await KazakhstanOpenDataService(session, settings).register_all()
+    summary = await ExternalSyncCoordinator(session, settings).sync_all()
+    return ExternalSyncBatchResponse.model_validate(summary)
+
+
+@router.post(
+    "/scheduler/run-due",
+    response_model=ExternalSyncBatchResponse,
+)
+async def run_due_external_sources(
+    session: AsyncSession = Depends(get_session),
+    settings: Settings = Depends(get_settings),
+) -> ExternalSyncBatchResponse:
+    await KazakhstanOpenDataService(session, settings).register_all()
+    summary = await ExternalSyncCoordinator(session, settings).sync_due()
+    return ExternalSyncBatchResponse.model_validate(summary)
 
 
 @router.get(
@@ -193,6 +242,8 @@ async def sync_kazakhstan_open_dataset(
         summary = await KazakhstanOpenDataService(session, settings).sync(code)
     except KazakhstanDatasetNotFoundError as error:
         raise HTTPException(status_code=404, detail="Набор данных не найден") from error
+    except ExternalSyncAlreadyRunningError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
     except ConnectorConfigurationError as error:
         raise HTTPException(status_code=503, detail=str(error)) from error
     except ExternalSourceProtocolError as error:
