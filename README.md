@@ -1,50 +1,123 @@
-# GeoKZ Backend v0.1
+# GeoKZ v0.2-dev
 
-Запускаемый каркас доказательного геологического справочника Казахстана.
+GeoKZ — доказательная геологическая информационная система Казахстана для хранения, структурирования, поиска, пространственного анализа и экспертной проверки геологических знаний с обязательной прослеживаемостью данных до первичных и внешних источников.
 
-## Что входит
+## Ключевые принципы
 
-- FastAPI API;
+- **Три языка:** русский (`ru`), казахский (`kk`) и английский (`en`).
+- **Evidence-first:** факт хранится отдельно от подтверждений и источников.
+- **Human-in-the-loop:** ИИ и внешние API не публикуют проверенные факты автоматически.
+- **Offline-capable core:** базовая информация GeoKZ доступна без обязательного интернета.
+- **Обновляемые данные:** внешний контент и GeoKZ Core Dataset обновляются независимо от версии приложения.
+- **Data provenance:** сохраняются источник, исходная запись, версия набора, дата получения, checksum и история синхронизаций.
+- **GIS-first storage:** PostgreSQL/PostGIS, EPSG:4326, GeoJSON; далее GeoPackage, OGC API Features и QGIS-интеграция.
+
+## Текущий стек
+
+- FastAPI;
 - PostgreSQL 17 + PostGIS 3.5;
 - асинхронный SQLAlchemy 2;
-- Alembic и начальная миграция;
-- расширения `postgis`, `pg_trgm`, `unaccent`;
-- модели источников, документов, страниц, геологических объектов, фактов,
-  доказательств, скважин, интервалов и конфликтов;
-- базовые CRUD-маршруты;
-- пилотное заполнение для Прикаспийской впадины и Даулеталы;
-- подготовленная граница между backend и будущим Windows-клиентом.
+- Alembic;
+- Pydantic;
+- Docker Compose;
+- GitHub Actions CI;
+- PySide6 запланирован для Windows-клиента.
+
+## Что уже реализовано
+
+- источники, документы и страницы;
+- геологические объекты и мультиязычные названия;
+- факты и доказательства;
+- скважины и интервалы;
+- конфликты;
+- базовые CRUD API;
+- пилотные данные по Прикаспийской впадине и Даулеталы;
+- PostGIS, `pg_trgm`, `unaccent`;
+- health checks;
+- CI;
+- API «О программе» на `ru/kk/en`;
+- первый слой внешних интеграций: источники, RAW-записи, sync runs и связи с объектами GeoKZ;
+- общий контракт `ExternalDataConnector`;
+- SHA-256 checksum для выявления изменений внешних записей.
 
 ## Архитектурное правило
 
-Рабочая база не зависит от нейросети. ИИ может готовить черновые JSON/CSV/JSONL,
-но публикация фактов выполняется только после проверки человеком.
+Рабочая база не зависит от нейросети и внешнего API. Система должна оставаться полезной без интернета.
 
 ```text
-Windows-клиент / Web-клиент
-            │
-            ▼
-         FastAPI
-            │
-            ▼
-SQLAlchemy + PostgreSQL/PostGIS
+PySide6 / Web / QGIS
+        │
+        ▼
+    FastAPI /api/v1
+        │
+        ▼
+ Application Layer
+        │
+        ▼
+ PostgreSQL/PostGIS
 ```
+
+Внешние данные проходят отдельный pipeline:
+
+```text
+External API
+    ↓
+Connector
+    ↓
+RAW / staging
+    ↓
+checksum + diff
+    ↓
+normalization
+    ↓
+entity matching
+    ↓
+review
+    ↓
+verified GeoKZ data
+```
+
+Внешняя синхронизация не должна напрямую переписывать проверенные `facts` и `geological_entities`.
+
+## Трёхъязычность
+
+GeoKZ поддерживает:
+
+- русский;
+- қазақ тілі;
+- English.
+
+Локализуются UI, предметные названия, справочники, пользовательская документация и display-поля API. Исходные цитаты, OCR/raw text и RAW payload внешнего источника сохраняются без перевода.
+
+Подробнее: [`docs/I18N.md`](docs/I18N.md).
+
+## Внешние открытые источники
+
+Планируемый приоритет:
+
+1. Kazakhstan Open Data (`data.egov.kz`);
+2. USGS;
+3. Macrostrat;
+4. OneGeology / OGC services;
+5. Copernicus — на более позднем этапе.
+
+Каждый источник подключается отдельным адаптером и обязан сохранять лицензию/условия использования, RAW payload и историю обновлений.
+
+Подробнее: [`docs/PROJECT_PLAN_V0_2.md`](docs/PROJECT_PLAN_V0_2.md).
 
 ## Быстрый запуск в Windows через Docker Desktop
 
-Требования для разработки:
+Требования:
 
 - Git;
-- Docker Desktop с командой `docker compose`.
-
-В PowerShell:
+- Docker Desktop с `docker compose`.
 
 ```powershell
 Copy-Item .env.example .env
 ./scripts/dev.ps1
 ```
 
-Либо вручную:
+Либо:
 
 ```powershell
 docker compose up --build
@@ -54,8 +127,18 @@ docker compose up --build
 
 - Swagger UI: `http://localhost:8000/docs`
 - ReDoc: `http://localhost:8000/redoc`
-- проверка процесса: `http://localhost:8000/health/live`
-- проверка БД и PostGIS: `http://localhost:8000/health/ready`
+- live check: `http://localhost:8000/health/live`
+- readiness/PostGIS: `http://localhost:8000/health/ready`
+- о программе: `http://localhost:8000/api/v1/about?lang=ru`
+- внешние источники: `http://localhost:8000/api/v1/integrations/sources`
+
+## Миграции и тесты
+
+```powershell
+docker compose exec api alembic upgrade head
+docker compose exec api pytest
+docker compose exec api ruff check .
+```
 
 ## Пилотные данные
 
@@ -63,7 +146,7 @@ docker compose up --build
 docker compose exec api python -m scripts.seed_pilot
 ```
 
-Скрипт добавляет:
+Пилот включает:
 
 - том XXI «Геология СССР. Западный Казахстан», книги 1 и 2;
 - документ 2017 года по Даулеталы;
@@ -71,89 +154,33 @@ docker compose exec api python -m scripts.seed_pilot
 - Южно-Эмбинское поднятие;
 - месторождение Даулеталы.
 
-Скрипт идемпотентный: повторный запуск не создаёт дубликаты.
-
-## Основные команды
-
-```powershell
-# Запуск
-docker compose up --build
-
-# Остановка
-docker compose down
-
-# Остановка с удалением тестовой базы
-docker compose down -v
-
-# Применение миграций
-docker compose exec api alembic upgrade head
-
-# Текущая миграция
-docker compose exec api alembic current
-
-# Новая миграция после изменения моделей
-docker compose exec api alembic revision --autogenerate -m "описание"
-
-# Тесты
-docker compose exec api pytest
-
-# Линтер
-docker compose exec api ruff check .
-```
-
-## Локальный запуск Python без контейнера API
-
-Базу можно оставить в Docker, а API запустить из виртуального окружения:
-
-```powershell
-Copy-Item .env.example .env
-# В .env оставить host=localhost в GEOKZ_DATABASE_URL.
-
-docker compose up -d db
-py -3.12 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -e ".[dev]"
-alembic upgrade head
-uvicorn app.main:app --reload
-```
-
 ## Структура
 
 ```text
 app/
-├── api/                 HTTP-маршруты
-├── core/                конфигурация и подключение к БД
-├── models/              SQLAlchemy-модели
-└── schemas/             Pydantic-схемы
-migrations/              Alembic
-scripts/                 служебные и seed-скрипты
-docs/                    архитектура и Windows-план
-packaging/windows/       заготовка установщика
+├── api/                  HTTP API
+├── core/                 конфигурация и метаданные проекта
+├── integrations/         контракты внешних источников
+├── models/               SQLAlchemy-модели
+└── schemas/              Pydantic-схемы
+migrations/               Alembic
+scripts/                  seed/служебные сценарии
+tests/                    автоматические проверки
+docs/                     архитектура и план развития
+packaging/windows/        заготовка Windows installer
 ```
 
-## Будущее Windows-приложение
+## Документация
 
-Docker используется только разработчиками. План конечной поставки:
+- [`docs/PROJECT_PLAN_V0_2.md`](docs/PROJECT_PLAN_V0_2.md) — основной roadmap;
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — архитектурные принципы;
+- [`docs/I18N.md`](docs/I18N.md) — RU/KK/EN;
+- [`docs/WINDOWS_DESKTOP_PLAN.md`](docs/WINDOWS_DESKTOP_PLAN.md) — Windows-клиент;
+- [`docs/ABOUT.md`](docs/ABOUT.md) — описание проекта и автор.
 
-1. интерфейс на PySide6;
-2. клиент общается с тем же FastAPI-контрактом;
-3. сборка `GeoKZ.exe` через `pyside6-deploy` или PyInstaller;
-4. установщик через Inno Setup либо MSIX;
-5. два режима работы:
-   - локальная база PostgreSQL/PostGIS на одном компьютере;
-   - подключение к центральному серверу организации.
+## Автор
 
-Подробности: [`docs/WINDOWS_DESKTOP_PLAN.md`](docs/WINDOWS_DESKTOP_PLAN.md).
+**Sarmuldin Rinat**  
+Email: **ura07srr@gmail.com**
 
-## Важное ограничение версии 0.1
-
-Это backend-каркас, а не готовый пользовательский справочник. В нём ещё нет:
-
-- полноценного интерфейса;
-- импорта PDF/DOCX;
-- редакторской панели проверки;
-- геологической карты;
-- авторизации и ролей;
-- хранения файлов в объектном хранилище.
-
-Эти модули можно добавлять независимо, не меняя базовый контракт данных.
+Repository: `07Rinat07/GeoKZ`
