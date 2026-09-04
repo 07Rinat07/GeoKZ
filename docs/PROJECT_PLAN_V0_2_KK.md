@@ -2,7 +2,7 @@
 
 Құжат мәртебесі: `2026-09-04`, тармақ `feature/external-data-sync-v0.2`.
 
-Белгілер: `✅` кодта іске асырылған; `🧪` CI/интеграциялық тексеру қажет; `⬜` жоспарланған.
+Белгілер: `✅` іске асырылған; `🧪` интеграциялық тексеру қажет; `⬜` жоспарланған.
 
 ## 1. Өнімнің мақсаты
 GeoKZ — Қазақстан геологиясы бойынша бірыңғай жұмыс терезесі: аумақ/координата → объект → ұңғыма → интервал/ҰГЗ/керн/сынақ → көршілес ұңғымалар корреляциясы → дереккөз/дәлел.
@@ -29,7 +29,7 @@ GeoKZ — Қазақстан геологиясы бойынша бірыңға�
 
 ### Platform
 - ✅ FastAPI/PostGIS, Evidence, About RU/KK/EN, Help RU/KK/EN;
-- 🧪 толық CI қайта тексеріледі.
+- ✅ ағымдағы head GitHub Actions ішінде `compileall`, Ruff және pytest тексерулерінен өтті.
 
 ### External data
 - ✅ ExternalDataSource/Record/SyncRun/EntityLink;
@@ -47,7 +47,7 @@ GeoKZ — Қазақстан геологиясы бойынша бірыңға�
 ### Subsurface
 - ✅ trajectory, well logs, tests, core, seismic models;
 - ✅ Well Passport API;
-- 🧪 migration/integration validation;
+- 🧪 PostgreSQL/PostGIS migration/integration validation;
 - ⬜ LAS/DLIS/WITSML және SEG-Y import.
 
 ### Well Correlation
@@ -58,7 +58,8 @@ GeoKZ — Қазақстан геологиясы бойынша бірыңға�
 - ✅ бірдей local horizons салыстыру;
 - ✅ thickness және net-pay delta;
 - ✅ porosity/permeability, lithology, fluid және hydrocarbon-status differences;
-- 🧪 CI/PostGIS integration tests;
+- ✅ unit-level CI өтті;
+- 🧪 PostGIS integration tests;
 - ⬜ log-curve assisted correlation;
 - ⬜ PySide6 cross-section viewer.
 
@@ -69,16 +70,15 @@ GeoKZ — Қазақстан геологиясы бойынша бірыңға�
 - ✅ CI documentation-contract test.
 
 ## 5. Жақын P0 backlog
-1. Толық Ruff/pytest/CI.
-2. PostgreSQL/PostGIS integration + migration-to-head test.
-3. Coordinate search HTTP endpoint және PROJ/pyproj.
-4. External sync persistence/manual endpoint.
-5. Kazakhstan Open Data dataset registry.
-6. Correlation integration tests және demo markers/intervals.
-7. Unit tests marker/reservoir comparison.
-8. Core Dataset manifest және controlled vocabularies.
-9. Audit/revisions.
-10. PySide6 correlation-viewer data model prototype.
+1. PostgreSQL/PostGIS integration + migration-to-head test.
+2. Coordinate search HTTP endpoint және PROJ/pyproj.
+3. External sync persistence/manual endpoint.
+4. Kazakhstan Open Data dataset registry.
+5. Correlation integration tests және demo markers/intervals.
+6. Unit tests marker/reservoir comparison.
+7. Core Dataset manifest және controlled vocabularies.
+8. Audit/revisions.
+9. PySide6 correlation-viewer data model prototype.
 
 ## 6. Релиздер
 - `v0.2`: platform/integration/help/spatial/subsurface/correlation foundation;
