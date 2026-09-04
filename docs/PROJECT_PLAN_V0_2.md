@@ -1,6 +1,6 @@
 # GeoKZ — актуальный план развития v0.2+
 
-Статус: `2026-09-04`, ветка `feature/external-data-sync-v0.2`.
+Статус: `2026-09-04`, ветка `feature/external-review-ui-contract-v0.3`. Фундамент v0.2 слит в `main` после зелёного CI.
 
 ## Цель
 GeoKZ — единое рабочее окно по геологии Казахстана: территория/координата → месторождения и скважины → полный паспорт → литология/стратиграфия/ГИС/керн/испытания/нефть-газ-вода → корреляция соседних скважин → источник и доказательство.
@@ -12,6 +12,7 @@ GeoKZ — единое рабочее окно по геологии Казах�
 - CRS, axis order, MD/TVD/TVDSS и units всегда явные.
 - Core Dataset работает без обязательного интернета.
 - Demo/synthetic данные явно маркируются и не считаются производственными фактами.
+- UI не дублирует backend business rules: доступность review-действий и обязательные поля задаёт backend view-model.
 
 ## Реализовано
 - ✅ FastAPI + PostgreSQL/PostGIS + Alembic.
@@ -37,31 +38,36 @@ GeoKZ — единое рабочее окно по геологии Казах�
 - ✅ автоматические exact/alias matches остаются `REVIEW_REQUIRED`; ambiguous/unmatched сохраняются для review.
 - ✅ повторный `process` идемпотентен для незавершённых auto-links и не создаёт дубли `ExternalEntityLink`.
 - ✅ reviewer-locked links (`VERIFIED`, `REJECTED`, `MANUAL`, reviewer/comment) не перезаписываются повторным process.
-- ✅ review queue: `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review`.
+- ✅ техническая review queue: `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review`.
 - ✅ review actions: confirm/reject candidate, manual-link к существующему field, explicit `create-draft-field` только для `UNMATCHED`.
 - ✅ новый объект из внешней записи создаётся только `GeologicalEntity(verification_status=DRAFT)`; verified link не делает объект VERIFIED.
 - ✅ reviewer identity/comment сохраняются в `ExternalEntityLink`; полноценные auth/AuditLog ещё запланированы.
-- ✅ review/matching backend подтверждён зелёными `Python quality checks` и PostgreSQL/PostGIS integration tests на одном head.
+- ✅ review/matching backend подтверждён зелёными `Python quality checks` и PostgreSQL/PostGIS integration tests на одном head и слит в `main`.
+- ✅ UI/view-model contract очереди review: `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view`.
+- ✅ view-model возвращает RU/KK/EN title/policy note, `total_pending`, pagination, локализованные candidate names, отдельный `entity_verification_status` и стабильные `matching_status`.
+- ✅ action descriptors `CONFIRM_LINK`, `REJECT_LINK`, `MANUAL_LINK`, `CREATE_DRAFT_FIELD` содержат `enabled`, `disabled_reason`, `required_fields`, `optional_fields` и точный `path` для PySide6/web.
+- ✅ `UNKNOWN` matching status является безопасным forward-compatible fallback для UI.
+- ✅ для review view-model добавлены unit tests и реальный PostgreSQL HTTP integration test.
 - ✅ источники регистрируются как `AUTOMATIC` с интервалом 168 часов; фактический scheduler ещё не реализован.
 - ✅ API key хранится только в `GEOKZ_EGOV_API_KEY`; без ключа локальная база продолжает работать.
-- ✅ отдельные RU/KK/EN инструкции: API keys, Kazakhstan Open Data onboarding/naming и field review workflow.
+- ✅ отдельные RU/KK/EN инструкции: API keys, Kazakhstan Open Data onboarding/naming, field review и review UI contract.
 - ✅ README, USER_GUIDE и roadmap поддерживаются на RU/KK/EN + documentation CI contract.
 
 ## Ближайший P0
-1. UI/view-model контракты очереди external review для будущего PySide6: список изменений, сравнение RAW/normalized/GeoKZ, confirm/reject/manual-link/create DRAFT.
-2. Scheduler периодической синхронизации внешних источников + «Обновить всё» с защитой от параллельных запусков.
-3. API/view-model для визуального cross-section viewer: колонки скважин, шкала глубин, реперы, интервалы и линии корреляции.
-4. Demo workflow: координата → ближайшие demo-скважины → выбор → корреляционный разрез.
-5. Хранение/настройка локальных CRS организации; СК-42/Гаусса–Крюгера только по подтверждённому EPSG/WKT/PROJ.
-6. Устранить оставшийся SQLAlchemy cartesian-product warning в distance query корреляции без изменения результата PostGIS distance.
-7. Controlled vocabularies для lithology/markers/property kinds/units.
-8. Добавить normalizer/review для следующего официального ресурса — геологических лицензий — после проверки mapping/license/data quality.
-9. Core Dataset manifest/importer.
-10. Authentication + AuditLog/revisions для review и изменений master data.
+1. Scheduler периодической синхронизации внешних источников + «Обновить всё» с защитой от параллельных запусков и корректным per-source status/error reporting.
+2. API/view-model для визуального cross-section viewer: колонки скважин, шкала глубин, реперы, интервалы и линии корреляции.
+3. Demo workflow: координата → ближайшие demo-скважины → выбор → корреляционный разрез.
+4. Хранение/настройка локальных CRS организации; СК-42/Гаусса–Крюгера только по подтверждённому EPSG/WKT/PROJ.
+5. Устранить оставшийся SQLAlchemy cartesian-product warning в distance query корреляции без изменения результата PostGIS distance.
+6. Controlled vocabularies для lithology/markers/property kinds/units.
+7. Добавить normalizer/review для следующего официального ресурса — геологических лицензий — после проверки mapping/license/data quality.
+8. Core Dataset manifest/importer.
+9. Authentication + AuditLog/revisions для review и изменений master data.
+10. Production PySide6 screen для external review на уже стабильном backend view-model contract.
 
 ## Релизы
-- `v0.2`: platform/integration/help/spatial/subsurface/correlation foundation + первые официальные REST integrations Казахстана + safe oil/gas-field normalization/matching/review.
-- `v0.3`: visual correlation data contract, CRS/local settings, complete demo workflow, scheduled external sync и review UI.
+- `v0.2`: platform/integration/help/spatial/subsurface/correlation foundation + первые официальные REST integrations Казахстана + safe oil/gas-field normalization/matching/review — слито в `main`.
+- `v0.3`: review UI contract, visual correlation data contract, CRS/local settings, complete demo workflow и scheduled external sync.
 - `v0.4`: PDF/DOCX/LAS/DLIS/WITSML/SEG-Y.
 - `v0.5`: расширенный matching/review/audit для внешних источников.
 - `v0.6`: unified RU/KK/EN search.
