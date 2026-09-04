@@ -1,6 +1,6 @@
 # GeoKZ — v0.2+ өзекті даму жоспары
 
-Мәртебе: `2026-09-04`, тармақ `feature/external-sync-scheduler-v0.3`. v0.2 негізі және review UI contract жасыл CI-ден кейін `main` тармағына біріктірілді.
+Мәртебе: `2026-09-04`, тармақ `feature/cross-section-view-model-v0.3`. v0.2 негізі, review UI contract және dedicated external-sync scheduler жасыл CI-ден кейін `main` тармағына біріктірілді.
 
 ## Мақсаты
 GeoKZ — Қазақстан геологиясы бойынша бірыңғай жұмыс терезесі: аумақ/координата → кен орындары мен ұңғымалар → толық паспорт → литология/стратиграфия/ҰГЗ/керн/сынақ/мұнай-газ-су → көршілес ұңғымалар корреляциясы → дереккөз және дәлел.
@@ -54,18 +54,21 @@ GeoKZ — Қазақстан геологиясы бойынша бірыңға�
 - ✅ API key тек `GEOKZ_EGOV_API_KEY` арқылы оқылады; key жоқ болса local DB жұмысын жалғастырады, provider error тек source деңгейінде сақталады.
 - ✅ API keys, Open Data, field review, review UI contract және external sync scheduler үшін RU/KK/EN құжаттары бар.
 - ✅ README, user guides және roadmaps documentation CI арқылы бақыланады.
+- ✅ backend-owned visual cross-section view-model: `POST /api/v1/correlation/wells/view`.
+- ✅ ортақ depth scale `TVDSS → TVD → MD` басымдығымен таңдалады; үйлеспейтін элементтер `renderable=false` болады және үнсіз түрлендірілмейді.
+- ✅ response ordered well columns, depth axis, дайын `MARKER`/`HORIZON` line segments және тұрақты warning codes береді.
+- ✅ cross-section view-model unit tests және нақты PostgreSQL/PostGIS HTTP integration test арқылы тексеріледі; RU/KK/EN contract клиенттік safe rendering ережесін сипаттайды.
 
 ## Жақын P0
-1. Visual cross-section viewer API/view-model: well columns, depth scale, markers, intervals және correlation lines.
-2. Координата → жақын demo-ұңғымалар → таңдау → correlation section толық сценарийі.
-3. Ұйымның configurable local CRS жүйелері; СК-42/Гаусс–Крюгер тек расталған EPSG/WKT/PROJ арқылы.
-4. Correlation distance query ішіндегі қалған SQLAlchemy cartesian-product warning-ті PostGIS distance нәтижесін өзгертпей жою.
-5. Lithology/markers/property kinds/units controlled vocabularies.
-6. Геологиялық лицензиялар ресурсына normalizer/review қосу — mapping/license/data quality тексерілгеннен кейін.
-7. Core Dataset manifest/importer.
-8. Review және master data өзгерістері үшін Authentication + AuditLog/revisions.
-9. Тұрақты backend view-model негізінде production PySide6 external review screen.
-10. USGS/Macrostrat/OneGeology provider registry кеңейту — licence/contract жеке тексерілгеннен кейін ғана.
+1. Координата → жақын demo-ұңғымалар → таңдау → correlation section толық сценарийі.
+2. Ұйымның configurable local CRS жүйелері; СК-42/Гаусс–Крюгер тек расталған EPSG/WKT/PROJ арқылы.
+3. Correlation distance query ішіндегі қалған SQLAlchemy cartesian-product warning-ті PostGIS distance нәтижесін өзгертпей жою.
+4. Lithology/markers/property kinds/units controlled vocabularies.
+5. Геологиялық лицензиялар ресурсына normalizer/review қосу — mapping/license/data quality тексерілгеннен кейін.
+6. Core Dataset manifest/importer.
+7. Review және master data өзгерістері үшін Authentication + AuditLog/revisions.
+8. Тұрақты backend view-model негізінде production PySide6 external review screen.
+9. USGS/Macrostrat/OneGeology provider registry кеңейту — licence/contract жеке тексерілгеннен кейін ғана.
 
 ## Релиздер
 - `v0.2`: platform/integration/help/spatial/subsurface/correlation + алғашқы Kazakhstan REST integrations + safe oil/gas-field normalization/matching/review — `main` тармағына біріктірілді.
