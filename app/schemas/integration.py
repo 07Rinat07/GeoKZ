@@ -2,10 +2,17 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.core.project_info import SupportedLanguage
-from app.integrations.types import SyncMode, SyncRunStatus
+from app.integrations.types import (
+    EntityLinkStatus,
+    ExternalRecordStatus,
+    MatchMethod,
+    SyncMode,
+    SyncRunStatus,
+)
+from app.models.enums import VerificationStatus
 
 
 class ExternalDataSourceRead(BaseModel):
@@ -83,3 +90,56 @@ class KazakhstanDatasetProcessingResponse(BaseModel):
     unmatched: int
     normalization_errors: int
     reviewer_locked: int
+
+
+class FieldReviewLinkRead(BaseModel):
+    link_id: UUID
+    entity_id: UUID
+    entity_name_ru: str
+    match_method: MatchMethod
+    match_confidence: float
+    status: EntityLinkStatus
+    verified_by: str | None
+    review_comment: str | None
+
+
+class FieldReviewRecordRead(BaseModel):
+    record_id: UUID
+    external_id: str
+    raw_payload: dict[str, Any]
+    normalized_payload: dict[str, Any] | None
+    status: ExternalRecordStatus
+    links: list[FieldReviewLinkRead]
+
+
+class FieldReviewDecisionRequest(BaseModel):
+    reviewer: str = Field(min_length=2, max_length=300)
+    comment: str | None = Field(default=None, max_length=2000)
+
+
+class FieldReviewRejectRequest(BaseModel):
+    reviewer: str = Field(min_length=2, max_length=300)
+    comment: str = Field(min_length=2, max_length=2000)
+
+
+class FieldReviewManualLinkRequest(BaseModel):
+    entity_id: UUID
+    reviewer: str = Field(min_length=2, max_length=300)
+    comment: str | None = Field(default=None, max_length=2000)
+
+
+class FieldReviewCreateDraftRequest(BaseModel):
+    reviewer: str = Field(min_length=2, max_length=300)
+    comment: str | None = Field(default=None, max_length=2000)
+    name_ru: str | None = Field(default=None, min_length=1, max_length=500)
+    name_kk: str | None = Field(default=None, min_length=1, max_length=500)
+    name_en: str | None = Field(default=None, min_length=1, max_length=500)
+
+
+class FieldReviewActionResponse(BaseModel):
+    record_id: UUID
+    record_status: ExternalRecordStatus
+    link_id: UUID
+    link_status: EntityLinkStatus
+    entity_id: UUID
+    entity_verification_status: VerificationStatus
