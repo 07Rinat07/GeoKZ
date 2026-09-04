@@ -27,9 +27,14 @@ TRILINGUAL_KZ_OPEN_DATA_GUIDES = (
     DOCS / "KAZAKHSTAN_OPEN_DATA_INTEGRATION_EN.md",
 )
 
-PROCESS_ENDPOINT = (
-    "/api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process"
+TRILINGUAL_FIELD_REVIEW_GUIDES = (
+    DOCS / "KAZAKHSTAN_FIELD_REVIEW_RU.md",
+    DOCS / "KAZAKHSTAN_FIELD_REVIEW_KK.md",
+    DOCS / "KAZAKHSTAN_FIELD_REVIEW_EN.md",
 )
+
+PROCESS_ENDPOINT = "/api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process"
+REVIEW_ENDPOINT = "/api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review"
 
 
 def test_trilingual_user_guides_exist_and_are_not_empty() -> None:
@@ -38,6 +43,7 @@ def test_trilingual_user_guides_exist_and_are_not_empty() -> None:
         content = path.read_text(encoding="utf-8").strip()
         assert len(content) > 500
         assert PROCESS_ENDPOINT in content
+        assert REVIEW_ENDPOINT in content
 
 
 def test_trilingual_roadmaps_exist_and_are_not_empty() -> None:
@@ -46,6 +52,7 @@ def test_trilingual_roadmaps_exist_and_are_not_empty() -> None:
         content = path.read_text(encoding="utf-8").strip()
         assert len(content) > 1000
         assert PROCESS_ENDPOINT in content
+        assert REVIEW_ENDPOINT in content
 
 
 def test_trilingual_api_key_guides_exist_and_are_not_empty() -> None:
@@ -70,6 +77,19 @@ def test_trilingual_kazakhstan_open_data_guides_exist_and_follow_contract() -> N
         assert "REVIEW_REQUIRED" in content
 
 
+def test_trilingual_field_review_guides_exist_and_follow_safety_contract() -> None:
+    for path in TRILINGUAL_FIELD_REVIEW_GUIDES:
+        assert path.is_file(), f"Missing field review guide: {path.name}"
+        content = path.read_text(encoding="utf-8").strip()
+        assert len(content) > 2000
+        assert REVIEW_ENDPOINT in content
+        assert "REVIEW_REQUIRED" in content
+        assert "DRAFT" in content
+        assert "VERIFIED" in content
+        assert "manual-link" in content
+        assert "create-draft-field" in content
+
+
 def test_documentation_policy_exists() -> None:
     policy = DOCS / "DOCUMENTATION_POLICY.md"
     assert policy.is_file()
@@ -85,3 +105,6 @@ def test_documentation_policy_exists() -> None:
     assert "KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md" in content
     assert "KAZAKHSTAN_OPEN_DATA_INTEGRATION_KK.md" in content
     assert "KAZAKHSTAN_OPEN_DATA_INTEGRATION_EN.md" in content
+    assert "KAZAKHSTAN_FIELD_REVIEW_RU.md" in content
+    assert "KAZAKHSTAN_FIELD_REVIEW_KK.md" in content
+    assert "KAZAKHSTAN_FIELD_REVIEW_EN.md" in content
