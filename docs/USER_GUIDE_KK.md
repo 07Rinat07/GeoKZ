@@ -45,13 +45,41 @@ GeoKZ ресми `apiUri` мен `version` мәндерін бөлек сақт�
 
 `kz-egov-oil-gas-fields` синхрондалғаннан кейін `process` қадамын іске қосуға болады. GeoKZ кен орны атауын нормализациялап, бар `field` объектілері және олардың aliases бойынша сәйкестендіреді. Сәйкестік автоматты түрде verified болмайды: `REVIEW_REQUIRED` кандидаты жасалады. Бірнеше ықтимал сәйкестік және табылмаған жазбалар сараптамалық review үшін сақталады.
 
-GeoKZ REST API:
+## Сыртқы кен орындарын сараптамалық тексеру
+Review кезегі:
+
+```text
+GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review
+```
+
+Пайдаланушы әр жазба үшін мына әрекеттердің бірін таңдай алады:
+
+- ұсынылған байланысты растау;
+- кандидаттан бас тарту және себеп жазу;
+- жазбаны басқа бар `GeologicalEntity(object_type="field")` объектісімен қолмен байланыстыру;
+- тек `matching.status=UNMATCHED` болса жаңа кен орнын жасау.
+
+Байланысты растау `ExternalEntityLink` статусын `VERIFIED` етеді, бірақ `GeologicalEntity.verification_status` автоматты түрде өзгермейді. Жаңа объект жасалса, ол міндетті түрде `DRAFT` болып құрылады және кейін бөлек геологиялық тексеруден өтеді.
+
+Негізгі review әрекеттері:
+
+```text
+POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/links/{link_id}/confirm
+POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/links/{link_id}/reject
+POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/manual-link
+POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/create-draft-field
+```
+
+Қайта `process` орындалғанда reviewer-locked шешімдер (`VERIFIED`, `REJECTED`, `MANUAL`, `verified_by` немесе review comment) үнсіз өзгертілмеуі тиіс. Толық нұсқаулық: `docs/KAZAKHSTAN_FIELD_REVIEW_KK.md`.
+
+## GeoKZ REST API
 
 - `GET /api/v1/integrations/kazakhstan/catalog` — ресми resources, `api_uri`, version және endpoint-тер;
 - `GET /api/v1/integrations/kazakhstan/{code}/schema` — импортқа дейін ресми metadata және mapping алу;
 - `POST /api/v1/integrations/kazakhstan/register` — ресурстарды жергілікті GeoKZ БД-сына тіркеу;
 - `POST /api/v1/integrations/kazakhstan/{code}/sync` — таңдалған ресурсты қолмен синхрондау;
 - `POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process` — RAW кен орындарын нормализациялау және GeoKZ объектілерімен safe matching жасау;
+- `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review` — сараптамалық review кезегін көрсету;
 - `GET /api/v1/integrations/sources` — сыртқы дереккөздер мен соңғы синхрондау күйін көрсету.
 
 Деректерді жүктеу үшін `data.egov.kz` developer API key талап етеді. Кілт тек `GEOKZ_EGOV_API_KEY` орта айнымалысында сақталады және Git репозиторийіне жазылмайды. Кілт болмаса да GeoKZ жергілікті базамен толық жұмыс істейді.
@@ -59,7 +87,8 @@ GeoKZ REST API:
 Толық нұсқаулықтар:
 
 - `docs/EXTERNAL_API_KEYS_KK.md` — API key алу және баптау;
-- `docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_KK.md` — `apiUri`, mapping, endpoint, processing және GeoKZ resource naming ережелері.
+- `docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_KK.md` — `apiUri`, mapping, endpoint, processing және GeoKZ resource naming ережелері;
+- `docs/KAZAKHSTAN_FIELD_REVIEW_KK.md` — confirm/reject/manual-link/create-draft-field review workflow.
 
 ## Көмектер мен кеңестер
 Күрделі өрістер үшін қысқа кеңес, кеңейтілген түсіндірме, қадамдық шебер және диагностикалық ескерту қолданылады. CRS, X/Y реті, MD/TVD/TVDSS, ҰГЗ, корреляция және сыртқы дереккөздерді баптау үшін контекстік көмек міндетті.
