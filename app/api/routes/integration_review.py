@@ -10,13 +10,18 @@ from app.application.kazakhstan_field_review import (
     FieldReviewValidationError,
     KazakhstanOilGasFieldReviewService,
 )
+from app.application.kazakhstan_field_review_view import (
+    KazakhstanOilGasFieldReviewViewService,
+)
 from app.core.database import get_session
+from app.core.project_info import SupportedLanguage
 from app.schemas.integration import (
     FieldReviewActionResponse,
     FieldReviewCreateDraftRequest,
     FieldReviewDecisionRequest,
     FieldReviewLinkRead,
     FieldReviewManualLinkRequest,
+    FieldReviewQueueViewRead,
     FieldReviewRecordRead,
     FieldReviewRejectRequest,
 )
@@ -49,6 +54,30 @@ def _raise_review_error(error: Exception) -> None:
     if isinstance(error, FieldReviewValidationError):
         raise HTTPException(status_code=409, detail=str(error)) from error
     raise error
+
+
+@router.get(
+    "/kazakhstan/{code}/review/view",
+    response_model=FieldReviewQueueViewRead,
+)
+async def get_field_review_queue_view(
+    code: str,
+    lang: SupportedLanguage = Query(default="ru"),
+    limit: int = Query(default=100, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    session: AsyncSession = Depends(get_session),
+) -> FieldReviewQueueViewRead:
+    _ensure_supported_code(code)
+    try:
+        view = await KazakhstanOilGasFieldReviewViewService(session).get_queue(
+            language=lang,
+            limit=limit,
+            offset=offset,
+        )
+    except Exception as error:
+        _raise_review_error(error)
+        raise AssertionError("unreachable") from error
+    return FieldReviewQueueViewRead.model_validate(view)
 
 
 @router.get(
