@@ -15,12 +15,25 @@ from app.models.integration import (
     ExternalSyncRun,
 )
 from app.models.source import Source
+from app.models.subsurface import (
+    CoreRun,
+    CoreSample,
+    SeismicLine,
+    SeismicSurvey,
+    SeismicVolume,
+    WellLogCurve,
+    WellLogRun,
+    WellTest,
+    WellTrajectoryPoint,
+)
 from app.models.well import Well, WellInterval
 
 __all__ = [
     "AdministrativeRegion",
     "Base",
     "ConflictRecord",
+    "CoreRun",
+    "CoreSample",
     "Document",
     "DocumentPage",
     "EntityName",
@@ -31,9 +44,16 @@ __all__ = [
     "Fact",
     "FactEvidence",
     "GeologicalEntity",
+    "SeismicLine",
+    "SeismicSurvey",
+    "SeismicVolume",
     "Source",
     "Well",
     "WellInterval",
+    "WellLogCurve",
+    "WellLogRun",
+    "WellTest",
+    "WellTrajectoryPoint",
     "conflict_facts",
     "geological_entity_administrative_regions",
 ]
