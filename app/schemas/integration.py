@@ -71,3 +71,15 @@ class KazakhstanDatasetSyncResponse(BaseModel):
     records_updated: int
     records_unchanged: int
     records_rejected: int
+
+
+class KazakhstanDatasetProcessingResponse(BaseModel):
+    source_id: UUID
+    processed: int
+    normalized: int
+    exact_matches: int
+    alias_matches: int
+    ambiguous: int
+    unmatched: int
+    normalization_errors: int
+    reviewer_locked: int
