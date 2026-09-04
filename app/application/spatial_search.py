@@ -128,6 +128,77 @@ def _seismic_card(survey: SeismicSurvey) -> SeismicSurveyCard:
 class SpatialSearchService:
     session: AsyncSession
 
+    async def search_nearby_wells(
+        self,
+        *,
+        latitude: float,
+        longitude: float,
+        radius_km: float,
+        limit: int,
+        well_ids: list[UUID] | None = None,
+    ) -> list[NearbyWellResult]:
+        if well_ids is not None and not well_ids:
+            return []
+
+        radius_m = radius_km * 1000.0
+        point_geometry = func.ST_SetSRID(func.ST_MakePoint(longitude, latitude), 4326)
+        point_geography = cast(point_geometry, _POINT_GEOGRAPHY)
+        well_distance = func.ST_Distance(
+            cast(Well.location, _POINT_GEOGRAPHY),
+            point_geography,
+        )
+        predicates = [
+            Well.location.is_not(None),
+            func.ST_DWithin(
+                cast(Well.location, _POINT_GEOGRAPHY),
+                point_geography,
+                radius_m,
+            ),
+        ]
+        if well_ids is not None:
+            predicates.append(Well.id.in_(well_ids))
+
+        well_rows = (
+            await self.session.execute(
+                select(
+                    Well,
+                    func.ST_X(Well.location).label("longitude"),
+                    func.ST_Y(Well.location).label("latitude"),
+                    well_distance.label("distance_m"),
+                )
+                .where(*predicates)
+                .order_by(well_distance, Well.id)
+                .limit(limit)
+            )
+        ).all()
+
+        found_well_ids: list[UUID] = [well.id for well, _, _, _ in well_rows]
+        intervals_by_well: dict[UUID, list[IntervalCard]] = defaultdict(list)
+        if found_well_ids:
+            intervals = list(
+                await self.session.scalars(
+                    select(WellInterval)
+                    .where(WellInterval.well_id.in_(found_well_ids))
+                    .order_by(
+                        WellInterval.well_id,
+                        WellInterval.top_depth_m,
+                        WellInterval.base_depth_m,
+                    )
+                )
+            )
+            for interval in intervals:
+                intervals_by_well[interval.well_id].append(_interval_card(interval))
+
+        return [
+            NearbyWellResult(
+                distance_m=float(distance_m),
+                well=_well_card(well, well_longitude, well_latitude),
+                intervals=intervals_by_well[well.id],
+                passport_path=f"/api/v1/wells/{well.id}/passport",
+            )
+            for well, well_longitude, well_latitude, distance_m in well_rows
+        ]
+
     async def search_nearby(
         self,
         *,
@@ -172,47 +243,12 @@ class SpatialSearchService:
             )
         ).all()
 
-        well_distance = func.ST_Distance(
-            cast(Well.location, _POINT_GEOGRAPHY),
-            point_geography,
+        nearby_wells = await self.search_nearby_wells(
+            latitude=latitude,
+            longitude=longitude,
+            radius_km=radius_km,
+            limit=limit,
         )
-        well_rows = (
-            await self.session.execute(
-                select(
-                    Well,
-                    func.ST_X(Well.location).label("longitude"),
-                    func.ST_Y(Well.location).label("latitude"),
-                    well_distance.label("distance_m"),
-                )
-                .where(
-                    Well.location.is_not(None),
-                    func.ST_DWithin(
-                        cast(Well.location, _POINT_GEOGRAPHY),
-                        point_geography,
-                        radius_m,
-                    ),
-                )
-                .order_by(well_distance)
-                .limit(limit)
-            )
-        ).all()
-
-        well_ids: list[UUID] = [well.id for well, _, _, _ in well_rows]
-        intervals_by_well: dict[UUID, list[IntervalCard]] = defaultdict(list)
-        if well_ids:
-            intervals = list(
-                await self.session.scalars(
-                    select(WellInterval)
-                    .where(WellInterval.well_id.in_(well_ids))
-                    .order_by(
-                        WellInterval.well_id,
-                        WellInterval.top_depth_m,
-                        WellInterval.base_depth_m,
-                    )
-                )
-            )
-            for interval in intervals:
-                intervals_by_well[interval.well_id].append(_interval_card(interval))
 
         seismic_distance = func.ST_Distance(
             cast(SeismicSurvey.coverage, _GEOGRAPHY),
@@ -258,15 +294,7 @@ class SpatialSearchService:
                 )
                 for entity, distance_m in entity_rows
             ],
-            nearby_wells=[
-                NearbyWellResult(
-                    distance_m=float(distance_m),
-                    well=_well_card(well, well_longitude, well_latitude),
-                    intervals=intervals_by_well[well.id],
-                    passport_path=f"/api/v1/wells/{well.id}/passport",
-                )
-                for well, well_longitude, well_latitude, distance_m in well_rows
-            ],
+            nearby_wells=nearby_wells,
             nearby_seismic_surveys=[
                 NearbySeismicResult(
                     distance_m=float(distance_m),
