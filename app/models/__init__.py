@@ -1,6 +1,7 @@
 from app.models.administrative_region import AdministrativeRegion
 from app.models.base import Base
 from app.models.conflict import ConflictRecord, conflict_facts
+from app.models.correlation import WellMarker
 from app.models.document import Document, DocumentPage
 from app.models.entity import (
     EntityName,
@@ -52,6 +53,7 @@ __all__ = [
     "WellInterval",
     "WellLogCurve",
     "WellLogRun",
+    "WellMarker",
     "WellTest",
     "WellTrajectoryPoint",
     "conflict_facts",
