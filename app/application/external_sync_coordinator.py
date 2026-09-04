@@ -82,7 +82,8 @@ def calculate_next_due_at(
 
     anchor = source.last_success_at or source.last_sync_completed_at
     if anchor is None:
-        return datetime.min.replace(tzinfo=UTC)
+        # None means "due immediately" for a never-synchronized automatic source.
+        return None
     return anchor + timedelta(hours=source.sync_interval_hours)
 
 
@@ -92,6 +93,14 @@ def is_source_due(
     now: datetime,
     failure_retry_hours: int,
 ) -> bool:
+    if not source.enabled or source.sync_mode != SyncMode.AUTOMATIC:
+        return False
+    if (
+        source.last_success_at is None
+        and source.last_sync_completed_at is None
+        and source.last_error_at is None
+    ):
+        return True
     next_due_at = calculate_next_due_at(
         source,
         failure_retry_hours=failure_retry_hours,
