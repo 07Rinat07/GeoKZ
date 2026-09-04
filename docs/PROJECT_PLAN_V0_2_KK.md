@@ -35,6 +35,8 @@ GeoKZ — Қазақстан геологиясы бойынша бірыңға�
 - ✅ `POST /api/v1/integrations/kazakhstan/{code}/sync` — RAW/staging қабатына қолмен REST-синхрондау.
 - ✅ дереккөздер `AUTOMATIC`, 168 сағаттық интервалмен тіркеледі; нақты scheduler әлі іске асырылмаған.
 - ✅ API key тек `GEOKZ_EGOV_API_KEY` арқылы оқылады; кілт болмаса жергілікті база жұмысын жалғастырады.
+- ✅ API кілттерін алу және баптау туралы RU/KK/EN нұсқаулықтары: `EXTERNAL_API_KEYS_RU.md`, `EXTERNAL_API_KEYS_KK.md`, `EXTERNAL_API_KEYS_EN.md`.
+- ✅ README ішінде `data.egov.kz` кілтін алу және `.env` ішінде қауіпсіз сақтау жөніндегі қысқа нұсқаулық бар.
 - ✅ RU/KK/EN user guides/roadmaps және documentation CI contract.
 
 ## Жақын P0
