@@ -1,7 +1,6 @@
 from app.core.project_info import SupportedLanguage
 from app.schemas.help import HelpLevel, HelpTopic
 
-
 _HELP_TOPICS: dict[str, dict[SupportedLanguage, HelpTopic]] = {
     "coordinates.format": {
         "ru": HelpTopic(
