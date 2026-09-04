@@ -46,11 +46,19 @@ GeoKZ ресми `apiUri` мен `version` мәндерін бөлек сақт�
 `kz-egov-oil-gas-fields` синхрондалғаннан кейін `process` қадамын іске қосуға болады. GeoKZ кен орны атауын нормализациялап, бар `field` объектілері және олардың aliases бойынша сәйкестендіреді. Сәйкестік автоматты түрде verified болмайды: `REVIEW_REQUIRED` кандидаты жасалады. Бірнеше ықтимал сәйкестік және табылмаған жазбалар сараптамалық review үшін сақталады.
 
 ## Сыртқы кен орындарын сараптамалық тексеру
-Review кезегі:
+Техникалық review кезегі:
 
 ```text
 GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review
 ```
+
+Пайдаланушы интерфейсі үшін локализацияланған view-model endpoint бар:
+
+```text
+GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view?lang=kk&limit=100&offset=0
+```
+
+Бұл жауап pending жазбалардың жалпы санын, pagination күйін, локализацияланған entity атауын, `entity_verification_status`, candidates және backend дайындаған action descriptor-ларын (`CONFIRM_LINK`, `REJECT_LINK`, `MANUAL_LINK`, `CREATE_DRAFT_FIELD`) береді. Әр action үшін `enabled`, `disabled_reason`, `required_fields`, `optional_fields` және нақты `path` қайтарылады, сондықтан PySide6/web клиенті backend business rules логикасын қайталамауы тиіс.
 
 Пайдаланушы әр жазба үшін мына әрекеттердің бірін таңдай алады:
 
@@ -70,7 +78,7 @@ POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/m
 POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/create-draft-field
 ```
 
-Қайта `process` орындалғанда reviewer-locked шешімдер (`VERIFIED`, `REJECTED`, `MANUAL`, `verified_by` немесе review comment) үнсіз өзгертілмеуі тиіс. Толық нұсқаулық: `docs/KAZAKHSTAN_FIELD_REVIEW_KK.md`.
+Қайта `process` орындалғанда reviewer-locked шешімдер (`VERIFIED`, `REJECTED`, `MANUAL`, `verified_by` немесе review comment) үнсіз өзгертілмеуі тиіс.
 
 ## GeoKZ REST API
 
@@ -79,7 +87,8 @@ POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/c
 - `POST /api/v1/integrations/kazakhstan/register` — ресурстарды жергілікті GeoKZ БД-сына тіркеу;
 - `POST /api/v1/integrations/kazakhstan/{code}/sync` — таңдалған ресурсты қолмен синхрондау;
 - `POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process` — RAW кен орындарын нормализациялау және GeoKZ объектілерімен safe matching жасау;
-- `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review` — сараптамалық review кезегін көрсету;
+- `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review` — техникалық сараптамалық review кезегін көрсету;
+- `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view` — локализацияланған UI/view-model review queue contract алу;
 - `GET /api/v1/integrations/sources` — сыртқы дереккөздер мен соңғы синхрондау күйін көрсету.
 
 Деректерді жүктеу үшін `data.egov.kz` developer API key талап етеді. Кілт тек `GEOKZ_EGOV_API_KEY` орта айнымалысында сақталады және Git репозиторийіне жазылмайды. Кілт болмаса да GeoKZ жергілікті базамен толық жұмыс істейді.
@@ -88,7 +97,8 @@ POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/c
 
 - `docs/EXTERNAL_API_KEYS_KK.md` — API key алу және баптау;
 - `docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_KK.md` — `apiUri`, mapping, endpoint, processing және GeoKZ resource naming ережелері;
-- `docs/KAZAKHSTAN_FIELD_REVIEW_KK.md` — confirm/reject/manual-link/create-draft-field review workflow.
+- `docs/KAZAKHSTAN_FIELD_REVIEW_KK.md` — confirm/reject/manual-link/create-draft-field review workflow;
+- `docs/EXTERNAL_REVIEW_UI_CONTRACT_KK.md` — PySide6/web клиентіне арналған тұрақты review queue contract.
 
 ## Көмектер мен кеңестер
 Күрделі өрістер үшін қысқа кеңес, кеңейтілген түсіндірме, қадамдық шебер және диагностикалық ескерту қолданылады. CRS, X/Y реті, MD/TVD/TVDSS, ҰГЗ, корреляция және сыртқы дереккөздерді баптау үшін контекстік көмек міндетті.

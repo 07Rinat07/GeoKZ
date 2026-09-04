@@ -28,6 +28,7 @@ GeoKZ — доказательная геологическая информац
 - **Data provenance:** сохраняются источник, версия набора, дата получения, checksum и RAW payload.
 - **GIS-first:** PostgreSQL/PostGIS, далее GeoPackage, OGC API Features и QGIS.
 - **Safe depth/CRS handling:** MD/TVD/TVDSS и разные CRS не смешиваются молча.
+- **Server-owned review rules:** PySide6/web UI получает готовые action descriptors и не дублирует backend business rules.
 - **Documentation-as-code:** пользовательские инструкции и roadmap поддерживаются на RU/KK/EN и проверяются CI-контрактом.
 
 ## Текущий стек
@@ -126,10 +127,27 @@ POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process
 
 Этот шаг извлекает название месторождения, сопоставляет его с существующими `GeologicalEntity(object_type="field")` и `EntityName` aliases и создаёт только review-кандидаты. `VERIFIED` master data автоматически не изменяются.
 
-Очередь экспертной проверки:
+Техническая очередь экспертной проверки:
 
 ```text
 GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review
+```
+
+Локализованная UI/view-model очередь для PySide6/web:
+
+```text
+GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view?lang=ru&limit=100&offset=0
+```
+
+View-model возвращает `total_pending`, pagination, локализованные candidate names, отдельный `entity_verification_status`, стабильный `matching_status` и готовые action descriptors. Доступность и форма действия определяются backend полями `enabled`, `disabled_reason`, `required_fields`, `optional_fields` и `path`.
+
+Стабильные action codes:
+
+```text
+CONFIRM_LINK
+REJECT_LINK
+MANUAL_LINK
+CREATE_DRAFT_FIELD
 ```
 
 Поддерживаются явные действия review:
@@ -151,6 +169,9 @@ POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/c
 - review RU: [`docs/KAZAKHSTAN_FIELD_REVIEW_RU.md`](docs/KAZAKHSTAN_FIELD_REVIEW_RU.md)
 - review KK: [`docs/KAZAKHSTAN_FIELD_REVIEW_KK.md`](docs/KAZAKHSTAN_FIELD_REVIEW_KK.md)
 - review EN: [`docs/KAZAKHSTAN_FIELD_REVIEW_EN.md`](docs/KAZAKHSTAN_FIELD_REVIEW_EN.md)
+- review UI contract RU: [`docs/EXTERNAL_REVIEW_UI_CONTRACT_RU.md`](docs/EXTERNAL_REVIEW_UI_CONTRACT_RU.md)
+- review UI contract KK: [`docs/EXTERNAL_REVIEW_UI_CONTRACT_KK.md`](docs/EXTERNAL_REVIEW_UI_CONTRACT_KK.md)
+- review UI contract EN: [`docs/EXTERNAL_REVIEW_UI_CONTRACT_EN.md`](docs/EXTERNAL_REVIEW_UI_CONTRACT_EN.md)
 
 ### Как получить API-ключ data.egov.kz
 
@@ -212,6 +233,7 @@ docker compose up --build
 - Kazakhstan sync: `/api/v1/integrations/kazakhstan/{code}/sync`
 - Kazakhstan process/match: `/api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process`
 - Kazakhstan field review: `/api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review`
+- Kazakhstan review UI contract: `/api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view`
 - well passport: `/api/v1/wells/{well_id}/passport`
 - correlation: `/api/v1/correlation/wells/{reference_well_id}`
 
@@ -241,6 +263,11 @@ docker compose up --build
 - RU: [`docs/KAZAKHSTAN_FIELD_REVIEW_RU.md`](docs/KAZAKHSTAN_FIELD_REVIEW_RU.md)
 - KK: [`docs/KAZAKHSTAN_FIELD_REVIEW_KK.md`](docs/KAZAKHSTAN_FIELD_REVIEW_KK.md)
 - EN: [`docs/KAZAKHSTAN_FIELD_REVIEW_EN.md`](docs/KAZAKHSTAN_FIELD_REVIEW_EN.md)
+
+### UI/View-Model contract external review
+- RU: [`docs/EXTERNAL_REVIEW_UI_CONTRACT_RU.md`](docs/EXTERNAL_REVIEW_UI_CONTRACT_RU.md)
+- KK: [`docs/EXTERNAL_REVIEW_UI_CONTRACT_KK.md`](docs/EXTERNAL_REVIEW_UI_CONTRACT_KK.md)
+- EN: [`docs/EXTERNAL_REVIEW_UI_CONTRACT_EN.md`](docs/EXTERNAL_REVIEW_UI_CONTRACT_EN.md)
 
 ### Другие документы
 - [`docs/BUSINESS_DOMAIN.md`](docs/BUSINESS_DOMAIN.md) — предметная модель;

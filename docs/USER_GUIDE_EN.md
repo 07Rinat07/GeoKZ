@@ -46,11 +46,19 @@ Sources are registered with a 168-hour automatic update interval (weekly), while
 After `kz-egov-oil-gas-fields` has been synchronized, the `process` step can be run. GeoKZ normalizes the field name and matches it against existing `field` objects and their aliases. A match is never treated as verified automatically: a `REVIEW_REQUIRED` candidate is created. Ambiguous and unmatched records remain available for expert review.
 
 ## Expert review of external field records
-The pending review queue is available at:
+The technical pending queue is available at:
 
 ```text
 GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review
 ```
+
+A localized UI-ready view-model is available at:
+
+```text
+GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view?lang=en&limit=100&offset=0
+```
+
+The view response includes the total pending count, pagination state, localized entity names, `entity_verification_status`, candidates and backend-generated action descriptors (`CONFIRM_LINK`, `REJECT_LINK`, `MANUAL_LINK`, `CREATE_DRAFT_FIELD`). Each descriptor supplies `enabled`, `disabled_reason`, `required_fields`, `optional_fields` and the exact `path`, so PySide6/web clients do not duplicate backend business rules.
 
 For each record the user can explicitly:
 
@@ -70,7 +78,7 @@ POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/m
 POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/create-draft-field
 ```
 
-A repeated `process` must not silently overwrite reviewer-locked decisions (`VERIFIED`, `REJECTED`, `MANUAL`, `verified_by` or a review comment). See `docs/KAZAKHSTAN_FIELD_REVIEW_EN.md` for the complete workflow.
+A repeated `process` must not silently overwrite reviewer-locked decisions (`VERIFIED`, `REJECTED`, `MANUAL`, `verified_by` or a review comment).
 
 ## GeoKZ REST API
 
@@ -80,6 +88,7 @@ A repeated `process` must not silently overwrite reviewer-locked decisions (`VER
 - `POST /api/v1/integrations/kazakhstan/{code}/sync` — manually synchronize one resource;
 - `POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process` — normalize RAW field records and perform safe matching against GeoKZ entities;
 - `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review` — list records pending expert review;
+- `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view` — get the localized UI/view-model review queue contract;
 - `GET /api/v1/integrations/sources` — show external sources and latest synchronization state.
 
 The `data.egov.kz` data API requires a developer API key. The key is read only from the `GEOKZ_EGOV_API_KEY` environment variable and must never be committed to Git. Without the key, GeoKZ continues to operate fully on the local database.
@@ -88,7 +97,8 @@ Detailed guides:
 
 - `docs/EXTERNAL_API_KEYS_EN.md` — obtaining and configuring the API key;
 - `docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_EN.md` — `apiUri`, mapping, endpoint patterns, processing and GeoKZ resource naming rules;
-- `docs/KAZAKHSTAN_FIELD_REVIEW_EN.md` — confirm/reject/manual-link/create-draft-field review workflow.
+- `docs/KAZAKHSTAN_FIELD_REVIEW_EN.md` — confirm/reject/manual-link/create-draft-field review workflow;
+- `docs/EXTERNAL_REVIEW_UI_CONTRACT_EN.md` — stable review queue contract for PySide6/web clients.
 
 ## Hints and assistants
 Complex fields use a short hint, expanded contextual help, step-by-step wizard and diagnostic warning. Contextual help is especially important for CRS, X/Y axis order, MD/TVD/TVDSS, well logs, correlation and external-source configuration.

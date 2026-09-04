@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.kazakhstan_field_processing import (
@@ -37,6 +37,9 @@ class FieldReviewLink:
     link_id: UUID
     entity_id: UUID
     entity_name_ru: str
+    entity_name_kk: str | None
+    entity_name_en: str | None
+    entity_verification_status: VerificationStatus
     match_method: MatchMethod
     match_confidence: float
     status: EntityLinkStatus
@@ -67,6 +70,18 @@ class FieldReviewActionResult:
 @dataclass(slots=True)
 class KazakhstanOilGasFieldReviewService:
     session: AsyncSession
+
+    async def count_pending(self) -> int:
+        source = await self._get_source()
+        count = await self.session.scalar(
+            select(func.count(ExternalRecord.id)).where(
+                ExternalRecord.source_id == source.id,
+                ExternalRecord.record_type == OIL_GAS_FIELDS_RECORD_TYPE,
+                ExternalRecord.status == ExternalRecordStatus.REVIEW_REQUIRED,
+                ExternalRecord.is_deleted_upstream.is_(False),
+            )
+        )
+        return int(count or 0)
 
     async def list_pending(
         self,
@@ -110,6 +125,9 @@ class KazakhstanOilGasFieldReviewService:
                     link_id=link.id,
                     entity_id=entity.id,
                     entity_name_ru=entity.name_ru,
+                    entity_name_kk=entity.name_kk,
+                    entity_name_en=entity.name_en,
+                    entity_verification_status=entity.verification_status,
                     match_method=link.match_method,
                     match_confidence=link.match_confidence,
                     status=link.status,

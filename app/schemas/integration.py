@@ -8,6 +8,8 @@ from app.core.project_info import SupportedLanguage
 from app.integrations.types import (
     EntityLinkStatus,
     ExternalRecordStatus,
+    FieldReviewActionCode,
+    FieldReviewMatchStatus,
     MatchMethod,
     SyncMode,
     SyncRunStatus,
@@ -110,6 +112,63 @@ class FieldReviewRecordRead(BaseModel):
     normalized_payload: dict[str, Any] | None
     status: ExternalRecordStatus
     links: list[FieldReviewLinkRead]
+
+
+class FieldReviewActionRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    code: FieldReviewActionCode
+    label: str
+    method: str
+    path: str
+    enabled: bool
+    disabled_reason: str | None
+    required_fields: list[str]
+    optional_fields: list[str]
+
+
+class FieldReviewCandidateViewRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    link_id: UUID
+    entity_id: UUID
+    entity_display_name: str
+    entity_verification_status: VerificationStatus
+    match_method: MatchMethod
+    match_confidence: float
+    status: EntityLinkStatus
+    verified_by: str | None
+    review_comment: str | None
+    actions: list[FieldReviewActionRead]
+
+
+class FieldReviewRecordViewRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    record_id: UUID
+    external_id: str
+    display_name: str
+    status: ExternalRecordStatus
+    matching_status: FieldReviewMatchStatus
+    raw_payload: dict[str, Any]
+    normalized_payload: dict[str, Any] | None
+    candidates: list[FieldReviewCandidateViewRead]
+    actions: list[FieldReviewActionRead]
+
+
+class FieldReviewQueueViewRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    source_code: str
+    language: SupportedLanguage
+    title: str
+    policy_note: str
+    total_pending: int
+    returned_count: int
+    limit: int
+    offset: int
+    has_more: bool
+    records: list[FieldReviewRecordViewRead]
 
 
 class FieldReviewDecisionRequest(BaseModel):
