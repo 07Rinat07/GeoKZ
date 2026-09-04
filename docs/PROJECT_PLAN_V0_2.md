@@ -1,6 +1,6 @@
 # GeoKZ — актуальный план развития v0.2+
 
-Статус: `2026-09-04`, ветка `feature/cross-section-view-model-v0.3`. Фундамент v0.2, review UI contract и dedicated external-sync scheduler уже слиты в `main` после зелёного CI.
+Статус: `2026-09-04`, ветка `feature/demo-correlation-workflow-v0.3`. Фундамент v0.2, review UI contract, dedicated external-sync scheduler и visual cross-section view-model уже слиты в `main` после зелёного CI.
 
 ## Цель
 GeoKZ — единое рабочее окно по геологии Казахстана: территория/координата → месторождения и скважины → полный паспорт → литология/стратиграфия/ГИС/керн/испытания/нефть-газ-вода → корреляция соседних скважин → источник и доказательство.
@@ -43,42 +43,37 @@ GeoKZ — единое рабочее окно по геологии Казах�
 - ✅ review actions: confirm/reject candidate, manual-link к существующему field, explicit `create-draft-field` только для `UNMATCHED`.
 - ✅ новый объект из внешней записи создаётся только `GeologicalEntity(verification_status=DRAFT)`; verified link не делает объект VERIFIED.
 - ✅ reviewer identity/comment сохраняются в `ExternalEntityLink`; полноценные auth/AuditLog ещё запланированы.
-- ✅ review/matching backend подтверждён зелёными `Python quality checks` и PostgreSQL/PostGIS integration tests и слит в `main`.
 - ✅ UI/view-model contract очереди review: `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view`.
-- ✅ view-model возвращает RU/KK/EN title/policy note, `total_pending`, pagination, локализованные candidate names, отдельный `entity_verification_status` и стабильные `matching_status`.
-- ✅ action descriptors `CONFIRM_LINK`, `REJECT_LINK`, `MANUAL_LINK`, `CREATE_DRAFT_FIELD` содержат `enabled`, `disabled_reason`, `required_fields`, `optional_fields` и точный `path` для PySide6/web.
-- ✅ `UNKNOWN` matching status является безопасным forward-compatible fallback для UI.
-- ✅ для review view-model добавлены unit tests и реальный PostgreSQL HTTP integration test.
+- ✅ action descriptors `CONFIRM_LINK`, `REJECT_LINK`, `MANUAL_LINK`, `CREATE_DRAFT_FIELD` содержат backend-owned availability/form contract.
 - ✅ scheduler периодической внешней синхронизации реализован отдельным process/service `python -m scripts.external_sync_scheduler`.
-- ✅ ручное «Обновить всё»: `POST /api/v1/integrations/sync-all` с независимым per-source result и продолжением batch при ошибке одного provider.
-- ✅ scheduled due dispatch: `POST /api/v1/integrations/scheduler/run-due` и status endpoint `GET /api/v1/integrations/scheduler/status`.
-- ✅ source due/retry рассчитывается из `sync_interval_hours`, `last_success_at` и последней ошибки; новый `AUTOMATIC` source due сразу.
-- ✅ PostgreSQL `SELECT ... FOR UPDATE` сериализует резервирование sync run без удержания lock на время внешнего HTTP transfer.
-- ✅ второй параллельный run получает `ALREADY_RUNNING`; stale `RUNNING` после configurable timeout переводится в `FAILED`.
-- ✅ Docker Compose запускает отдельный `geokz-external-sync-scheduler`; FastAPI worker не содержит scheduler loop.
-- ✅ scheduler policy покрыт unit tests и реальными PostgreSQL integration tests active-run/stale-run recovery.
-- ✅ API key хранится только в `GEOKZ_EGOV_API_KEY`; без ключа локальная база продолжает работать, provider error остаётся локальным для source.
-- ✅ отдельные RU/KK/EN инструкции: API keys, Kazakhstan Open Data, field review, review UI contract и external sync scheduler.
-- ✅ README, USER_GUIDE и roadmap поддерживаются на RU/KK/EN + documentation CI contract.
+- ✅ ручное «Обновить всё»: `POST /api/v1/integrations/sync-all`.
+- ✅ scheduled due dispatch: `POST /api/v1/integrations/scheduler/run-due`; status: `GET /api/v1/integrations/scheduler/status`.
+- ✅ PostgreSQL row-lock/stale-run защита parallel sync.
 - ✅ backend-owned visual cross-section view-model: `POST /api/v1/correlation/wells/view`.
-- ✅ единая шкала глубин выбирается по приоритету `TVDSS → TVD → MD`; несовместимые элементы получают `renderable=false` без скрытого преобразования.
-- ✅ response содержит ordered well columns, depth axis, готовые `MARKER`/`HORIZON` line segments и стабильные warning codes.
-- ✅ cross-section view-model покрыт unit tests и реальным PostgreSQL/PostGIS HTTP integration test; отдельный RU/KK/EN contract описывает безопасную клиентскую отрисовку.
+- ✅ единая шкала глубин выбирается по приоритету `TVDSS → TVD → MD`; несовместимые элементы получают `renderable=false`.
+- ✅ response содержит ordered well columns, depth axis, готовые `MARKER`/`HORIZON` line segments и stable warnings.
+- ✅ complete synthetic demo workflow: `POST /api/v1/correlation/demo/workflow`.
+- ✅ первый вызов workflow выполняет coordinate resolution + PostGIS discovery и возвращает `stage=DISCOVERY`, `nearby_demo_wells`, suggested reference и selection contract.
+- ✅ второй вызов с `reference_well_id` + `well_ids` возвращает `stage=CROSS_SECTION_READY` и готовый backend-owned `cross_section`.
+- ✅ demo selection допускает только `synthetic-correlation-demo-v1`; production well даже в той же точке исключается.
+- ✅ invalid/incomplete/duplicate/out-of-discovery selection отклоняется HTTP `422`.
+- ✅ demo dataset identifier централизован между runtime workflow и `python -m scripts.seed_correlation_demo`.
+- ✅ полный demo HTTP path покрыт реальным PostgreSQL/PostGIS integration test с отдельной production fixture well.
+- ✅ README, USER_GUIDE, roadmap и отдельные feature contracts поддерживаются на RU/KK/EN и проверяются documentation CI contract.
 
 ## Ближайший P0
-1. Demo workflow: координата → ближайшие demo-скважины → выбор → корреляционный разрез.
-2. Хранение/настройка локальных CRS организации; СК-42/Гаусса–Крюгера только по подтверждённому EPSG/WKT/PROJ.
-3. Устранить оставшийся SQLAlchemy cartesian-product warning в distance query корреляции без изменения результата PostGIS distance.
-4. Controlled vocabularies для lithology/markers/property kinds/units.
-5. Добавить normalizer/review для следующего официального ресурса — геологических лицензий — после проверки mapping/license/data quality.
-6. Core Dataset manifest/importer.
-7. Authentication + AuditLog/revisions для review и изменений master data.
-8. Production PySide6 screen для external review на уже стабильном backend view-model contract.
-9. Расширить scheduler provider registry на USGS/Macrostrat/OneGeology только после отдельной проверки лицензий и контрактов.
+1. Хранение/настройка локальных CRS организации; СК-42/Гаусса–Крюгера только по подтверждённому EPSG/WKT/PROJ.
+2. Устранить оставшийся SQLAlchemy cartesian-product warning в distance query корреляции без изменения результата PostGIS distance.
+3. Controlled vocabularies для lithology/markers/property kinds/units.
+4. Добавить normalizer/review для следующего официального ресурса — геологических лицензий — после проверки mapping/license/data quality.
+5. Core Dataset manifest/importer.
+6. Authentication + AuditLog/revisions для review и изменений master data.
+7. Production PySide6 screen для external review на уже стабильном backend view-model contract.
+8. Расширить scheduler provider registry на USGS/Macrostrat/OneGeology только после отдельной проверки лицензий и контрактов.
 
 ## Релизы
 - `v0.2`: platform/integration/help/spatial/subsurface/correlation foundation + первые официальные REST integrations Казахстана + safe oil/gas-field normalization/matching/review — слито в `main`.
-- `v0.3`: review UI contract, dedicated scheduled external sync/Update All, visual correlation data contract, CRS/local settings и complete demo workflow.
+- `v0.3`: review UI contract, scheduled external sync/Update All, visual correlation contract, complete synthetic demo workflow и CRS/local settings.
 - `v0.4`: PDF/DOCX/LAS/DLIS/WITSML/SEG-Y.
 - `v0.5`: расширенный matching/review/audit для внешних источников.
 - `v0.6`: unified RU/KK/EN search.
