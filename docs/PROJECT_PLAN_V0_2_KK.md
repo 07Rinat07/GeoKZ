@@ -19,30 +19,31 @@ GeoKZ — Қазақстан геологиясы бойынша бірыңға�
 - ✅ PostgreSQL/PostGIS CI: таза БД, `0001 → 0004` миграциялары, PostGIS/pg_trgm/unaccent, geography distance.
 - ✅ Territory Explorer, Geological Entity Passport, Well Passport.
 - ✅ latitude/longitude және projected X/Y; нүкте/үтір; CRS; екі X/Y axis order.
-- ✅ pyproj/PROJ негізіндегі `CoordinateResolver`, WGS84 түрлендіруі.
-- ✅ `POST /api/v1/spatial/nearby` — жақын объектілерді, ұңғымаларды және сейсмиканы іздеу.
-- ✅ `/api/v1/spatial/nearby` HTTP integration test нақты PostGIS базасында өтті.
+- ✅ pyproj/PROJ `CoordinateResolver`, WGS84 түрлендіруі.
+- ✅ `POST /api/v1/spatial/nearby` және нақты PostGIS HTTP integration test.
+- ✅ `GET /api/v1/spatial/crs-presets`: WGS84, UTM 38N–45N, RU/KK/EN ескерту; CRS автоматты түрде болжанбайды.
 - ✅ trajectory, well logs, tests, core, seismic модельдері.
 - ✅ Well Correlation: реперлер, TVDSS, thickness/net pay, porosity/permeability, lithology/fluid/hydrocarbon differences.
-- ✅ нақты PostGIS correlation integration test.
-- ✅ 4 көршілес ұңғымадан, R1/R2 және J-II-ден тұратын synthetic demo dataset.
+- ✅ `POST /api/v1/correlation/wells` — тірек және таңдалған көршілес ұңғымалар үшін; GET үйлесімділік үшін сақталды.
+- ✅ POST correlation нақты PostGIS базасында тексеріледі.
+- ✅ 4 көршілес ұңғыма, R1/R2 және J-II бар synthetic demo dataset.
 - ✅ Kazakhstan Open Data API v4 connector және external integration foundation.
 - ✅ RU/KK/EN user guides/roadmaps және documentation CI contract.
 
 ## Жақын P0
-1. Coordinate search нәтижесін жақын ұңғымаларды таңдаумен және correlation іске қосумен байланыстыру.
-2. Қазақстан CRS каталогы және ұйымның local CRS баптауы.
-3. Correlation distance query ішіндегі SQLAlchemy warning-ті жою.
-4. Visual cross-section viewer үшін API data model.
-5. Demo workflow: координата → 4 ұңғыма → корреляция.
+1. Visual cross-section viewer үшін API/view-model: ұңғыма бағандары, depth scale, реперлер, интервалдар және correlation lines.
+2. Demo workflow: координата → 4 жақын demo-ұңғыма → таңдау → correlation section.
+3. Ұйымның local CRS сақтау/баптау; СК-42/Гаусс–Крюгер тек расталған EPSG/WKT/PROJ арқылы.
+4. Correlation distance query ішіндегі SQLAlchemy cartesian-product warning-ті жою.
+5. Lithology/markers/property kinds/units controlled vocabularies.
 6. External sync persistence + manual/scheduled sync.
 7. Ресми Kazakhstan Open Data dataset registry.
 8. Core Dataset manifest/importer.
-9. Controlled vocabularies + audit/revisions.
+9. Audit log/revisions.
 
 ## Релиздер
 - `v0.2`: platform/integration/help/spatial/subsurface/correlation foundation.
-- `v0.3`: coordinate/CRS hardening + correlation demo workflow.
+- `v0.3`: visual correlation data contract, CRS/local settings, complete demo workflow.
 - `v0.4`: PDF/DOCX/LAS/DLIS/WITSML/SEG-Y.
 - `v0.5`: scheduled sync/matching/review/audit.
 - `v0.6`: unified RU/KK/EN search.
