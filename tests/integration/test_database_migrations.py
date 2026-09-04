@@ -19,7 +19,7 @@ async def test_alembic_head_and_required_extensions() -> None:
     try:
         async with engine.connect() as connection:
             revision = await connection.scalar(text("SELECT version_num FROM alembic_version"))
-            assert revision == "20260904_0004"
+            assert revision == "20260904_0005"
 
             extensions = set(
                 (
@@ -61,6 +61,7 @@ async def test_alembic_head_and_required_extensions() -> None:
                 "external_data_sources",
                 "external_records",
                 "external_sync_runs",
+                "organization_crs_definitions",
             } <= tables
 
             postgis_version = await connection.scalar(text("SELECT PostGIS_Version()"))

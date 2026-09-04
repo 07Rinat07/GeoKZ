@@ -1,7 +1,7 @@
 from enum import StrEnum
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class ProjectedAxisOrder(StrEnum):
@@ -76,27 +76,56 @@ class ProjectedCoordinateInput(BaseModel):
         ),
         examples=[711157.665],
     )
-    crs: str = Field(
+    crs: str | None = Field(
+        default=None,
         min_length=3,
-        max_length=1000,
+        max_length=50000,
         description=(
-            "Исходная система координат, например EPSG-код. Для больших X/Y в метрах "
-            "систему координат нельзя определять только по значениям — её нужно выбрать "
-            "или подтвердить по исходным материалам."
+            "Явное EPSG/WKT/PROJ-описание исходной CRS. Используйте это поле для "
+            "непосредственного ввода подтверждённой системы или registered_crs_code "
+            "для сохранённой организационной CRS."
         ),
         examples=["EPSG:32639"],
     )
-    axis_order: ProjectedAxisOrder = Field(
+    registered_crs_code: str | None = Field(
+        default=None,
+        min_length=3,
+        max_length=120,
+        pattern=r"^[a-z0-9][a-z0-9._-]+$",
         description=(
-            "Порядок осей исходных данных. В производственных материалах X нередко означает "
-            "Northing, а Y — Easting."
-        )
+            "Код сохранённой и подтверждённой организационной CRS. "
+            "Одновременно с полем crs не задаётся."
+        ),
+        examples=["company-grid-01"],
+    )
+    axis_order: ProjectedAxisOrder | None = Field(
+        default=None,
+        description=(
+            "Порядок осей исходных данных. Для явного поля crs обязателен. "
+            "Для registered_crs_code используется подтверждённый порядок осей из реестра; "
+            "клиент может передать его только как дополнительную проверку."
+        ),
     )
 
     @field_validator("x", "y", mode="before")
     @classmethod
     def parse_decimal(cls, value: float | int | str) -> float:
         return _parse_decimal(value)
+
+    @model_validator(mode="after")
+    def validate_crs_selection(self) -> "ProjectedCoordinateInput":
+        has_raw_crs = self.crs is not None
+        has_registered_crs = self.registered_crs_code is not None
+        if has_raw_crs == has_registered_crs:
+            raise ValueError(
+                "Для projected coordinate укажите ровно одно из полей: "
+                "crs или registered_crs_code."
+            )
+        if has_raw_crs and self.axis_order is None:
+            raise ValueError(
+                "Для явной projected CRS необходимо явно указать axis_order."
+            )
+        return self
 
 
 CoordinateInput = Annotated[
@@ -113,3 +142,4 @@ class ResolvedCoordinate(BaseModel):
     source_x: float | None = None
     source_y: float | None = None
     axis_order: ProjectedAxisOrder | None = None
+    registered_crs_code: str | None = None

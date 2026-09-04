@@ -9,6 +9,9 @@ from app.application.correlation_view import WellCrossSectionViewService
 from app.application.demo_correlation_workflow import DemoCorrelationWorkflowService
 from app.application.errors import (
     CoordinateResolutionError,
+    CrsDefinitionNotConfirmedError,
+    CrsDefinitionNotFoundError,
+    CrsDefinitionValidationError,
     DemoCorrelationSelectionError,
     ResourceNotFoundError,
 )
@@ -65,7 +68,15 @@ async def run_demo_correlation_workflow(
 ) -> DemoCorrelationWorkflowResponse:
     try:
         return await DemoCorrelationWorkflowService(session).run(request)
-    except (CoordinateResolutionError, DemoCorrelationSelectionError) as error:
+    except CrsDefinitionNotFoundError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except CrsDefinitionNotConfirmedError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    except (
+        CoordinateResolutionError,
+        CrsDefinitionValidationError,
+        DemoCorrelationSelectionError,
+    ) as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
     except ResourceNotFoundError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
