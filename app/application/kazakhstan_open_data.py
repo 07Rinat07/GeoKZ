@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,6 +18,15 @@ from app.models.integration import ExternalDataSource
 
 class KazakhstanDatasetNotFoundError(LookupError):
     pass
+
+
+@dataclass(frozen=True, slots=True)
+class KazakhstanDatasetInspection:
+    code: str
+    api_uri: str
+    version: str
+    metadata: dict[str, Any]
+    mapping: dict[str, Any]
 
 
 @dataclass(slots=True)
@@ -74,6 +84,22 @@ class KazakhstanOpenDataService:
         }
         await self.session.flush()
         return source
+
+    async def inspect(self, code: str) -> KazakhstanDatasetInspection:
+        dataset = get_kazakhstan_dataset(code)
+        if dataset is None:
+            raise KazakhstanDatasetNotFoundError(code)
+
+        connector = build_kazakhstan_connector(dataset, self.settings)
+        metadata = await connector.get_metadata()
+        mapping = await connector.get_mapping()
+        return KazakhstanDatasetInspection(
+            code=dataset.code,
+            api_uri=dataset.api_uri,
+            version=dataset.version,
+            metadata=metadata,
+            mapping=mapping,
+        )
 
     async def sync(self, code: str) -> SyncSummary:
         dataset = get_kazakhstan_dataset(code)
