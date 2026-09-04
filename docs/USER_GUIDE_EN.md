@@ -5,35 +5,34 @@ Version: `0.2-dev`.
 ## Purpose
 GeoKZ combines geological information for a territory, field/deposit, geological structure and well from the verified GeoKZ database and permitted external sources.
 
-Primary workflow: territory or coordinate → fields/structures/wells/seismic → object passport → well passport → intervals, lithology, well logs, core, tests, oil/gas/water → source and evidence.
+Primary workflow: territory or coordinate → fields/structures/wells/seismic → object passport → well passport → intervals, lithology, well logs, core, tests, oil/gas/water → nearby-well correlation → source and evidence.
 
 ## Languages
-The user interface, vocabularies, object names and user documentation support English, Russian and Kazakh.
+The user interface, vocabularies, object names, contextual help and user documentation support English, Russian and Kazakh.
 
 ## Coordinate search
 Geographic input example: `43.652341 / 51.168420`. A comma decimal separator is also accepted.
 
 Projected input example: `X=5085125.325`, `Y=711157.665`. The form `5085125,325 / 711157,665` is also accepted.
 
-Large metric X/Y values require the source coordinate reference system: EPSG, UTM zone, SK-42/Gauss-Kruger or a configured local company CRS. GeoKZ must not guess a CRS from the numbers alone.
+Large metric X/Y values require the source CRS: EPSG, UTM zone, SK-42/Gauss-Kruger or a configured local company CRS. The axis order is explicit as X=Easting/Y=Northing or X=Northing/Y=Easting. GeoKZ never guesses the CRS from numbers alone.
+
+After input, GeoKZ resolves the working point to WGS84 and searches within the selected radius. Results include administrative context, nearby geological objects/fields, drilled wells with distance and known intervals, and nearby or covering seismic surveys. A full well passport can be opened, and multiple wells can then be selected for correlation.
 
 ## Well passport
 The well passport includes coordinates, type/operator/status, dates, total depth, MD/TVD/TVDSS trajectory, geological intervals, stratigraphy, lithology, oil/gas/water indications, porosity/permeability, well logs, tests, flow rates, pressure/temperature, core/samples and related documents.
 
 ## Cross-well section correlation
-Select a reference well and nearby wells. GeoKZ compares the sections in two complementary forms:
+For a reference well and nearby wells, GeoKZ compares markers, lithology, reservoirs, oil/gas/water, depth, thickness, net pay, porosity and permeability in visual and textual form.
 
-- visual: vertical well columns, lithology intervals, reservoirs, oil/gas/water intervals and lines connecting common markers;
-- textual: marker depths, structural differences, interval thickness changes, lithology differences, reservoir properties and test-result differences.
+TVDSS is preferred. Incompatible depth references are not connected by an automatic line. Each marker retains its source, interpretation method and verification status.
 
-TVDSS is preferred for comparison. If available depth references are incompatible, GeoKZ shows a warning and does not draw a misleading automatic correlation.
-
-Each marker is stored separately with a code, localized name, depth, interpretation method, source, confidence and verification status. A correlation line should be traceable to the source document or well-log evidence supporting it.
+The GeoKZ demo dataset contains clearly marked synthetic wells for UI/correlation testing only; it is not production geological information.
 
 ## Sources and updates
-Important values expose provenance and verification status. External data never silently overwrites verified GeoKZ master values. Manual and periodic synchronization are supported, while the local database remains usable offline.
+External data never silently overwrites verified GeoKZ master values. Manual and periodic synchronization are supported while the local database remains usable offline.
 
 ## Hints and assistants
-Complex fields use four assistance levels: a short field hint, expanded contextual help, a step-by-step wizard and a diagnostic warning.
+Complex fields use a short hint, expanded contextual help, step-by-step wizard and diagnostic warning. Contextual help is especially important for CRS, X/Y axis order, MD/TVD/TVDSS, well logs and correlation.
 
-Current implementation status: `docs/PROJECT_PLAN_V0_2.md`.
+Current implementation status: `docs/PROJECT_PLAN_V0_2_EN.md`.
