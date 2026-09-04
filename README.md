@@ -118,6 +118,14 @@ POST /api/v1/integrations/kazakhstan/register
 POST /api/v1/integrations/kazakhstan/{code}/sync
 ```
 
+Нормализация и безопасное сопоставление нефтегазовых месторождений после RAW-синхронизации:
+
+```text
+POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process
+```
+
+Этот шаг извлекает название месторождения, сопоставляет его с существующими `GeologicalEntity(object_type="field")` и `EntityName` aliases и создаёт только review-кандидаты. `VERIFIED` master data автоматически не изменяются.
+
 Подробная инструкция по подключению, именованию ресурсов и добавлению новых datasets:
 
 - RU: [`docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md`](docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md)
@@ -181,6 +189,8 @@ docker compose up --build
 - external sources: `/api/v1/integrations/sources`
 - Kazakhstan catalog: `/api/v1/integrations/kazakhstan/catalog`
 - Kazakhstan resource schema: `/api/v1/integrations/kazakhstan/{code}/schema`
+- Kazakhstan sync: `/api/v1/integrations/kazakhstan/{code}/sync`
+- Kazakhstan process/match: `/api/v1/integrations/kazakhstan/{code}/process`
 - well passport: `/api/v1/wells/{well_id}/passport`
 - correlation: `/api/v1/correlation/wells/{reference_well_id}`
 
