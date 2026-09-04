@@ -32,6 +32,12 @@ class Settings(BaseSettings):
     egov_api_key: SecretStr | None = None
     external_http_timeout_seconds: float = Field(default=30.0, gt=0, le=300)
 
+    # Dedicated external-sync worker periodically checks which AUTOMATIC sources are due.
+    # Scheduler intentionally runs outside FastAPI workers to avoid duplicate background loops.
+    external_scheduler_poll_seconds: int = Field(default=300, ge=30, le=3600)
+    external_sync_failure_retry_hours: int = Field(default=6, ge=1, le=168)
+    external_sync_running_timeout_hours: int = Field(default=6, ge=1, le=72)
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
