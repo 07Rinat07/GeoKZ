@@ -40,3 +40,48 @@ jobs:
 
       - name: Run tests
         run: pytest -q
+
+  postgres-postgis:
+    name: PostgreSQL/PostGIS integration
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgis/postgis:17-3.5
+        env:
+          POSTGRES_USER: geokz
+          POSTGRES_PASSWORD: geokz_ci
+          POSTGRES_DB: geokz_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U geokz -d geokz_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      GEOKZ_ENVIRONMENT: test
+      GEOKZ_DATABASE_URL: postgresql+asyncpg://geokz:geokz_ci@localhost:5432/geokz_ci
+      GEOKZ_INTEGRATION_DATABASE_URL: postgresql+asyncpg://geokz:geokz_ci@localhost:5432/geokz_ci
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install project and development dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Upgrade database to Alembic head
+        run: alembic upgrade head
+
+      - name: Verify PostgreSQL/PostGIS integration
+        run: pytest -q tests/integration
