@@ -20,6 +20,7 @@ dependencies = [
     "pydantic-settings>=2.8,<3.0",
     "orjson>=3.10,<4.0",
     "httpx>=0.28,<1.0",
+    "pyproj>=3.7,<4.0",
 ]
 
 [project.optional-dependencies]
