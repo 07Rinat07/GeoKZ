@@ -30,13 +30,17 @@ GeoKZ is a single working window for geology in Kazakhstan: territory/coordinate
 - ✅ external-integration foundation: RAW/staging, checksum, SyncRun, source status and safe updates.
 - ✅ generic Kazakhstan Open Data API v4 connector.
 - ✅ official Kazakhstan Open Data registry: `stat_kgn_117/v10` (oil and gas fields) and `zher_koinauyn_geologiyalyk_zer2/v6` (geological-study licenses).
-- ✅ `GET /api/v1/integrations/kazakhstan/catalog` — official dataset catalog.
+- ✅ official naming contract uses upstream `apiUri` + `version`; RAW field names are preserved while GeoKZ `code` and `record_type` remain separate internal identifiers.
+- ✅ connector reads official `/meta/{apiUri}/{version}` and `/api/v4/mapping/{apiUri}/{version}` before ingestion.
+- ✅ `GET /api/v1/integrations/kazakhstan/catalog` — catalog with `api_uri`, version and endpoint templates.
+- ✅ `GET /api/v1/integrations/kazakhstan/{code}/schema` — upstream metadata/mapping inspection endpoint.
 - ✅ `POST /api/v1/integrations/kazakhstan/register` — register the sources in the local GeoKZ database.
 - ✅ `POST /api/v1/integrations/kazakhstan/{code}/sync` — manual REST synchronization into RAW/staging.
 - ✅ sources are registered as `AUTOMATIC` with a 168-hour interval; the actual scheduler is still pending.
 - ✅ the API key is read only from `GEOKZ_EGOV_API_KEY`; the local database remains usable without it.
-- ✅ dedicated RU/KK/EN API-key acquisition and setup guides: `EXTERNAL_API_KEYS_RU.md`, `EXTERNAL_API_KEYS_KK.md`, `EXTERNAL_API_KEYS_EN.md`.
-- ✅ README includes a concise `data.egov.kz` key acquisition and secure `.env` configuration guide.
+- ✅ dedicated RU/KK/EN API-key acquisition and setup guides.
+- ✅ dedicated RU/KK/EN Kazakhstan Open Data connection and resource-naming guides.
+- ✅ README documents API-key setup, official `apiUri` contract and resource onboarding rules.
 - ✅ RU/KK/EN user guides/roadmaps and documentation CI contract.
 
 ## Near-term P0
@@ -47,7 +51,7 @@ GeoKZ is a single working window for geology in Kazakhstan: territory/coordinate
 5. Controlled vocabularies for lithology/markers/property kinds/units.
 6. Scheduled external-source synchronization and an Update All workflow.
 7. Normalize and match Kazakhstan Open Data records to GeoKZ GeologicalEntity/field records.
-8. Add more official Kazakhstan datasets after schema/license/data-quality review.
+8. Add more official Kazakhstan resources after metadata/mapping/license/data-quality review.
 9. Core Dataset manifest/importer.
 10. Audit log/revisions.
 
