@@ -1,6 +1,6 @@
 # GeoKZ — v0.2+ өзекті даму жоспары
 
-Мәртебе: `2026-09-04`, тармақ `feature/external-data-sync-v0.2`.
+Мәртебе: `2026-09-04`, тармақ `feature/external-review-ui-contract-v0.3`. v0.2 негізі жасыл CI-ден кейін `main` тармағына біріктірілді.
 
 ## Мақсаты
 GeoKZ — Қазақстан геологиясы бойынша бірыңғай жұмыс терезесі: аумақ/координата → кен орындары мен ұңғымалар → толық паспорт → литология/стратиграфия/ҰГЗ/керн/сынақ/мұнай-газ-су → көршілес ұңғымалар корреляциясы → дереккөз және дәлел.
@@ -12,6 +12,7 @@ GeoKZ — Қазақстан геологиясы бойынша бірыңға�
 - CRS, axis order, MD/TVD/TVDSS және units әрқашан анық көрсетіледі.
 - Core Dataset интернетсіз де жұмыс істейді.
 - Demo/synthetic деректер өндірістік факт ретінде пайдаланылмайды және айқын белгіленеді.
+- UI backend business rules логикасын қайталамайды: review action availability және required fields backend view-model арқылы беріледі.
 
 ## Іске асырылды
 - ✅ FastAPI + PostgreSQL/PostGIS + Alembic.
@@ -31,31 +32,36 @@ GeoKZ — Қазақстан геологиясы бойынша бірыңға�
 - ✅ exact/alias candidates `REVIEW_REQUIRED`; ambiguous/unmatched review үшін сақталады.
 - ✅ қайталанған `process` unresolved auto-links үшін идемпотентті және duplicate `ExternalEntityLink` жасамайды.
 - ✅ reviewer-locked links (`VERIFIED`, `REJECTED`, `MANUAL`, reviewer/comment) қайта process кезінде өзгертілмейді.
-- ✅ review queue: `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review`.
+- ✅ техникалық review queue: `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review`.
 - ✅ review actions: candidate confirm/reject, existing field-пен `manual-link`, тек `UNMATCHED` үшін explicit `create-draft-field`.
 - ✅ сыртқы record-тан жасалған жаңа `GeologicalEntity` тек `DRAFT`; verified link объектіні автоматты түрде VERIFIED етпейді.
 - ✅ reviewer және comment ExternalEntityLink ішінде сақталады; толық authentication/AuditLog кейін қосылады.
-- ✅ review/matching backend бір head-та жасыл `Python quality checks` және PostgreSQL/PostGIS integration tests арқылы расталды.
+- ✅ review/matching backend бір head-та жасыл `Python quality checks` және PostgreSQL/PostGIS integration tests арқылы расталып, `main` тармағына біріктірілді.
+- ✅ review queue UI/view-model contract: `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view`.
+- ✅ view-model RU/KK/EN title/policy note, `total_pending`, pagination, локализацияланған candidate name, жеке `entity_verification_status` және тұрақты `matching_status` қайтарады.
+- ✅ `CONFIRM_LINK`, `REJECT_LINK`, `MANUAL_LINK`, `CREATE_DRAFT_FIELD` action descriptor-лары `enabled`, `disabled_reason`, `required_fields`, `optional_fields` және нақты `path` береді.
+- ✅ `UNKNOWN` matching status болашақ жаңа мәндер үшін safe fallback.
+- ✅ review view-model үшін unit tests және нақты PostgreSQL HTTP integration test қосылды.
 - ✅ sources `AUTOMATIC`, 168 сағаттық interval; нақты scheduler әлі жоқ.
 - ✅ API key тек `GEOKZ_EGOV_API_KEY` арқылы оқылады.
-- ✅ API keys, Open Data onboarding/naming және field review үшін RU/KK/EN құжаттары бар.
+- ✅ API keys, Open Data onboarding/naming, field review және review UI contract үшін RU/KK/EN құжаттары бар.
 - ✅ README, user guides және roadmaps documentation CI арқылы бақыланады.
 
 ## Жақын P0
-1. Болашақ PySide6 үшін external review queue UI/view-model contract: өзгерістер тізімі, RAW/normalized/GeoKZ салыстыруы, confirm/reject/manual-link/create DRAFT.
-2. Scheduled external sync + «Барлығын жаңарту», параллель sync іске қосылуынан қорғаумен.
-3. Visual cross-section viewer API/view-model және demo workflow.
-4. Координата → жақын demo-ұңғымалар → таңдау → correlation section толық сценарийі.
-5. Ұйымның configurable local CRS жүйелері; СК-42/Гаусс–Крюгер тек расталған EPSG/WKT/PROJ арқылы.
-6. Correlation distance query ішіндегі қалған SQLAlchemy cartesian-product warning-ті PostGIS distance нәтижесін өзгертпей жою.
-7. Lithology/markers/property kinds/units controlled vocabularies.
-8. Геологиялық лицензиялар ресурсына normalizer/review қосу — mapping/license/data quality тексерілгеннен кейін.
-9. Core Dataset manifest/importer.
-10. Review және master data өзгерістері үшін Authentication + AuditLog/revisions.
+1. Scheduled external sync + «Барлығын жаңарту», параллель sync іске қосылуынан қорғау және әр source үшін status/error reporting.
+2. Visual cross-section viewer API/view-model: well columns, depth scale, markers, intervals және correlation lines.
+3. Координата → жақын demo-ұңғымалар → таңдау → correlation section толық сценарийі.
+4. Ұйымның configurable local CRS жүйелері; СК-42/Гаусс–Крюгер тек расталған EPSG/WKT/PROJ арқылы.
+5. Correlation distance query ішіндегі қалған SQLAlchemy cartesian-product warning-ті PostGIS distance нәтижесін өзгертпей жою.
+6. Lithology/markers/property kinds/units controlled vocabularies.
+7. Геологиялық лицензиялар ресурсына normalizer/review қосу — mapping/license/data quality тексерілгеннен кейін.
+8. Core Dataset manifest/importer.
+9. Review және master data өзгерістері үшін Authentication + AuditLog/revisions.
+10. Тұрақты backend view-model негізінде production PySide6 external review screen.
 
 ## Релиздер
-- `v0.2`: platform/integration/help/spatial/subsurface/correlation + алғашқы Kazakhstan REST integrations + safe oil/gas-field normalization/matching/review.
-- `v0.3`: visual correlation contract, CRS/local settings, complete demo workflow, scheduled sync және review UI.
+- `v0.2`: platform/integration/help/spatial/subsurface/correlation + алғашқы Kazakhstan REST integrations + safe oil/gas-field normalization/matching/review — `main` тармағына біріктірілді.
+- `v0.3`: review UI contract, visual correlation contract, CRS/local settings, complete demo workflow және scheduled sync.
 - `v0.4`: PDF/DOCX/LAS/DLIS/WITSML/SEG-Y.
 - `v0.5`: expanded external matching/review/audit.
 - `v0.6`: unified RU/KK/EN search.
