@@ -119,11 +119,13 @@ class ExternalSyncService:
                 records_rejected=rejected,
             )
         except Exception as error:
+            run_id = run.id
+            reserved_source_id = source.id
             await self.session.rollback()
             failed_at = datetime.now(UTC)
 
-            failed_run = await self.session.get(ExternalSyncRun, run.id)
-            failed_source = await self.session.get(ExternalDataSource, source.id)
+            failed_run = await self.session.get(ExternalSyncRun, run_id)
+            failed_source = await self.session.get(ExternalDataSource, reserved_source_id)
             if failed_run is not None:
                 failed_run.status = SyncRunStatus.FAILED
                 failed_run.finished_at = failed_at
@@ -197,8 +199,12 @@ class ExternalSyncService:
             .limit(1)
         )
         if active_run is not None:
+            # Rollback expires ORM state. Capture scalar identifiers first so constructing
+            # the domain error never triggers implicit async IO after rollback.
+            source_code = locked_source.code
+            active_run_id = active_run.id
             await self.session.rollback()
-            raise ExternalSyncAlreadyRunningError(locked_source.code, active_run.id)
+            raise ExternalSyncAlreadyRunningError(source_code, active_run_id)
 
         locked_source.last_sync_started_at = started_at
         locked_source.last_error = None
