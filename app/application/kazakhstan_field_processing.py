@@ -9,18 +9,9 @@ from app.integrations.normalizers.kazakhstan_oil_gas_fields import (
     normalize_entity_name,
     normalize_oil_gas_field_record,
 )
-from app.integrations.types import (
-    EntityLinkStatus,
-    ExternalRecordStatus,
-    MatchMethod,
-)
+from app.integrations.types import EntityLinkStatus, ExternalRecordStatus, MatchMethod
 from app.models.entity import EntityName, GeologicalEntity
-from app.models.integration import (
-    ExternalDataSource,
-    ExternalEntityLink,
-    ExternalRecord,
-)
-
+from app.models.integration import ExternalDataSource, ExternalEntityLink, ExternalRecord
 
 OIL_GAS_FIELDS_SOURCE_CODE = "kz-egov-oil-gas-fields"
 OIL_GAS_FIELDS_RECORD_TYPE = "oil_gas_field"
@@ -138,8 +129,6 @@ class KazakhstanOilGasFieldProcessingService:
                 }
                 continue
 
-            await self._clear_automatic_links(existing_links)
-
             unique_candidates: dict[UUID, MatchMethod] = {}
             for entity_id, method in candidates:
                 previous = unique_candidates.get(entity_id)
@@ -147,6 +136,7 @@ class KazakhstanOilGasFieldProcessingService:
                     unique_candidates[entity_id] = method
 
             if not unique_candidates:
+                await self._clear_automatic_links(existing_links)
                 unmatched += 1
                 record.status = ExternalRecordStatus.REVIEW_REQUIRED
                 record.normalized_payload = {
@@ -156,6 +146,7 @@ class KazakhstanOilGasFieldProcessingService:
                 continue
 
             if len(unique_candidates) > 1:
+                await self._clear_automatic_links(existing_links)
                 ambiguous += 1
                 record.status = ExternalRecordStatus.REVIEW_REQUIRED
                 record.normalized_payload = {
@@ -175,15 +166,36 @@ class KazakhstanOilGasFieldProcessingService:
             else:
                 alias_matches += 1
 
-            self.session.add(
-                ExternalEntityLink(
+            matching_link = next(
+                (
+                    link
+                    for link in existing_links
+                    if link.geological_entity_id == entity_id
+                    and not self._is_reviewer_locked(link)
+                ),
+                None,
+            )
+            await self._clear_automatic_links(
+                existing_links,
+                keep_link_id=matching_link.id if matching_link is not None else None,
+            )
+
+            if matching_link is None:
+                matching_link = ExternalEntityLink(
                     external_record_id=record.id,
                     geological_entity_id=entity_id,
                     match_method=method,
                     match_confidence=1.0,
                     status=EntityLinkStatus.REVIEW_REQUIRED,
                 )
-            )
+                self.session.add(matching_link)
+                existing_links.append(matching_link)
+                links_by_record[record.id] = existing_links
+            else:
+                matching_link.match_method = method
+                matching_link.match_confidence = 1.0
+                matching_link.status = EntityLinkStatus.REVIEW_REQUIRED
+
             record.status = ExternalRecordStatus.REVIEW_REQUIRED
             record.normalized_payload = {
                 **payload,
@@ -256,10 +268,18 @@ class KazakhstanOilGasFieldProcessingService:
     async def _clear_automatic_links(
         self,
         links: list[ExternalEntityLink],
+        *,
+        keep_link_id: UUID | None = None,
     ) -> None:
+        deleted = False
         for link in links:
+            if keep_link_id is not None and link.id == keep_link_id:
+                continue
             if not self._is_reviewer_locked(link):
                 await self.session.delete(link)
+                deleted = True
+        if deleted:
+            await self.session.flush()
 
     @staticmethod
     def _is_reviewer_locked(link: ExternalEntityLink) -> bool:
