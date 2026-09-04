@@ -20,6 +20,7 @@ from app.models.integration import ExternalDataSource
 from app.schemas.integration import (
     ExternalDataSourceRead,
     KazakhstanDatasetCatalogItem,
+    KazakhstanDatasetInspectionResponse,
     KazakhstanDatasetSyncResponse,
 )
 
@@ -132,6 +133,36 @@ async def list_kazakhstan_open_datasets(
         )
         for dataset in KAZAKHSTAN_OPEN_DATASETS
     ]
+
+
+@router.get(
+    "/kazakhstan/{code}/schema",
+    response_model=KazakhstanDatasetInspectionResponse,
+)
+async def inspect_kazakhstan_open_dataset(
+    code: str,
+    session: AsyncSession = Depends(get_session),
+    settings: Settings = Depends(get_settings),
+) -> KazakhstanDatasetInspectionResponse:
+    try:
+        inspection = await KazakhstanOpenDataService(session, settings).inspect(code)
+    except KazakhstanDatasetNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Набор данных не найден") from error
+    except ExternalSourceProtocolError as error:
+        raise HTTPException(status_code=502, detail=str(error)) from error
+    except httpx.HTTPError as error:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Ошибка обращения к data.egov.kz: {error}",
+        ) from error
+
+    return KazakhstanDatasetInspectionResponse(
+        code=inspection.code,
+        api_uri=inspection.api_uri,
+        version=inspection.version,
+        metadata=inspection.metadata,
+        mapping=inspection.mapping,
+    )
 
 
 @router.post(
