@@ -32,9 +32,25 @@ TVDSS is preferred. Incompatible depth references are not connected by an automa
 The GeoKZ demo dataset contains clearly marked synthetic wells for UI/correlation testing only; it is not production geological information.
 
 ## Sources and updates
-External data never silently overwrites verified GeoKZ master values. Manual and periodic synchronization are supported while the local database remains usable offline.
+External data never silently overwrites verified GeoKZ master values. Incoming records are stored in the RAW/staging layer first and can then pass normalization, entity matching and expert review.
+
+The current version connects to Kazakhstan's official `data.egov.kz` Open Data portal through API v4. Two geology-related datasets are registered:
+
+1. `kz-egov-oil-gas-fields` — list of oil and gas fields of the Republic of Kazakhstan (`stat_kgn_117`, version `v10`).
+2. `kz-egov-geological-study-licenses` — register of licenses for geological exploration of subsoil (`zher_koinauyn_geologiyalyk_zer2`, version `v6`).
+
+Sources are registered with a 168-hour automatic update interval (weekly), while manual synchronization is available at any time.
+
+GeoKZ REST API:
+
+- `GET /api/v1/integrations/kazakhstan/catalog` — list available official datasets;
+- `POST /api/v1/integrations/kazakhstan/register` — register them in the local GeoKZ database;
+- `POST /api/v1/integrations/kazakhstan/{code}/sync` — manually synchronize one dataset;
+- `GET /api/v1/integrations/sources` — show registered external sources and the latest synchronization state.
+
+The `data.egov.kz` data API requires a developer API key. The key is read only from the `GEOKZ_EGOV_API_KEY` environment variable and must never be committed to Git. Without the key, GeoKZ continues to operate fully on the local database and the integration catalog remains available.
 
 ## Hints and assistants
-Complex fields use a short hint, expanded contextual help, step-by-step wizard and diagnostic warning. Contextual help is especially important for CRS, X/Y axis order, MD/TVD/TVDSS, well logs and correlation.
+Complex fields use a short hint, expanded contextual help, step-by-step wizard and diagnostic warning. Contextual help is especially important for CRS, X/Y axis order, MD/TVD/TVDSS, well logs, correlation and external-source configuration.
 
 Current implementation status: `docs/PROJECT_PLAN_V0_2_EN.md`.
