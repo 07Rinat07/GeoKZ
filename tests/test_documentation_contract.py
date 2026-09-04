@@ -51,6 +51,12 @@ TRILINGUAL_CROSS_SECTION_CONTRACTS = (
     DOCS / "CROSS_SECTION_VIEW_CONTRACT_EN.md",
 )
 
+TRILINGUAL_DEMO_WORKFLOW_GUIDES = (
+    DOCS / "DEMO_CORRELATION_WORKFLOW_RU.md",
+    DOCS / "DEMO_CORRELATION_WORKFLOW_KK.md",
+    DOCS / "DEMO_CORRELATION_WORKFLOW_EN.md",
+)
+
 PROCESS_ENDPOINT = "/api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process"
 REVIEW_ENDPOINT = "/api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review"
 REVIEW_VIEW_ENDPOINT = (
@@ -60,6 +66,7 @@ SYNC_ALL_ENDPOINT = "/api/v1/integrations/sync-all"
 SCHEDULER_STATUS_ENDPOINT = "/api/v1/integrations/scheduler/status"
 RUN_DUE_ENDPOINT = "/api/v1/integrations/scheduler/run-due"
 CROSS_SECTION_ENDPOINT = "/api/v1/correlation/wells/view"
+DEMO_WORKFLOW_ENDPOINT = "/api/v1/correlation/demo/workflow"
 
 
 def test_trilingual_user_guides_exist_and_are_not_empty() -> None:
@@ -73,6 +80,7 @@ def test_trilingual_user_guides_exist_and_are_not_empty() -> None:
         assert SYNC_ALL_ENDPOINT in content
         assert SCHEDULER_STATUS_ENDPOINT in content
         assert CROSS_SECTION_ENDPOINT in content
+        assert DEMO_WORKFLOW_ENDPOINT in content
 
 
 def test_trilingual_roadmaps_exist_and_are_not_empty() -> None:
@@ -86,6 +94,7 @@ def test_trilingual_roadmaps_exist_and_are_not_empty() -> None:
         assert SYNC_ALL_ENDPOINT in content
         assert RUN_DUE_ENDPOINT in content
         assert CROSS_SECTION_ENDPOINT in content
+        assert DEMO_WORKFLOW_ENDPOINT in content
 
 
 def test_trilingual_api_key_guides_exist_and_are_not_empty() -> None:
@@ -175,6 +184,24 @@ def test_trilingual_cross_section_contracts_exist_and_follow_depth_safety() -> N
         assert "VerificationStatus" in content
 
 
+def test_trilingual_demo_workflow_guides_exist_and_follow_safety_contract() -> None:
+    for path in TRILINGUAL_DEMO_WORKFLOW_GUIDES:
+        assert path.is_file(), f"Missing demo workflow guide: {path.name}"
+        content = path.read_text(encoding="utf-8").strip()
+        assert len(content) > 2500
+        assert DEMO_WORKFLOW_ENDPOINT in content
+        assert "synthetic-correlation-demo-v1" in content
+        assert "synthetic=true" in content
+        assert "DISCOVERY" in content
+        assert "CROSS_SECTION_READY" in content
+        assert "reference_well_id" in content
+        assert "well_ids" in content
+        assert "TVDSS" in content
+        assert "production" in content
+        assert "422" in content
+        assert "python -m scripts.seed_correlation_demo" in content
+
+
 def test_documentation_policy_exists() -> None:
     policy = DOCS / "DOCUMENTATION_POLICY.md"
     assert policy.is_file()
@@ -202,3 +229,6 @@ def test_documentation_policy_exists() -> None:
     assert "CROSS_SECTION_VIEW_CONTRACT_RU.md" in content
     assert "CROSS_SECTION_VIEW_CONTRACT_KK.md" in content
     assert "CROSS_SECTION_VIEW_CONTRACT_EN.md" in content
+    assert "DEMO_CORRELATION_WORKFLOW_RU.md" in content
+    assert "DEMO_CORRELATION_WORKFLOW_KK.md" in content
+    assert "DEMO_CORRELATION_WORKFLOW_EN.md" in content
