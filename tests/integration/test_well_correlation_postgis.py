@@ -3,9 +3,11 @@ from decimal import Decimal
 
 import pytest
 from geoalchemy2.elements import WKTElement
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.application.correlation import WellCorrelationService
+from app.main import app
 from app.models.correlation import WellMarker
 from app.models.entity import GeologicalEntity
 from app.models.enums import (
@@ -135,7 +137,7 @@ async def test_correlation_uses_real_postgis_and_compares_reservoirs() -> None:
                     ),
                 ]
             )
-            await session.flush()
+            await session.commit()
 
             result = await WellCorrelationService(session).compare(
                 reference_well_id=reference_well.id,
@@ -167,6 +169,25 @@ async def test_correlation_uses_real_postgis_and_compares_reservoirs() -> None:
             assert reservoir_difference.fluid_changed is True
             assert reservoir_difference.hydrocarbon_status_changed is True
 
-            await session.rollback()
+            reference_id = reference_well.id
+            compared_id = compared_well.id
+
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.post(
+                "/api/v1/correlation/wells",
+                json={
+                    "reference_well_id": str(reference_id),
+                    "well_ids": [str(compared_id)],
+                    "language": "ru",
+                },
+            )
+
+        assert response.status_code == 200, response.text
+        payload = response.json()
+        assert payload["reference_well_id"] == str(reference_id)
+        assert len(payload["columns"]) == 2
+        assert payload["marker_differences"][0]["delta_m"] == "18.400"
+        assert payload["reservoir_differences"][0]["horizon"] == "J-II"
     finally:
         await engine.dispose()
