@@ -34,21 +34,29 @@ GeoKZ demo-наборындағы synthetic ұңғымалар тек интер
 ## Дереккөздер және жаңарту
 Сыртқы деректер тексерілген GeoKZ мәндерін автоматты түрде ауыстырмайды. Алынған жазбалар алдымен RAW/staging қабатына түседі, кейін олар нормализациядан, GeoKZ объектілерімен сәйкестендіруден және сараптамалық тексеруден өте алады.
 
-Қазіргі нұсқада Қазақстанның ресми ашық деректер порталы `data.egov.kz` API v4 арқылы қосылған. Екі геологиялық dataset тіркелді:
+Қазіргі нұсқада Қазақстанның ресми ашық деректер порталы `data.egov.kz` API v4 арқылы қосылған. Екі геологиялық ресурс тіркелді:
 
-1. `kz-egov-oil-gas-fields` — Қазақстан Республикасының мұнай-газ кен орындарының тізбесі (`stat_kgn_117`, `v10`).
-2. `kz-egov-geological-study-licenses` — жер қойнауын геологиялық зерттеуге берілген лицензиялар тізілімі (`zher_koinauyn_geologiyalyk_zer2`, `v6`).
+1. `kz-egov-oil-gas-fields` — Қазақстан Республикасының мұнай-газ кен орындары (`apiUri=stat_kgn_117`, `v10`).
+2. `kz-egov-geological-study-licenses` — жер қойнауын геологиялық зерттеу лицензиялары (`apiUri=zher_koinauyn_geologiyalyk_zer2`, `v6`).
+
+GeoKZ ресми `apiUri` мен `version` мәндерін бөлек сақтайды. Ресурсты қоспас бұрын немесе version ауыстырғанда portal metadata және mapping арқылы field schema тексеріледі. RAW техникалық field атаулары өзгертілмейді, ал GeoKZ нормализацияланған атаулары бөлек жасалады.
 
 Дереккөздер үшін автоматты жаңарту аралығы 168 сағат (аптасына бір рет) ретінде тіркеледі, сонымен бірге қолмен синхрондау кез келген уақытта орындалады.
 
 GeoKZ REST API:
 
-- `GET /api/v1/integrations/kazakhstan/catalog` — қолжетімді ресми dataset-терді көрсету;
-- `POST /api/v1/integrations/kazakhstan/register` — оларды GeoKZ жергілікті БД-сына тіркеу;
-- `POST /api/v1/integrations/kazakhstan/{code}/sync` — таңдалған dataset-ті қолмен синхрондау;
-- `GET /api/v1/integrations/sources` — тіркелген сыртқы дереккөздер мен соңғы синхрондау күйін көрсету.
+- `GET /api/v1/integrations/kazakhstan/catalog` — ресми resources, `api_uri`, version және endpoint-тер;
+- `GET /api/v1/integrations/kazakhstan/{code}/schema` — импортқа дейін ресми metadata және mapping алу;
+- `POST /api/v1/integrations/kazakhstan/register` — ресурстарды жергілікті GeoKZ БД-сына тіркеу;
+- `POST /api/v1/integrations/kazakhstan/{code}/sync` — таңдалған ресурсты қолмен синхрондау;
+- `GET /api/v1/integrations/sources` — сыртқы дереккөздер мен соңғы синхрондау күйін көрсету.
 
-Деректерді жүктеу үшін `data.egov.kz` developer API key талап етеді. Кілт тек `GEOKZ_EGOV_API_KEY` орта айнымалысында сақталады және Git репозиторийіне жазылмайды. Кілт болмаса да GeoKZ жергілікті базамен толық жұмыс істейді, ал дереккөздер каталогы қолжетімді болып қалады.
+Деректерді жүктеу үшін `data.egov.kz` developer API key талап етеді. Кілт тек `GEOKZ_EGOV_API_KEY` орта айнымалысында сақталады және Git репозиторийіне жазылмайды. Кілт болмаса да GeoKZ жергілікті базамен толық жұмыс істейді.
+
+Толық нұсқаулықтар:
+
+- `docs/EXTERNAL_API_KEYS_KK.md` — API key алу және баптау;
+- `docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_KK.md` — `apiUri`, mapping, endpoint және GeoKZ resource naming ережелері.
 
 ## Көмектер мен кеңестер
 Күрделі өрістер үшін қысқа кеңес, кеңейтілген түсіндірме, қадамдық шебер және диагностикалық ескерту қолданылады. CRS, X/Y реті, MD/TVD/TVDSS, ҰГЗ, корреляция және сыртқы дереккөздерді баптау үшін контекстік көмек міндетті.
