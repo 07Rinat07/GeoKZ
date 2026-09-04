@@ -1,7 +1,13 @@
 from pydantic import BaseModel
 
 from app.core.project_info import SupportedLanguage
-from app.schemas.explorer import GeologicalEntityCard, IntervalCard, RegionHeader, SeismicSurveyCard, WellCard
+from app.schemas.explorer import (
+    GeologicalEntityCard,
+    IntervalCard,
+    RegionHeader,
+    SeismicSurveyCard,
+    WellCard,
+)
 
 
 class SearchCoordinate(BaseModel):
