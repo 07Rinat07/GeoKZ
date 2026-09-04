@@ -30,13 +30,17 @@ GeoKZ — Қазақстан геологиясы бойынша бірыңға�
 - ✅ external integration foundation: RAW/staging, checksum, SyncRun, source status және қауіпсіз жаңарту.
 - ✅ Kazakhstan Open Data API v4 үшін әмбебап connector.
 - ✅ ресми Kazakhstan Open Data registry: `stat_kgn_117/v10` (мұнай-газ кен орындары) және `zher_koinauyn_geologiyalyk_zer2/v6` (геологиялық зерттеу лицензиялары).
-- ✅ `GET /api/v1/integrations/kazakhstan/catalog` — ресми dataset каталогы.
+- ✅ ресми naming contract: `apiUri` + `version`; RAW technical fields өзгертілмейді, GeoKZ `code` және `record_type` upstream identifiers-тен бөлек сақталады.
+- ✅ connector ресми `/meta/{apiUri}/{version}` және `/api/v4/mapping/{apiUri}/{version}` endpoint-терін импортқа дейін оқиды.
+- ✅ `GET /api/v1/integrations/kazakhstan/catalog` — `api_uri`, version және endpoint templates бар ресми каталог.
+- ✅ `GET /api/v1/integrations/kazakhstan/{code}/schema` — external metadata/mapping тексеру endpoint-і.
 - ✅ `POST /api/v1/integrations/kazakhstan/register` — дереккөздерді жергілікті GeoKZ БД-сына тіркеу.
 - ✅ `POST /api/v1/integrations/kazakhstan/{code}/sync` — RAW/staging қабатына қолмен REST-синхрондау.
 - ✅ дереккөздер `AUTOMATIC`, 168 сағаттық интервалмен тіркеледі; нақты scheduler әлі іске асырылмаған.
 - ✅ API key тек `GEOKZ_EGOV_API_KEY` арқылы оқылады; кілт болмаса жергілікті база жұмысын жалғастырады.
-- ✅ API кілттерін алу және баптау туралы RU/KK/EN нұсқаулықтары: `EXTERNAL_API_KEYS_RU.md`, `EXTERNAL_API_KEYS_KK.md`, `EXTERNAL_API_KEYS_EN.md`.
-- ✅ README ішінде `data.egov.kz` кілтін алу және `.env` ішінде қауіпсіз сақтау жөніндегі қысқа нұсқаулық бар.
+- ✅ API кілттерін алу және баптау туралы RU/KK/EN нұсқаулықтары.
+- ✅ Kazakhstan Open Data resource naming және connection туралы RU/KK/EN жеке нұсқаулықтар.
+- ✅ README ішінде API key, `apiUri` contract және resource onboarding ережелері бар.
 - ✅ RU/KK/EN user guides/roadmaps және documentation CI contract.
 
 ## Жақын P0
@@ -47,7 +51,7 @@ GeoKZ — Қазақстан геологиясы бойынша бірыңға�
 5. Lithology/markers/property kinds/units controlled vocabularies.
 6. Сыртқы дереккөздерді мерзімді синхрондау scheduler-і және «Барлығын жаңарту» функциясы.
 7. Kazakhstan Open Data жазбаларын GeoKZ GeologicalEntity/кен орындарымен нормализациялау және matching.
-8. Схемасы, лицензиясы және сапасы тексерілгеннен кейін Қазақстанның келесі ресми dataset-терін қосу.
+8. Metadata/mapping/license/data quality тексерілгеннен кейін Қазақстанның келесі ресми resources қосу.
 9. Core Dataset manifest/importer.
 10. Audit log/revisions.
 
