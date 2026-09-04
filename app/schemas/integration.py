@@ -11,6 +11,8 @@ from app.integrations.types import (
     FieldReviewActionCode,
     FieldReviewMatchStatus,
     MatchMethod,
+    SyncBatchMode,
+    SyncDispatchStatus,
     SyncMode,
     SyncRunStatus,
 )
@@ -40,6 +42,61 @@ class ExternalDataSourceRead(BaseModel):
     last_success_at: datetime | None
     last_error_at: datetime | None
     last_error: str | None
+
+
+class ExternalSourceScheduleRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    source_id: UUID
+    source_code: str
+    enabled: bool
+    sync_mode: SyncMode
+    sync_interval_hours: int
+    last_success_at: datetime | None
+    last_error_at: datetime | None
+    last_error: str | None
+    next_due_at: datetime | None
+    due: bool
+    running_run_id: UUID | None
+
+
+class ExternalSyncSchedulerStatusRead(BaseModel):
+    poll_seconds: int
+    failure_retry_hours: int
+    running_timeout_hours: int
+    sources: list[ExternalSourceScheduleRead]
+
+
+class ExternalSyncDispatchResultRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    source_id: UUID
+    source_code: str
+    dispatch_status: SyncDispatchStatus
+    run_id: UUID | None
+    sync_status: SyncRunStatus | None
+    records_received: int
+    records_created: int
+    records_updated: int
+    records_unchanged: int
+    records_rejected: int
+    next_due_at: datetime | None
+    error: str | None
+
+
+class ExternalSyncBatchResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    mode: SyncBatchMode
+    started_at: datetime
+    finished_at: datetime
+    total_sources: int
+    attempted: int
+    succeeded: int
+    failed: int
+    already_running: int
+    skipped: int
+    results: list[ExternalSyncDispatchResultRead]
 
 
 class KazakhstanDatasetCatalogItem(BaseModel):
