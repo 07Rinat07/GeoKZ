@@ -18,6 +18,7 @@ from app.schemas.correlation import (
     CorrelationMarker,
     CorrelationWellColumn,
     MarkerDifference,
+    ReservoirDifference,
     WellCorrelationResponse,
 )
 from app.schemas.explorer import WellCard
@@ -101,6 +102,16 @@ def _preferred_marker(markers: list[WellMarker]) -> WellMarker:
     )[0]
 
 
+def _preferred_interval(intervals: list[WellInterval]) -> WellInterval:
+    return sorted(
+        intervals,
+        key=lambda interval: (
+            _STATUS_RANK.get(interval.verification_status, 99),
+            -(float(interval.net_pay_m) if interval.net_pay_m is not None else -1.0),
+        ),
+    )[0]
+
+
 def _comparison_depth(marker: WellMarker) -> tuple[DepthReference, Decimal] | None:
     if marker.tvdss_m is not None:
         return DepthReference.TVDSS, marker.tvdss_m
@@ -113,6 +124,13 @@ def _comparison_depth(marker: WellMarker) -> tuple[DepthReference, Decimal] | No
     return None
 
 
+def _normalize_horizon(value: str | None) -> str | None:
+    if value is None:
+        return None
+    normalized = " ".join(value.casefold().split())
+    return normalized or None
+
+
 def _not_comparable_reason(language: SupportedLanguage) -> str:
     return {
         "ru": "Нет общей сопоставимой системы глубин для этого репера.",
@@ -121,19 +139,30 @@ def _not_comparable_reason(language: SupportedLanguage) -> str:
     }[language]
 
 
+def _interval_not_comparable_reason(language: SupportedLanguage) -> str:
+    return {
+        "ru": "Интервалы имеют разные или неизвестные системы глубин; мощность не сравнивается автоматически.",
+        "kk": "Интервалдардың тереңдік жүйелері әртүрлі немесе белгісіз; қалыңдық автоматты түрде салыстырылмайды.",
+        "en": "Intervals use different or unknown depth references; thickness is not compared automatically.",
+    }[language]
+
+
 def _comparison_note(language: SupportedLanguage) -> str:
     return {
         "ru": (
-            "Корреляция является рабочим сравнением. Предпочтительно сопоставлять TVDSS; при его отсутствии "
-            "используется совместимая TVD или MD. Несовместимые системы глубин не коррелируются автоматически."
+            "Корреляция является рабочим сравнением. Для реперов предпочтительно TVDSS; при его отсутствии "
+            "используется совместимая TVD или MD. Интервалы сравниваются только в общей системе глубин. "
+            "Результат не заменяет экспертную геологическую интерпретацию."
         ),
         "kk": (
-            "Корреляция жұмыс салыстыруы болып табылады. TVDSS басым қолданылады; ол болмаған кезде "
-            "үйлесімді TVD немесе MD пайдаланылады. Үйлеспейтін тереңдік жүйелері автоматты түрде байланыстырылмайды."
+            "Корреляция жұмыс салыстыруы болып табылады. Реперлер үшін TVDSS басым; ол болмаған кезде "
+            "үйлесімді TVD немесе MD қолданылады. Интервалдар тек ортақ тереңдік жүйесінде салыстырылады. "
+            "Нәтиже сараптамалық геологиялық интерпретацияны алмастырмайды."
         ),
         "en": (
-            "Correlation is a working comparison. TVDSS is preferred; compatible TVD or MD is used when "
-            "TVDSS is unavailable. Incompatible depth references are not correlated automatically."
+            "Correlation is a working comparison. TVDSS is preferred for markers; compatible TVD or MD is "
+            "used when unavailable. Intervals are compared only in a common depth reference. The result does "
+            "not replace expert geological interpretation."
         ),
     }[language]
 
@@ -160,14 +189,19 @@ class WellCorrelationService:
                 ).where(Well.id.in_(ordered_ids))
             )
         ).all()
-        wells_by_id = {well.id: (well, longitude, latitude) for well, longitude, latitude in well_rows}
+        wells_by_id = {
+            well.id: (well, longitude, latitude)
+            for well, longitude, latitude in well_rows
+        }
 
         if reference_well_id not in wells_by_id:
             raise ResourceNotFoundError("Опорная скважина не найдена")
 
         missing_ids = [well_id for well_id in ordered_ids if well_id not in wells_by_id]
         if missing_ids:
-            raise ResourceNotFoundError(f"Скважины не найдены: {', '.join(map(str, missing_ids))}")
+            raise ResourceNotFoundError(
+                f"Скважины не найдены: {', '.join(map(str, missing_ids))}"
+            )
 
         markers = list(
             await self.session.scalars(
@@ -192,8 +226,14 @@ class WellCorrelationService:
             )
         )
         intervals_by_well: dict[UUID, list[WellInterval]] = defaultdict(list)
+        intervals_by_well_and_horizon: dict[UUID, dict[str, list[WellInterval]]] = defaultdict(
+            lambda: defaultdict(list)
+        )
         for interval in intervals:
             intervals_by_well[interval.well_id].append(interval)
+            horizon_key = _normalize_horizon(interval.local_horizon)
+            if horizon_key is not None:
+                intervals_by_well_and_horizon[interval.well_id][horizon_key].append(interval)
 
         distance_by_well = await self._distances(reference_well_id, ordered_ids)
 
@@ -201,16 +241,31 @@ class WellCorrelationService:
             CorrelationWellColumn(
                 well=_well_card(*wells_by_id[well_id]),
                 distance_from_reference_m=distance_by_well.get(well_id),
-                markers=[_marker_schema(marker, language) for marker in markers_by_well[well_id]],
-                intervals=[_interval_schema(interval) for interval in intervals_by_well[well_id]],
+                markers=[
+                    _marker_schema(marker, language)
+                    for marker in markers_by_well[well_id]
+                ],
+                intervals=[
+                    _interval_schema(interval)
+                    for interval in intervals_by_well[well_id]
+                ],
             )
             for well_id in ordered_ids
         ]
 
-        differences = self._build_marker_differences(
+        compared_ids = [
+            well_id for well_id in ordered_ids if well_id != reference_well_id
+        ]
+        marker_differences = self._build_marker_differences(
             reference_well_id=reference_well_id,
-            compared_well_ids=[well_id for well_id in ordered_ids if well_id != reference_well_id],
+            compared_well_ids=compared_ids,
             markers_by_well_and_code=markers_by_well_and_code,
+            language=language,
+        )
+        reservoir_differences = self._build_reservoir_differences(
+            reference_well_id=reference_well_id,
+            compared_well_ids=compared_ids,
+            intervals_by_well_and_horizon=intervals_by_well_and_horizon,
             language=language,
         )
 
@@ -218,7 +273,8 @@ class WellCorrelationService:
             language=language,
             reference_well_id=reference_well_id,
             columns=columns,
-            marker_differences=differences,
+            marker_differences=marker_differences,
+            reservoir_differences=reservoir_differences,
             comparison_note=_comparison_note(language),
         )
 
@@ -267,7 +323,9 @@ class WellCorrelationService:
             reference_depth = _comparison_depth(reference_marker)
 
             for compared_well_id in compared_well_ids:
-                compared_candidates = markers_by_well_and_code[compared_well_id].get(marker_code)
+                compared_candidates = markers_by_well_and_code[compared_well_id].get(
+                    marker_code
+                )
                 if not compared_candidates:
                     continue
                 compared_marker = _preferred_marker(compared_candidates)
@@ -278,7 +336,6 @@ class WellCorrelationService:
                     and compared_depth is not None
                     and reference_depth[0] == compared_depth[0]
                 ):
-                    depth_reference = reference_depth[0]
                     reference_value = reference_depth[1]
                     compared_value = compared_depth[1]
                     result.append(
@@ -287,7 +344,7 @@ class WellCorrelationService:
                             compared_well_id=compared_well_id,
                             reference_depth_m=reference_value,
                             compared_depth_m=compared_value,
-                            depth_reference=depth_reference,
+                            depth_reference=reference_depth[0],
                             delta_m=compared_value - reference_value,
                             comparable=True,
                         )
@@ -305,5 +362,105 @@ class WellCorrelationService:
                             reason=_not_comparable_reason(language),
                         )
                     )
+
+        return result
+
+    def _build_reservoir_differences(
+        self,
+        *,
+        reference_well_id: UUID,
+        compared_well_ids: list[UUID],
+        intervals_by_well_and_horizon: dict[
+            UUID, dict[str, list[WellInterval]]
+        ],
+        language: SupportedLanguage,
+    ) -> list[ReservoirDifference]:
+        result: list[ReservoirDifference] = []
+        reference_horizons = intervals_by_well_and_horizon[reference_well_id]
+
+        for horizon_key, reference_candidates in reference_horizons.items():
+            reference_interval = _preferred_interval(reference_candidates)
+            reference_thickness = (
+                reference_interval.base_depth_m - reference_interval.top_depth_m
+            )
+
+            for compared_well_id in compared_well_ids:
+                compared_candidates = intervals_by_well_and_horizon[compared_well_id].get(
+                    horizon_key
+                )
+                if not compared_candidates:
+                    continue
+                compared_interval = _preferred_interval(compared_candidates)
+                compared_thickness = (
+                    compared_interval.base_depth_m - compared_interval.top_depth_m
+                )
+                comparable = (
+                    reference_interval.depth_reference != DepthReference.UNKNOWN
+                    and reference_interval.depth_reference
+                    == compared_interval.depth_reference
+                )
+
+                net_pay_delta = None
+                if (
+                    reference_interval.net_pay_m is not None
+                    and compared_interval.net_pay_m is not None
+                ):
+                    net_pay_delta = (
+                        compared_interval.net_pay_m - reference_interval.net_pay_m
+                    )
+
+                result.append(
+                    ReservoirDifference(
+                        horizon=reference_interval.local_horizon or horizon_key,
+                        compared_well_id=compared_well_id,
+                        reference_interval_id=reference_interval.id,
+                        compared_interval_id=compared_interval.id,
+                        depth_reference=(
+                            reference_interval.depth_reference if comparable else None
+                        ),
+                        reference_thickness_m=reference_thickness,
+                        compared_thickness_m=compared_thickness,
+                        thickness_delta_m=(
+                            compared_thickness - reference_thickness
+                            if comparable
+                            else None
+                        ),
+                        reference_net_pay_m=reference_interval.net_pay_m,
+                        compared_net_pay_m=compared_interval.net_pay_m,
+                        net_pay_delta_m=net_pay_delta,
+                        reference_porosity_percent=reference_interval.porosity_percent,
+                        compared_porosity_percent=compared_interval.porosity_percent,
+                        reference_permeability_md=reference_interval.permeability_md,
+                        compared_permeability_md=compared_interval.permeability_md,
+                        reference_lithologies=reference_interval.lithologies,
+                        compared_lithologies=compared_interval.lithologies,
+                        lithology_changed=(
+                            set(map(str.casefold, reference_interval.lithologies))
+                            != set(map(str.casefold, compared_interval.lithologies))
+                        ),
+                        reference_fluid_type=reference_interval.fluid_type,
+                        compared_fluid_type=compared_interval.fluid_type,
+                        fluid_changed=(
+                            reference_interval.fluid_type
+                            != compared_interval.fluid_type
+                        ),
+                        reference_hydrocarbon_status=(
+                            reference_interval.hydrocarbon_status
+                        ),
+                        compared_hydrocarbon_status=(
+                            compared_interval.hydrocarbon_status
+                        ),
+                        hydrocarbon_status_changed=(
+                            reference_interval.hydrocarbon_status
+                            != compared_interval.hydrocarbon_status
+                        ),
+                        comparable_thickness=comparable,
+                        reason=(
+                            None
+                            if comparable
+                            else _interval_not_comparable_reason(language)
+                        ),
+                    )
+                )
 
         return result
