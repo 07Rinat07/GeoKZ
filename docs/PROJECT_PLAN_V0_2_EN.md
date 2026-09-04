@@ -1,6 +1,6 @@
 # GeoKZ — Current Development Plan v0.2+
 
-Status: `2026-09-04`, branch `feature/external-sync-scheduler-v0.3`. The v0.2 foundation and review UI contract have already been merged into `main` after green CI.
+Status: `2026-09-04`, branch `feature/cross-section-view-model-v0.3`. The v0.2 foundation, review UI contract and dedicated external-sync scheduler have already been merged into `main` after green CI.
 
 ## Purpose
 GeoKZ is a single working window for geology in Kazakhstan: territory/coordinate → fields and wells → full passport → lithology/stratigraphy/logs/core/tests/oil-gas-water → nearby-well correlation → source and evidence.
@@ -48,18 +48,21 @@ GeoKZ is a single working window for geology in Kazakhstan: territory/coordinate
 - ✅ scheduler policy has unit tests plus real PostgreSQL active-run/stale-run integration coverage.
 - ✅ API credentials remain only in `GEOKZ_EGOV_API_KEY`; without the key, the local GeoKZ database continues to work and provider failures remain isolated to the source.
 - ✅ trilingual documentation covers external integration, field review, review UI contract, and external synchronization scheduler behavior, enforced by CI.
+- ✅ backend-owned visual cross-section view-model: `POST /api/v1/correlation/wells/view`.
+- ✅ one common depth axis is selected with `TVDSS → TVD → MD` priority; incompatible items return `renderable=false` instead of being silently transformed.
+- ✅ the response contains ordered well columns, the depth axis, ready-to-render `MARKER`/`HORIZON` line segments and stable warning codes.
+- ✅ the cross-section view-model has unit coverage and a real PostgreSQL/PostGIS HTTP integration test, with a dedicated RU/KK/EN contract for safe client rendering.
 
 ## Near-term P0
-1. Visual cross-section viewer API/view-model: well columns, depth scale, markers, intervals and correlation lines.
-2. Coordinate → nearby demo wells → selection → correlation section end-to-end flow.
-3. Persistent/configurable organization-local CRS definitions; SK-42/Gauss-Kruger only from confirmed EPSG/WKT/PROJ definitions.
-4. Remove the remaining SQLAlchemy cartesian-product warning in correlation distance queries without changing PostGIS distance results.
-5. Controlled vocabularies for lithology/markers/property kinds/units.
-6. Add normalization/review for the geological-study licenses resource after mapping/license/data-quality validation.
-7. Core Dataset manifest/importer.
-8. Authentication + AuditLog/revisions for review and master-data changes.
-9. Production PySide6 external-review screen on top of the stable backend view-model contract.
-10. Expand the scheduler provider registry to USGS/Macrostrat/OneGeology only after separate license and contract validation.
+1. Coordinate → nearby demo wells → selection → correlation section end-to-end flow.
+2. Persistent/configurable organization-local CRS definitions; SK-42/Gauss-Kruger only from confirmed EPSG/WKT/PROJ definitions.
+3. Remove the remaining SQLAlchemy cartesian-product warning in correlation distance queries without changing PostGIS distance results.
+4. Controlled vocabularies for lithology/markers/property kinds/units.
+5. Add normalization/review for the geological-study licenses resource after mapping/license/data-quality validation.
+6. Core Dataset manifest/importer.
+7. Authentication + AuditLog/revisions for review and master-data changes.
+8. Production PySide6 external-review screen on top of the stable backend view-model contract.
+9. Expand the scheduler provider registry to USGS/Macrostrat/OneGeology only after separate license and contract validation.
 
 ## Releases
 - `v0.2`: platform/integration/help/spatial/subsurface/correlation foundation + first Kazakhstan REST integrations + safe oil/gas-field normalization/matching/review — merged to `main`.
