@@ -1,12 +1,27 @@
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Query
+import httpx
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.application.kazakhstan_open_data import (
+    KazakhstanDatasetNotFoundError,
+    KazakhstanOpenDataService,
+)
+from app.core.config import Settings, get_settings
 from app.core.database import get_session
+from app.integrations.errors import (
+    ConnectorConfigurationError,
+    ExternalSourceProtocolError,
+)
+from app.integrations.kazakhstan_open_data import KAZAKHSTAN_OPEN_DATASETS
 from app.models.integration import ExternalDataSource
-from app.schemas.integration import ExternalDataSourceRead
+from app.schemas.integration import (
+    ExternalDataSourceRead,
+    KazakhstanDatasetCatalogItem,
+    KazakhstanDatasetSyncResponse,
+)
 
 router = APIRouter()
 
@@ -44,6 +59,22 @@ def _to_read_model(source: ExternalDataSource, language: str) -> ExternalDataSou
     )
 
 
+def _catalog_display_name(dataset, language: str) -> str:
+    return {
+        "ru": dataset.name_ru,
+        "kk": dataset.name_kk,
+        "en": dataset.name_en,
+    }[language]
+
+
+def _catalog_description(dataset, language: str) -> str:
+    return {
+        "ru": dataset.description_ru,
+        "kk": dataset.description_kk,
+        "en": dataset.description_en,
+    }[language]
+
+
 @router.get("/sources", response_model=list[ExternalDataSourceRead])
 async def list_external_sources(
     lang: Literal["ru", "kk", "en"] = Query(default="ru"),
@@ -56,3 +87,94 @@ async def list_external_sources(
 
     sources = list(await session.scalars(statement))
     return [_to_read_model(source, lang) for source in sources]
+
+
+@router.get(
+    "/kazakhstan/catalog",
+    response_model=list[KazakhstanDatasetCatalogItem],
+)
+async def list_kazakhstan_open_datasets(
+    lang: Literal["ru", "kk", "en"] = Query(default="ru"),
+    session: AsyncSession = Depends(get_session),
+    settings: Settings = Depends(get_settings),
+) -> list[KazakhstanDatasetCatalogItem]:
+    registered_codes = set(
+        await session.scalars(
+            select(ExternalDataSource.code).where(
+                ExternalDataSource.code.in_(
+                    [dataset.code for dataset in KAZAKHSTAN_OPEN_DATASETS]
+                )
+            )
+        )
+    )
+    api_key_configured = bool(
+        settings.egov_api_key
+        and settings.egov_api_key.get_secret_value().strip()
+    )
+    return [
+        KazakhstanDatasetCatalogItem(
+            code=dataset.code,
+            name_ru=dataset.name_ru,
+            name_kk=dataset.name_kk,
+            name_en=dataset.name_en,
+            display_name=_catalog_display_name(dataset, lang),
+            description=_catalog_description(dataset, lang),
+            dataset=dataset.dataset,
+            version=dataset.version,
+            record_type=dataset.record_type,
+            official_url=dataset.official_url,
+            metadata_url=dataset.metadata_url,
+            sync_interval_hours=dataset.sync_interval_hours,
+            api_key_configured=api_key_configured,
+            registered=dataset.code in registered_codes,
+        )
+        for dataset in KAZAKHSTAN_OPEN_DATASETS
+    ]
+
+
+@router.post(
+    "/kazakhstan/register",
+    response_model=list[ExternalDataSourceRead],
+)
+async def register_kazakhstan_open_datasets(
+    lang: Literal["ru", "kk", "en"] = Query(default="ru"),
+    session: AsyncSession = Depends(get_session),
+    settings: Settings = Depends(get_settings),
+) -> list[ExternalDataSourceRead]:
+    sources = await KazakhstanOpenDataService(session, settings).register_all()
+    return [_to_read_model(source, lang) for source in sources]
+
+
+@router.post(
+    "/kazakhstan/{code}/sync",
+    response_model=KazakhstanDatasetSyncResponse,
+)
+async def sync_kazakhstan_open_dataset(
+    code: str,
+    session: AsyncSession = Depends(get_session),
+    settings: Settings = Depends(get_settings),
+) -> KazakhstanDatasetSyncResponse:
+    try:
+        summary = await KazakhstanOpenDataService(session, settings).sync(code)
+    except KazakhstanDatasetNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Набор данных не найден") from error
+    except ConnectorConfigurationError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+    except ExternalSourceProtocolError as error:
+        raise HTTPException(status_code=502, detail=str(error)) from error
+    except httpx.HTTPError as error:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Ошибка обращения к data.egov.kz: {error}",
+        ) from error
+
+    return KazakhstanDatasetSyncResponse(
+        run_id=summary.run_id,
+        source_id=summary.source_id,
+        status=summary.status,
+        records_received=summary.records_received,
+        records_created=summary.records_created,
+        records_updated=summary.records_updated,
+        records_unchanged=summary.records_unchanged,
+        records_rejected=summary.records_rejected,
+    )
