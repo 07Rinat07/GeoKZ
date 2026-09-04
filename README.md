@@ -16,6 +16,7 @@ GeoKZ — доказательная геологическая информац
 - ГИС/well logs, испытания, керн;
 - 2D/3D seismic catalog;
 - корреляция разрезов соседних скважин по реперам и интервалам;
+- backend-owned visual cross-section view-model с общей depth scale и готовыми correlation lines;
 - evidence/provenance и конфликты источников;
 - встроенный GeoKZ Core Dataset + обновляемые внешние источники;
 - контекстные подсказки и помощники RU/KK/EN.
@@ -29,6 +30,7 @@ GeoKZ — доказательная геологическая информац
 - **GIS-first:** PostgreSQL/PostGIS, далее GeoPackage, OGC API Features и QGIS.
 - **Safe depth/CRS handling:** MD/TVD/TVDSS и разные CRS не смешиваются молча.
 - **Server-owned review rules:** PySide6/web UI получает готовые action descriptors и не дублирует backend business rules.
+- **Server-owned cross-section rendering contract:** клиент отображает готовую depth axis/columns/lines и не придумывает собственные depth conversions или correlation links.
 - **Dedicated sync scheduler:** periodic external sync выполняется отдельным process/service, не background loop внутри FastAPI workers.
 - **Documentation-as-code:** пользовательские инструкции и roadmap поддерживаются на RU/KK/EN и проверяются CI-контрактом.
 
@@ -242,6 +244,22 @@ GEOKZ_EGOV_API_KEY=ВАШ_РЕАЛЬНЫЙ_КЛЮЧ
 - KK: [`docs/EXTERNAL_API_KEYS_KK.md`](docs/EXTERNAL_API_KEYS_KK.md)
 - EN: [`docs/EXTERNAL_API_KEYS_EN.md`](docs/EXTERNAL_API_KEYS_EN.md)
 
+## Визуальный корреляционный разрез
+
+UI-ready view-model строится поверх существующего `WellCorrelationService`:
+
+```text
+POST /api/v1/correlation/wells/view
+```
+
+Контракт выбирает одну depth axis с приоритетом `TVDSS → TVD → MD`, возвращает ordered well columns, markers/intervals, `renderable`, готовые `MARKER`/`HORIZON` correlation lines и стабильные warnings. Несовместимые системы глубин не преобразуются и не соединяются молча. Клиент отображает `VerificationStatus` и предупреждения, но не дублирует backend correlation logic.
+
+Полный трёхъязычный контракт:
+
+- RU: [`docs/CROSS_SECTION_VIEW_CONTRACT_RU.md`](docs/CROSS_SECTION_VIEW_CONTRACT_RU.md)
+- KK: [`docs/CROSS_SECTION_VIEW_CONTRACT_KK.md`](docs/CROSS_SECTION_VIEW_CONTRACT_KK.md)
+- EN: [`docs/CROSS_SECTION_VIEW_CONTRACT_EN.md`](docs/CROSS_SECTION_VIEW_CONTRACT_EN.md)
+
 ## Разработка
 
 ```powershell
@@ -275,6 +293,7 @@ docker compose up --build
 - Kazakhstan review UI contract: `/api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view`
 - well passport: `/api/v1/wells/{well_id}/passport`
 - correlation: `/api/v1/correlation/wells/{reference_well_id}`
+- visual cross-section view-model: `/api/v1/correlation/wells/view`
 
 ## Документация
 
@@ -312,6 +331,11 @@ docker compose up --build
 - RU: [`docs/EXTERNAL_SYNC_SCHEDULER_RU.md`](docs/EXTERNAL_SYNC_SCHEDULER_RU.md)
 - KK: [`docs/EXTERNAL_SYNC_SCHEDULER_KK.md`](docs/EXTERNAL_SYNC_SCHEDULER_KK.md)
 - EN: [`docs/EXTERNAL_SYNC_SCHEDULER_EN.md`](docs/EXTERNAL_SYNC_SCHEDULER_EN.md)
+
+### Visual cross-section contract
+- RU: [`docs/CROSS_SECTION_VIEW_CONTRACT_RU.md`](docs/CROSS_SECTION_VIEW_CONTRACT_RU.md)
+- KK: [`docs/CROSS_SECTION_VIEW_CONTRACT_KK.md`](docs/CROSS_SECTION_VIEW_CONTRACT_KK.md)
+- EN: [`docs/CROSS_SECTION_VIEW_CONTRACT_EN.md`](docs/CROSS_SECTION_VIEW_CONTRACT_EN.md)
 
 ### Другие документы
 - [`docs/BUSINESS_DOMAIN.md`](docs/BUSINESS_DOMAIN.md) — предметная модель;

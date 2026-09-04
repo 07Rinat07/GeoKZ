@@ -134,3 +134,14 @@ Detailed guides:
 Complex fields use a short hint, expanded contextual help, step-by-step wizard and diagnostic warning. Contextual help is especially important for CRS, X/Y axis order, MD/TVD/TVDSS, well logs, correlation and external-source configuration.
 
 Current implementation status: `docs/PROJECT_PLAN_V0_2_EN.md`.
+
+## Visual correlation cross-section
+A backend-owned UI view-model is now available on top of the already computed correlation; clients do not reimplement geological correlation rules:
+
+```text
+POST /api/v1/correlation/wells/view
+```
+
+The backend selects one common depth scale with `TVDSS → TVD → MD` priority. Markers and intervals that cannot be safely represented on the selected reference are returned with `renderable=false` and are not connected automatically. `correlation_lines` contains ready-to-render `MARKER` and `HORIZON` segments, while `warnings` exposes stable codes including `DEPTH_REFERENCE_MISMATCH`, `NO_RENDERABLE_DATA` and `NO_CORRELATION_LINES`.
+
+Clients must display `VerificationStatus` and warnings, but must not invent depth conversions or new correlation links. Full contract: `docs/CROSS_SECTION_VIEW_CONTRACT_EN.md`.

@@ -1,4 +1,6 @@
 from decimal import Decimal
+from enum import StrEnum
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -98,3 +100,92 @@ class WellCorrelationResponse(BaseModel):
     marker_differences: list[MarkerDifference]
     reservoir_differences: list[ReservoirDifference]
     comparison_note: str
+
+
+class CrossSectionLineKind(StrEnum):
+    MARKER = "MARKER"
+    HORIZON = "HORIZON"
+
+
+class CrossSectionWarningCode(StrEnum):
+    DEPTH_REFERENCE_MISMATCH = "DEPTH_REFERENCE_MISMATCH"
+    NON_COMPARABLE_MARKERS = "NON_COMPARABLE_MARKERS"
+    NON_COMPARABLE_INTERVALS = "NON_COMPARABLE_INTERVALS"
+    NO_RENDERABLE_DATA = "NO_RENDERABLE_DATA"
+    NO_CORRELATION_LINES = "NO_CORRELATION_LINES"
+
+
+class CrossSectionDepthAxis(BaseModel):
+    depth_reference: DepthReference
+    unit: Literal["m"] = "m"
+    direction: Literal["DOWN"] = "DOWN"
+    min_depth_m: Decimal
+    max_depth_m: Decimal
+    padding_m: Decimal
+
+
+class CrossSectionMarkerView(BaseModel):
+    marker_id: UUID
+    marker_code: str
+    display_name: str
+    marker_type: str
+    depth_m: Decimal | None
+    depth_reference: DepthReference
+    renderable: bool
+    confidence_percent: Decimal | None
+    verification_status: VerificationStatus
+
+
+class CrossSectionIntervalView(BaseModel):
+    interval_id: UUID
+    external_id: str
+    horizon: str | None
+    top_depth_m: Decimal | None
+    base_depth_m: Decimal | None
+    depth_reference: DepthReference
+    renderable: bool
+    lithologies: list[str]
+    fluid_type: FluidType
+    hydrocarbon_status: HydrocarbonStatus
+    net_pay_m: Decimal | None
+    verification_status: VerificationStatus
+
+
+class CrossSectionWellColumnView(BaseModel):
+    column_index: int = Field(ge=0)
+    well: WellCard
+    is_reference: bool
+    distance_from_reference_m: float | None
+    markers: list[CrossSectionMarkerView]
+    intervals: list[CrossSectionIntervalView]
+
+
+class CrossSectionCorrelationLine(BaseModel):
+    kind: CrossSectionLineKind
+    key: str
+    depth_reference: DepthReference
+    from_column_index: int = Field(ge=0)
+    to_column_index: int = Field(ge=0)
+    from_well_id: UUID
+    to_well_id: UUID
+    from_depth_m: Decimal
+    to_depth_m: Decimal
+
+
+class CrossSectionWarning(BaseModel):
+    code: CrossSectionWarningCode
+    message: str
+    well_id: UUID | None = None
+    key: str | None = None
+
+
+class WellCrossSectionViewResponse(BaseModel):
+    language: SupportedLanguage
+    reference_well_id: UUID
+    title: str
+    policy_note: str
+    depth_axis: CrossSectionDepthAxis
+    columns: list[CrossSectionWellColumnView]
+    correlation_lines: list[CrossSectionCorrelationLine]
+    warnings: list[CrossSectionWarning]
+    has_renderable_data: bool

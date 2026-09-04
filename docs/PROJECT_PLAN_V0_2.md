@@ -1,6 +1,6 @@
 # GeoKZ — актуальный план развития v0.2+
 
-Статус: `2026-09-04`, ветка `feature/external-sync-scheduler-v0.3`. Фундамент v0.2 и review UI contract уже слиты в `main` после зелёного CI.
+Статус: `2026-09-04`, ветка `feature/cross-section-view-model-v0.3`. Фундамент v0.2, review UI contract и dedicated external-sync scheduler уже слиты в `main` после зелёного CI.
 
 ## Цель
 GeoKZ — единое рабочее окно по геологии Казахстана: территория/координата → месторождения и скважины → полный паспорт → литология/стратиграфия/ГИС/керн/испытания/нефть-газ-вода → корреляция соседних скважин → источник и доказательство.
@@ -60,18 +60,21 @@ GeoKZ — единое рабочее окно по геологии Казах�
 - ✅ API key хранится только в `GEOKZ_EGOV_API_KEY`; без ключа локальная база продолжает работать, provider error остаётся локальным для source.
 - ✅ отдельные RU/KK/EN инструкции: API keys, Kazakhstan Open Data, field review, review UI contract и external sync scheduler.
 - ✅ README, USER_GUIDE и roadmap поддерживаются на RU/KK/EN + documentation CI contract.
+- ✅ backend-owned visual cross-section view-model: `POST /api/v1/correlation/wells/view`.
+- ✅ единая шкала глубин выбирается по приоритету `TVDSS → TVD → MD`; несовместимые элементы получают `renderable=false` без скрытого преобразования.
+- ✅ response содержит ordered well columns, depth axis, готовые `MARKER`/`HORIZON` line segments и стабильные warning codes.
+- ✅ cross-section view-model покрыт unit tests и реальным PostgreSQL/PostGIS HTTP integration test; отдельный RU/KK/EN contract описывает безопасную клиентскую отрисовку.
 
 ## Ближайший P0
-1. API/view-model для визуального cross-section viewer: колонки скважин, шкала глубин, реперы, интервалы и линии корреляции.
-2. Demo workflow: координата → ближайшие demo-скважины → выбор → корреляционный разрез.
-3. Хранение/настройка локальных CRS организации; СК-42/Гаусса–Крюгера только по подтверждённому EPSG/WKT/PROJ.
-4. Устранить оставшийся SQLAlchemy cartesian-product warning в distance query корреляции без изменения результата PostGIS distance.
-5. Controlled vocabularies для lithology/markers/property kinds/units.
-6. Добавить normalizer/review для следующего официального ресурса — геологических лицензий — после проверки mapping/license/data quality.
-7. Core Dataset manifest/importer.
-8. Authentication + AuditLog/revisions для review и изменений master data.
-9. Production PySide6 screen для external review на уже стабильном backend view-model contract.
-10. Расширить scheduler provider registry на USGS/Macrostrat/OneGeology только после отдельной проверки лицензий и контрактов.
+1. Demo workflow: координата → ближайшие demo-скважины → выбор → корреляционный разрез.
+2. Хранение/настройка локальных CRS организации; СК-42/Гаусса–Крюгера только по подтверждённому EPSG/WKT/PROJ.
+3. Устранить оставшийся SQLAlchemy cartesian-product warning в distance query корреляции без изменения результата PostGIS distance.
+4. Controlled vocabularies для lithology/markers/property kinds/units.
+5. Добавить normalizer/review для следующего официального ресурса — геологических лицензий — после проверки mapping/license/data quality.
+6. Core Dataset manifest/importer.
+7. Authentication + AuditLog/revisions для review и изменений master data.
+8. Production PySide6 screen для external review на уже стабильном backend view-model contract.
+9. Расширить scheduler provider registry на USGS/Macrostrat/OneGeology только после отдельной проверки лицензий и контрактов.
 
 ## Релизы
 - `v0.2`: platform/integration/help/spatial/subsurface/correlation foundation + первые официальные REST integrations Казахстана + safe oil/gas-field normalization/matching/review — слито в `main`.

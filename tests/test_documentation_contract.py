@@ -45,6 +45,12 @@ TRILINGUAL_SYNC_SCHEDULER_GUIDES = (
     DOCS / "EXTERNAL_SYNC_SCHEDULER_EN.md",
 )
 
+TRILINGUAL_CROSS_SECTION_CONTRACTS = (
+    DOCS / "CROSS_SECTION_VIEW_CONTRACT_RU.md",
+    DOCS / "CROSS_SECTION_VIEW_CONTRACT_KK.md",
+    DOCS / "CROSS_SECTION_VIEW_CONTRACT_EN.md",
+)
+
 PROCESS_ENDPOINT = "/api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process"
 REVIEW_ENDPOINT = "/api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review"
 REVIEW_VIEW_ENDPOINT = (
@@ -53,6 +59,7 @@ REVIEW_VIEW_ENDPOINT = (
 SYNC_ALL_ENDPOINT = "/api/v1/integrations/sync-all"
 SCHEDULER_STATUS_ENDPOINT = "/api/v1/integrations/scheduler/status"
 RUN_DUE_ENDPOINT = "/api/v1/integrations/scheduler/run-due"
+CROSS_SECTION_ENDPOINT = "/api/v1/correlation/wells/view"
 
 
 def test_trilingual_user_guides_exist_and_are_not_empty() -> None:
@@ -65,6 +72,7 @@ def test_trilingual_user_guides_exist_and_are_not_empty() -> None:
         assert REVIEW_VIEW_ENDPOINT in content
         assert SYNC_ALL_ENDPOINT in content
         assert SCHEDULER_STATUS_ENDPOINT in content
+        assert CROSS_SECTION_ENDPOINT in content
 
 
 def test_trilingual_roadmaps_exist_and_are_not_empty() -> None:
@@ -77,6 +85,7 @@ def test_trilingual_roadmaps_exist_and_are_not_empty() -> None:
         assert REVIEW_VIEW_ENDPOINT in content
         assert SYNC_ALL_ENDPOINT in content
         assert RUN_DUE_ENDPOINT in content
+        assert CROSS_SECTION_ENDPOINT in content
 
 
 def test_trilingual_api_key_guides_exist_and_are_not_empty() -> None:
@@ -148,6 +157,24 @@ def test_trilingual_sync_scheduler_guides_exist_and_follow_safety_contract() -> 
         assert "FAILED" in content
 
 
+def test_trilingual_cross_section_contracts_exist_and_follow_depth_safety() -> None:
+    for path in TRILINGUAL_CROSS_SECTION_CONTRACTS:
+        assert path.is_file(), f"Missing cross-section contract: {path.name}"
+        content = path.read_text(encoding="utf-8").strip()
+        assert len(content) > 2500
+        assert CROSS_SECTION_ENDPOINT in content
+        assert "TVDSS" in content
+        assert "TVD" in content
+        assert "MD" in content
+        assert "renderable" in content
+        assert "MARKER" in content
+        assert "HORIZON" in content
+        assert "DEPTH_REFERENCE_MISMATCH" in content
+        assert "NO_RENDERABLE_DATA" in content
+        assert "NO_CORRELATION_LINES" in content
+        assert "VerificationStatus" in content
+
+
 def test_documentation_policy_exists() -> None:
     policy = DOCS / "DOCUMENTATION_POLICY.md"
     assert policy.is_file()
@@ -172,3 +199,6 @@ def test_documentation_policy_exists() -> None:
     assert "EXTERNAL_SYNC_SCHEDULER_RU.md" in content
     assert "EXTERNAL_SYNC_SCHEDULER_KK.md" in content
     assert "EXTERNAL_SYNC_SCHEDULER_EN.md" in content
+    assert "CROSS_SECTION_VIEW_CONTRACT_RU.md" in content
+    assert "CROSS_SECTION_VIEW_CONTRACT_KK.md" in content
+    assert "CROSS_SECTION_VIEW_CONTRACT_EN.md" in content
