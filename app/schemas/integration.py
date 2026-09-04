@@ -39,11 +39,14 @@ class KazakhstanDatasetCatalogItem(BaseModel):
     name_en: str
     display_name: str
     description: str
-    dataset: str
+    api_uri: str
     version: str
     record_type: str
     official_url: str
     metadata_url: str
+    mapping_url: str
+    data_url_template: str
+    detailed_url_template: str
     sync_interval_hours: int
     api_key_required: bool = True
     api_key_configured: bool
