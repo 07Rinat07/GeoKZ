@@ -2,7 +2,7 @@
 
 Document status: `2026-09-04`, branch `feature/external-data-sync-v0.2`.
 
-Legend: `✅` implemented; `🧪` awaiting CI/integration validation; `⬜` planned.
+Legend: `✅` implemented; `🧪` awaiting integration validation; `⬜` planned.
 
 ## 1. Product purpose
 GeoKZ is a single working window for geology in Kazakhstan: territory/coordinate → geological object → well → intervals/logs/core/tests → cross-well correlation → source/evidence.
@@ -29,7 +29,7 @@ GeoKZ is a single working window for geology in Kazakhstan: territory/coordinate
 
 ### Platform
 - ✅ FastAPI/PostGIS, Evidence, About RU/KK/EN, Help RU/KK/EN;
-- 🧪 full CI rerun required after the latest changes.
+- ✅ current head passed `compileall`, Ruff and pytest in GitHub Actions.
 
 ### External data
 - ✅ ExternalDataSource/Record/SyncRun/EntityLink;
@@ -47,7 +47,7 @@ GeoKZ is a single working window for geology in Kazakhstan: territory/coordinate
 ### Subsurface
 - ✅ trajectory, well-log, test, core and seismic models;
 - ✅ Well Passport API;
-- 🧪 migration/integration validation;
+- 🧪 PostgreSQL/PostGIS migration/integration validation;
 - ⬜ LAS/DLIS/WITSML and SEG-Y import.
 
 ### Well Correlation
@@ -58,7 +58,8 @@ GeoKZ is a single working window for geology in Kazakhstan: territory/coordinate
 - ✅ same-local-horizon matching;
 - ✅ thickness and net-pay deltas;
 - ✅ porosity/permeability, lithology, fluid and hydrocarbon-status differences;
-- 🧪 CI/PostGIS integration tests;
+- ✅ unit-level CI passed;
+- 🧪 PostGIS integration tests;
 - ⬜ log-curve-assisted correlation;
 - ⬜ PySide6 cross-section viewer.
 
@@ -69,16 +70,15 @@ GeoKZ is a single working window for geology in Kazakhstan: territory/coordinate
 - ✅ CI documentation-contract test.
 
 ## 5. Near-term P0 backlog
-1. Full Ruff/pytest/CI.
-2. PostgreSQL/PostGIS integration and migrate-to-head test.
-3. Coordinate-search HTTP endpoint and PROJ/pyproj.
-4. External-sync persistence/manual endpoint.
-5. Kazakhstan Open Data dataset registry.
-6. Correlation integration tests and demo markers/intervals.
-7. Unit tests for marker/reservoir comparison.
-8. Core Dataset manifest and controlled vocabularies.
-9. Audit/revisions.
-10. PySide6 correlation-viewer data-model prototype.
+1. PostgreSQL/PostGIS integration and migrate-to-head test.
+2. Coordinate-search HTTP endpoint and PROJ/pyproj.
+3. External-sync persistence/manual endpoint.
+4. Kazakhstan Open Data dataset registry.
+5. Correlation integration tests and demo markers/intervals.
+6. Unit tests for marker/reservoir comparison.
+7. Core Dataset manifest and controlled vocabularies.
+8. Audit/revisions.
+9. PySide6 correlation-viewer data-model prototype.
 
 ## 6. Release plan
 - `v0.2`: platform/integration/help/spatial/subsurface/correlation foundation;
