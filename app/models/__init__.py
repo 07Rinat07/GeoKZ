@@ -8,6 +8,12 @@ from app.models.entity import (
     geological_entity_administrative_regions,
 )
 from app.models.fact import Fact, FactEvidence
+from app.models.integration import (
+    ExternalDataSource,
+    ExternalEntityLink,
+    ExternalRecord,
+    ExternalSyncRun,
+)
 from app.models.source import Source
 from app.models.well import Well, WellInterval
 
@@ -18,6 +24,10 @@ __all__ = [
     "Document",
     "DocumentPage",
     "EntityName",
+    "ExternalDataSource",
+    "ExternalEntityLink",
+    "ExternalRecord",
+    "ExternalSyncRun",
     "Fact",
     "FactEvidence",
     "GeologicalEntity",
