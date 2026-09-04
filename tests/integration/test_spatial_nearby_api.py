@@ -1,3 +1,4 @@
+import os
 from uuid import uuid4
 
 import pytest
@@ -9,6 +10,13 @@ from app.main import app
 from app.models.entity import GeologicalEntity
 from app.models.enums import VerificationStatus, WellType
 from app.models.well import Well
+
+INTEGRATION_DATABASE_URL = os.getenv("GEOKZ_INTEGRATION_DATABASE_URL")
+
+pytestmark = pytest.mark.skipif(
+    not INTEGRATION_DATABASE_URL,
+    reason="GEOKZ_INTEGRATION_DATABASE_URL is required for PostgreSQL/PostGIS integration tests",
+)
 
 
 @pytest.mark.asyncio
