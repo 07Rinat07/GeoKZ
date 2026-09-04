@@ -21,6 +21,7 @@ GeoKZ is a single working window for geology in Kazakhstan: territory/coordinate
 - ✅ latitude/longitude and projected X/Y; dot/comma decimals; CRS; both X/Y axis orders.
 - ✅ pyproj/PROJ `CoordinateResolver` and transformation to WGS84.
 - ✅ `POST /api/v1/spatial/nearby` for nearby geological objects, wells and seismic surveys.
+- ✅ HTTP integration test for `/api/v1/spatial/nearby` against a real PostGIS database.
 - ✅ trajectory, well-log, test, core and seismic models.
 - ✅ Well Correlation: markers, TVDSS preference, thickness/net pay, porosity/permeability, lithology/fluid/hydrocarbon differences.
 - ✅ real PostGIS correlation integration test.
@@ -30,15 +31,14 @@ GeoKZ is a single working window for geology in Kazakhstan: territory/coordinate
 
 ## Near-term P0
 1. Connect coordinate-search results to nearby-well selection and correlation launch.
-2. Add a full integration test for `POST /api/v1/spatial/nearby`.
-3. Add a Kazakhstan CRS catalog and configurable local organization CRS definitions.
-4. Remove the SQLAlchemy warning in the correlation distance query.
-5. Define the API data model for the visual cross-section viewer.
-6. Build a demo workflow: coordinate → 4 wells → correlation.
-7. External sync persistence + manual/scheduled sync.
-8. Registry of official Kazakhstan Open Data datasets.
-9. Core Dataset manifest/importer.
-10. Controlled vocabularies + audit/revisions.
+2. Add a Kazakhstan CRS catalog and configurable local organization CRS definitions.
+3. Remove the SQLAlchemy warning in the correlation distance query.
+4. Define the API data model for the visual cross-section viewer.
+5. Build a demo workflow: coordinate → 4 wells → correlation.
+6. External sync persistence + manual/scheduled sync.
+7. Registry of official Kazakhstan Open Data datasets.
+8. Core Dataset manifest/importer.
+9. Controlled vocabularies + audit/revisions.
 
 ## Releases
 - `v0.2`: platform/integration/help/spatial/subsurface/correlation foundation.
