@@ -34,23 +34,26 @@ GeoKZ — единое рабочее окно по геологии Казах�
 - ✅ metadata/mapping inspection до импорта и REST catalog/register/sync/schema endpoints.
 - ✅ `stat_kgn_117` normalizer и matching с `GeologicalEntity(object_type="field")`/`EntityName` aliases.
 - ✅ `POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process` — normalize + match после RAW sync.
-- ✅ автоматические exact/alias matches остаются `REVIEW_REQUIRED`; ambiguous/unmatched сохраняются для review; reviewer-locked links не перезаписываются повторным process.
+- ✅ автоматические exact/alias matches остаются `REVIEW_REQUIRED`; ambiguous/unmatched сохраняются для review.
+- ✅ повторный `process` идемпотентен для незавершённых auto-links и не создаёт дубли `ExternalEntityLink`.
+- ✅ reviewer-locked links (`VERIFIED`, `REJECTED`, `MANUAL`, reviewer/comment) не перезаписываются повторным process.
 - ✅ review queue: `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review`.
 - ✅ review actions: confirm/reject candidate, manual-link к существующему field, explicit `create-draft-field` только для `UNMATCHED`.
 - ✅ новый объект из внешней записи создаётся только `GeologicalEntity(verification_status=DRAFT)`; verified link не делает объект VERIFIED.
 - ✅ reviewer identity/comment сохраняются в `ExternalEntityLink`; полноценные auth/AuditLog ещё запланированы.
+- ✅ review/matching backend подтверждён зелёными `Python quality checks` и PostgreSQL/PostGIS integration tests на одном head.
 - ✅ источники регистрируются как `AUTOMATIC` с интервалом 168 часов; фактический scheduler ещё не реализован.
 - ✅ API key хранится только в `GEOKZ_EGOV_API_KEY`; без ключа локальная база продолжает работать.
 - ✅ отдельные RU/KK/EN инструкции: API keys, Kazakhstan Open Data onboarding/naming и field review workflow.
 - ✅ README, USER_GUIDE и roadmap поддерживаются на RU/KK/EN + documentation CI contract.
 
 ## Ближайший P0
-1. Довести текущий review backend до зелёного PostgreSQL/PostGIS CI и добавить UI-контракт очереди review.
-2. Scheduler периодической синхронизации внешних источников + «Обновить всё».
+1. UI/view-model контракты очереди external review для будущего PySide6: список изменений, сравнение RAW/normalized/GeoKZ, confirm/reject/manual-link/create DRAFT.
+2. Scheduler периодической синхронизации внешних источников + «Обновить всё» с защитой от параллельных запусков.
 3. API/view-model для визуального cross-section viewer: колонки скважин, шкала глубин, реперы, интервалы и линии корреляции.
 4. Demo workflow: координата → ближайшие demo-скважины → выбор → корреляционный разрез.
 5. Хранение/настройка локальных CRS организации; СК-42/Гаусса–Крюгера только по подтверждённому EPSG/WKT/PROJ.
-6. Устранить SQLAlchemy cartesian-product warning в distance query корреляции.
+6. Устранить оставшийся SQLAlchemy cartesian-product warning в distance query корреляции без изменения результата PostGIS distance.
 7. Controlled vocabularies для lithology/markers/property kinds/units.
 8. Добавить normalizer/review для следующего официального ресурса — геологических лицензий — после проверки mapping/license/data quality.
 9. Core Dataset manifest/importer.
