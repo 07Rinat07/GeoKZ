@@ -1,6 +1,7 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.core.project_info import SupportedLanguage
+from app.schemas.coordinates import CoordinateInput, ResolvedCoordinate
 from app.schemas.explorer import (
     GeologicalEntityCard,
     IntervalCard,
@@ -41,3 +42,15 @@ class NearbySearchResponse(BaseModel):
     nearby_entities: list[NearbyEntityResult]
     nearby_wells: list[NearbyWellResult]
     nearby_seismic_surveys: list[NearbySeismicResult]
+
+
+class CoordinateNearbySearchRequest(BaseModel):
+    coordinate: CoordinateInput
+    radius_km: float = Field(default=25.0, gt=0, le=500)
+    language: SupportedLanguage = "ru"
+    limit: int = Field(default=25, ge=1, le=200)
+
+
+class CoordinateNearbySearchResponse(BaseModel):
+    resolved_coordinate: ResolvedCoordinate
+    result: NearbySearchResponse
