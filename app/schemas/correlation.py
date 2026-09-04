@@ -1,11 +1,17 @@
 from decimal import Decimal
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.core.project_info import SupportedLanguage
 from app.models.enums import DepthReference, FluidType, HydrocarbonStatus, VerificationStatus
 from app.schemas.explorer import WellCard
+
+
+class WellCorrelationRequest(BaseModel):
+    reference_well_id: UUID
+    well_ids: list[UUID] = Field(min_length=1, max_length=20)
+    language: SupportedLanguage = "ru"
 
 
 class CorrelationMarker(BaseModel):
