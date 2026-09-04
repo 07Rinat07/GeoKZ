@@ -8,6 +8,7 @@ from app.api.routes import (
     facts,
     health,
     help,
+    integration_review,
     integrations,
     sources,
     spatial,
@@ -73,4 +74,9 @@ api_router.include_router(
     integrations.router,
     prefix=f"{settings.api_prefix}/integrations",
     tags=["integrations"],
+)
+api_router.include_router(
+    integration_review.router,
+    prefix=f"{settings.api_prefix}/integrations",
+    tags=["integration-review"],
 )
