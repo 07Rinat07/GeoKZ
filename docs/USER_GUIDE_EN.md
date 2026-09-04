@@ -145,3 +145,16 @@ POST /api/v1/correlation/wells/view
 The backend selects one common depth scale with `TVDSS → TVD → MD` priority. Markers and intervals that cannot be safely represented on the selected reference are returned with `renderable=false` and are not connected automatically. `correlation_lines` contains ready-to-render `MARKER` and `HORIZON` segments, while `warnings` exposes stable codes including `DEPTH_REFERENCE_MISMATCH`, `NO_RENDERABLE_DATA` and `NO_CORRELATION_LINES`.
 
 Clients must display `VerificationStatus` and warnings, but must not invent depth conversions or new correlation links. Full contract: `docs/CROSS_SECTION_VIEW_CONTRACT_EN.md`.
+
+## Complete demo correlation workflow
+A single safe endpoint is available for UI testing without mixing synthetic and production data:
+
+```text
+POST /api/v1/correlation/demo/workflow
+```
+
+The first request provides coordinate/radius and returns `stage=DISCOVERY`, `nearby_demo_wells`, `suggested_reference_well_id`, `can_build_cross_section`, and mandatory `synthetic=true`. The UI then selects one reference well and 1–20 compared wells only from the current `nearby_demo_wells`, and repeats the same endpoint with `reference_well_id` and `well_ids`. A valid selection returns `stage=CROSS_SECTION_READY` and a ready `cross_section`.
+
+Dataset `synthetic-correlation-demo-v1` is strictly separated from ordinary wells: even a production well at the same coordinate is excluded from demo selection. Incomplete selection, duplicates, a reference well repeated in `well_ids`, or a UUID outside the current discovery result are rejected with HTTP `422`. The demo dataset is installed with `python -m scripts.seed_correlation_demo` and is never production geological evidence.
+
+Full step-by-step contract: `docs/DEMO_CORRELATION_WORKFLOW_EN.md`.
