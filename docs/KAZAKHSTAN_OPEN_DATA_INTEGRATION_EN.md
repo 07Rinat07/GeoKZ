@@ -237,3 +237,26 @@ If the portal releases `v11`, GeoKZ keeps the same `code`. The `version`, endpoi
 - `docs/USER_GUIDE_EN.md` — user workflow for external sources;
 - `docs/PROJECT_PLAN_V0_2_EN.md` — current roadmap;
 - `docs/DOCUMENTATION_POLICY.md` — synchronized RU/KK/EN documentation policy.
+
+## 10. Oil and gas field normalization and matching
+
+For `kz-egov-oil-gas-fields`, GeoKZ now implements a post-sync processing step:
+
+```text
+POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process
+```
+
+GeoKZ normalizes only the fact supported by this dataset: the field name. The original RAW payload remains unchanged. The normalized payload stores `entity_type=field`, `name_ru`, a matching key, and the original source-field name.
+
+Matching is performed against existing `GeologicalEntity(object_type="field")` records and registered `EntityName` aliases. Case, typographic quotes, repeated whitespace, and `ё/е` differences are normalized for comparison, while the upstream value remains untouched.
+
+Safety rules:
+
+- exact name matches create only `ExternalEntityLink(status=REVIEW_REQUIRED)`;
+- alias matches also require review;
+- multiple candidates are marked `AMBIGUOUS`;
+- no candidate is marked `UNMATCHED`;
+- links already marked `VERIFIED` or `REJECTED` by a reviewer are reviewer-locked and are not overwritten automatically;
+- the external dataset never creates or publishes a new verified `GeologicalEntity` automatically.
+
+The endpoint returns `processed`, `normalized`, `exact_matches`, `alias_matches`, `ambiguous`, `unmatched`, `normalization_errors`, and `reviewer_locked` counters.
