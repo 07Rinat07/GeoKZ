@@ -10,7 +10,30 @@ from app.integrations.providers.egov_open_data import EgovDatasetConfig, EgovOpe
 def _build_client() -> httpx.AsyncClient:
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path.startswith("/meta/"):
-            return httpx.Response(200, json={"apiUri": "demo", "nameRu": "Demo"})
+            return httpx.Response(
+                200,
+                json={
+                    "apiUri": "demo",
+                    "nameRu": "Демонстрационный набор",
+                    "fields": {"id": {"type": "Int"}, "name": {"type": "String"}},
+                },
+            )
+        if request.url.path.startswith("/api/v4/mapping/"):
+            return httpx.Response(
+                200,
+                json={
+                    "demo": {
+                        "mappings": {
+                            "v1": {
+                                "properties": {
+                                    "id": {"type": "integer"},
+                                    "name": {"type": "string"},
+                                }
+                            }
+                        }
+                    }
+                },
+            )
 
         source = json.loads(request.url.params["source"])
         offset = source["from"]
@@ -47,9 +70,14 @@ async def test_egov_connector_pages_and_builds_stable_ids() -> None:
             client=client,
         )
 
+        assert connector._config.api_uri == "demo"
         assert await connector.check_availability() is True
+        metadata = await connector.get_metadata()
+        mapping = await connector.get_mapping()
         records = [record async for record in connector.fetch_records()]
 
+    assert metadata["apiUri"] == "demo"
+    assert mapping["demo"]["mappings"]["v1"]["properties"]["name"]["type"] == "string"
     assert [record.external_id for record in records] == ["1", "2"]
     assert [record.raw_payload["name"] for record in records] == ["Жетыбай", "Тенгиз"]
 
