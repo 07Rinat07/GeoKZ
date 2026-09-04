@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "geokz"
-version = "0.1.0"
-description = "Доказательный геологический справочник Казахстана"
+version = "0.2.0.dev0"
+description = "Доказательная геологическая информационная система Казахстана"
 readme = "README.md"
 requires-python = ">=3.12,<3.14"
-authors = [{ name = "GeoKZ" }]
+authors = [{ name = "Sarmuldin Rinat", email = "ura07srr@gmail.com" }]
 dependencies = [
     "fastapi>=0.139,<0.140",
     "uvicorn[standard]>=0.34,<1.0",
@@ -34,6 +34,9 @@ desktop = [
 windows-build = [
     "pyinstaller>=6.13,<7.0",
 ]
+
+[project.urls]
+Repository = "https://github.com/07Rinat07/GeoKZ"
 
 [tool.setuptools.packages.find]
 include = ["app*", "scripts*"]
