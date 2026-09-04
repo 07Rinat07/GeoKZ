@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.integrations.errors import ExternalSourceProtocolError
 from app.integrations.normalizers.kazakhstan_oil_gas_fields import (
     normalize_entity_name,
     normalize_oil_gas_field_record,
@@ -81,16 +82,33 @@ class KazakhstanOilGasFieldProcessingService:
         reviewer_locked = 0
 
         for record in records:
+            existing_links = links_by_record.get(record.id, [])
+            locked = [link for link in existing_links if self._is_reviewer_locked(link)]
+
             try:
                 normalized = normalize_oil_gas_field_record(record.raw_payload)
-            except Exception as error:
+            except ExternalSourceProtocolError as error:
                 normalization_errors += 1
-                record.status = ExternalRecordStatus.REVIEW_REQUIRED
+                if locked:
+                    reviewer_locked += 1
+                else:
+                    await self._clear_automatic_links(existing_links)
+                record.status = (
+                    ExternalRecordStatus.ACCEPTED
+                    if any(link.status == EntityLinkStatus.VERIFIED for link in locked)
+                    else ExternalRecordStatus.REVIEW_REQUIRED
+                )
                 record.normalized_payload = {
                     "schema_version": 1,
                     "entity_type": "field",
                     "normalization_status": "ERROR",
                     "normalization_error": str(error),
+                    "matching": {
+                        "status": "REVIEWER_LOCKED" if locked else "UNAVAILABLE",
+                        "linked_entity_ids": [
+                            str(link.geological_entity_id) for link in locked
+                        ],
+                    },
                 }
                 continue
 
@@ -98,12 +116,6 @@ class KazakhstanOilGasFieldProcessingService:
             candidates = name_index.get(normalized.match_key, [])
             payload = normalized.as_payload()
 
-            existing_links = links_by_record.get(record.id, [])
-            locked = [
-                link
-                for link in existing_links
-                if link.status in (EntityLinkStatus.VERIFIED, EntityLinkStatus.REJECTED)
-            ]
             if locked:
                 reviewer_locked += 1
                 record.status = (
@@ -115,10 +127,14 @@ class KazakhstanOilGasFieldProcessingService:
                     **payload,
                     "matching": {
                         "status": "REVIEWER_LOCKED",
-                        "linked_entity_ids": [str(link.geological_entity_id) for link in locked],
+                        "linked_entity_ids": [
+                            str(link.geological_entity_id) for link in locked
+                        ],
                     },
                 }
                 continue
+
+            await self._clear_automatic_links(existing_links)
 
             unique_candidates: dict[UUID, MatchMethod] = {}
             for entity_id, method in candidates:
@@ -155,30 +171,15 @@ class KazakhstanOilGasFieldProcessingService:
             else:
                 alias_matches += 1
 
-            link = next(
-                (
-                    item
-                    for item in existing_links
-                    if item.geological_entity_id == entity_id
-                ),
-                None,
-            )
-            if link is None:
-                link = ExternalEntityLink(
+            self.session.add(
+                ExternalEntityLink(
                     external_record_id=record.id,
                     geological_entity_id=entity_id,
                     match_method=method,
                     match_confidence=1.0,
                     status=EntityLinkStatus.REVIEW_REQUIRED,
                 )
-                self.session.add(link)
-                existing_links.append(link)
-                links_by_record[record.id] = existing_links
-            else:
-                link.match_method = method
-                link.match_confidence = 1.0
-                link.status = EntityLinkStatus.REVIEW_REQUIRED
-
+            )
             record.status = ExternalRecordStatus.REVIEW_REQUIRED
             record.normalized_payload = {
                 **payload,
@@ -247,6 +248,23 @@ class KazakhstanOilGasFieldProcessingService:
         for link in links:
             result.setdefault(link.external_record_id, []).append(link)
         return result
+
+    async def _clear_automatic_links(
+        self,
+        links: list[ExternalEntityLink],
+    ) -> None:
+        for link in links:
+            if not self._is_reviewer_locked(link):
+                await self.session.delete(link)
+
+    @staticmethod
+    def _is_reviewer_locked(link: ExternalEntityLink) -> bool:
+        return (
+            link.status in (EntityLinkStatus.VERIFIED, EntityLinkStatus.REJECTED)
+            or link.match_method == MatchMethod.MANUAL
+            or bool(link.verified_by)
+            or bool(link.review_comment and link.review_comment.strip())
+        )
 
     @staticmethod
     def _add_to_index(
