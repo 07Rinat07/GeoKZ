@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy import select
@@ -8,7 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.application.errors import ResourceNotFoundError
 from app.integrations.checksum import calculate_payload_checksum
 from app.integrations.contracts import ExternalDataConnector
-from app.integrations.errors import ConnectorConfigurationError
+from app.integrations.errors import (
+    ConnectorConfigurationError,
+    ExternalSyncAlreadyRunningError,
+)
 from app.integrations.types import ExternalRecordStatus, SyncRunStatus
 from app.models.integration import ExternalDataSource, ExternalRecord, ExternalSyncRun
 
@@ -28,33 +31,14 @@ class SyncSummary:
 @dataclass(slots=True)
 class ExternalSyncService:
     session: AsyncSession
+    running_timeout_hours: int = 6
 
     async def sync(
         self,
         source_id: UUID,
         connector: ExternalDataConnector,
     ) -> SyncSummary:
-        source = await self.session.get(ExternalDataSource, source_id)
-        if source is None:
-            raise ResourceNotFoundError("Внешний источник данных не найден")
-        if source.code != connector.source_code:
-            raise ConnectorConfigurationError(
-                "Код connector не соответствует зарегистрированному источнику GeoKZ"
-            )
-        if not source.enabled:
-            raise ConnectorConfigurationError("Внешний источник отключён")
-
-        started_at = datetime.now(UTC)
-        source.last_sync_started_at = started_at
-        source.last_error = None
-        run = ExternalSyncRun(
-            source_id=source.id,
-            status=SyncRunStatus.RUNNING,
-            started_at=started_at,
-        )
-        self.session.add(run)
-        await self.session.commit()
-        await self.session.refresh(run)
+        source, run = await self._reserve_run(source_id, connector)
 
         received = 0
         created = 0
@@ -155,3 +139,75 @@ class ExternalSyncService:
                 failed_source.last_error = str(error)
             await self.session.commit()
             raise
+
+    async def _reserve_run(
+        self,
+        source_id: UUID,
+        connector: ExternalDataConnector,
+    ) -> tuple[ExternalDataSource, ExternalSyncRun]:
+        source = await self.session.get(ExternalDataSource, source_id)
+        if source is None:
+            raise ResourceNotFoundError("Внешний источник данных не найден")
+        if source.code != connector.source_code:
+            raise ConnectorConfigurationError(
+                "Код connector не соответствует зарегистрированному источнику GeoKZ"
+            )
+        if not source.enabled:
+            raise ConnectorConfigurationError("Внешний источник отключён")
+
+        # Row-level lock serializes run reservation across API requests and the dedicated
+        # scheduler process. The lock is held only for the short reservation transaction,
+        # never for the external HTTP transfer itself.
+        locked_source = await self.session.scalar(
+            select(ExternalDataSource)
+            .where(ExternalDataSource.id == source_id)
+            .with_for_update()
+        )
+        if locked_source is None:
+            await self.session.rollback()
+            raise ResourceNotFoundError("Внешний источник данных не найден")
+
+        started_at = datetime.now(UTC)
+        stale_before = started_at - timedelta(hours=self.running_timeout_hours)
+        stale_runs = list(
+            await self.session.scalars(
+                select(ExternalSyncRun).where(
+                    ExternalSyncRun.source_id == source_id,
+                    ExternalSyncRun.status == SyncRunStatus.RUNNING,
+                    ExternalSyncRun.started_at < stale_before,
+                )
+            )
+        )
+        for stale_run in stale_runs:
+            stale_run.status = SyncRunStatus.FAILED
+            stale_run.finished_at = started_at
+            stale_run.error_message = (
+                "RUNNING sync автоматически помечен FAILED как stale после "
+                f"{self.running_timeout_hours} ч. без завершения"
+            )
+
+        active_run = await self.session.scalar(
+            select(ExternalSyncRun)
+            .where(
+                ExternalSyncRun.source_id == source_id,
+                ExternalSyncRun.status == SyncRunStatus.RUNNING,
+                ExternalSyncRun.started_at >= stale_before,
+            )
+            .order_by(ExternalSyncRun.started_at.desc())
+            .limit(1)
+        )
+        if active_run is not None:
+            await self.session.rollback()
+            raise ExternalSyncAlreadyRunningError(locked_source.code, active_run.id)
+
+        locked_source.last_sync_started_at = started_at
+        locked_source.last_error = None
+        run = ExternalSyncRun(
+            source_id=locked_source.id,
+            status=SyncRunStatus.RUNNING,
+            started_at=started_at,
+        )
+        self.session.add(run)
+        await self.session.commit()
+        await self.session.refresh(run)
+        return locked_source, run
