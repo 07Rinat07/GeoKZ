@@ -1,397 +1,252 @@
-# GeoKZ — план развития v0.2+
+# GeoKZ — актуальный план развития v0.2+
 
-## 1. Продуктовое назначение
+Статус документа: `2026-09-04`, ветка `feature/external-data-sync-v0.2`.
 
-GeoKZ — единое рабочее окно по геологической информации Казахстана.
+Обозначения: `✅` реализовано в коде; `🧪` реализовано/частично реализовано, требует CI или интеграционной проверки; `⬜` запланировано.
 
-Пользователь должен иметь возможность выбрать территорию, месторождение, структуру или скважину и получить максимально полную доступную информацию из собственной проверенной базы и подключённых разрешённых источников.
+## 1. Продуктовый смысл
 
-Главный пользовательский путь:
+GeoKZ — единое рабочее окно по геологической информации Казахстана. Пользователь выбирает территорию, координату, месторождение, структуру или скважину и получает максимально полную доступную информацию из встроенной проверенной базы и разрешённых внешних источников.
 
-```text
-Территория
-  ↓
-Месторождения / структуры / скважины / сейсмика / карты
-  ↓
-Месторождение
-  ↓
-Геология → стратиграфия → литология → залежи → скважины
-  ↓
-Скважина
-  ↓
-Траектория → интервалы → ГИС → керн → испытания → нефть/газ/вода
-  ↓
-Источник / документ / файл / страница / доказательство
-```
-
-Подробная предметная модель: `docs/BUSINESS_DOMAIN.md`.
-
-## 2. Обязательные принципы
-
-1. **Три языка:** русский (`ru`), казахский (`kk`) и английский (`en`) во всём пользовательском продукте.
-2. **Полнота с provenance:** значение без понятного происхождения не считается проверенным мастер-данным.
-3. **Исходный материал неизменяем:** цитата, OCR/raw text, LAS/DLIS/SEG-Y и RAW API payload сохраняются отдельно от интерпретации.
-4. **Human-in-the-loop:** внешние API и ИИ не переписывают проверенные факты автоматически.
-5. **Offline-capable core:** встроенная база должна быть полезна без интернета.
-6. **Обновляемые наборы:** приложение, GeoKZ Core Dataset и внешние источники имеют независимые версии.
-7. **GIS-first:** PostGIS/GeoJSON, далее GeoPackage, OGC API Features и QGIS.
-8. **Отраслевые форматы:** архитектура не должна препятствовать LAS/DLIS, WITSML, SEG-Y, GeoSciML, RESQML/PRODML.
-9. **Измерения с единицами:** числовые геологические/геофизические параметры всегда имеют unit и, при необходимости, reference system.
-10. **Наблюдение отдельно от интерпретации:** измеренный приток газа и вывод «продуктивный горизонт» — разные сущности.
-
-## 3. Целевая архитектура
+Основной путь:
 
 ```text
-PySide6 / Web / QGIS / CLI
-            │
-            ▼
-        FastAPI /api/v1
-            │
-            ▼
-      Application Layer
- ┌──────────┼──────────────────────────────────┐
- │          │          │          │             │
-Catalog  Evidence   Subsurface   Search    Integrations
- │          │          │          │             │
- └──────────┴──────────┴──────────┴─────────────┘
-            │
-            ▼
-        Domain Model
-            │
-            ▼
- Infrastructure / Repositories
-     │              │                 │
-PostgreSQL       Object/File       External
- + PostGIS         Storage         Connectors
+Территория / координата
+  ↓
+месторождения / структуры / скважины / сейсмика / карты
+  ↓
+паспорт геологического объекта
+  ↓
+паспорт скважины
+  ↓
+траектория / интервалы / литология / ГИС / керн / испытания / нефть-газ-вода
+  ↓
+корреляция с соседними скважинами
+  ↓
+источник / документ / файл / страница / доказательство
 ```
 
-Большие файлы не помещаются целиком в обычные ORM-таблицы:
+## 2. Обязательные правила
 
-- PDF/DOCX;
-- LAS/DLIS;
-- SEG-Y;
-- растры;
-- большие массивы кривых.
+1. RU/KK/EN во всём пользовательском продукте.
+2. Документация и инструкции входят в Definition of Done.
+3. Значимые данные имеют provenance и verification status.
+4. Исходные документы, RAW API payload, LAS/DLIS/SEG-Y не заменяются интерпретацией.
+5. Внешние API и ИИ не переписывают verified master data автоматически.
+6. Базовый GeoKZ Core Dataset работает без обязательного интернета.
+7. Приложение, схема БД, Core Dataset и внешние источники обновляются независимо.
+8. PostGIS является основой пространственных запросов.
+9. Числовые измерения сохраняют units и reference system.
+10. MD/TVD/TVDSS не смешиваются без явного преобразования.
+11. Наблюдение и интерпретация — разные сущности.
+12. По неоднозначным координатам CRS не угадывается молча.
 
-PostgreSQL хранит каталог, metadata, geometry, индексы, связи, контроль качества и provenance; файл хранится в file/object storage.
-
-## 4. Главные домены
+## 3. Основные домены
 
 ### Territory / Spatial
-
 - административные регионы;
-- карта;
-- геологические/тектонические объекты;
-- рельеф/DEM;
-- гидрография;
-- инфраструктура и land-cover при наличии открытых источников.
+- поиск по области/району;
+- поиск по широте/долготе;
+- ввод проекционных X/Y;
+- CRS/axis-order normalization;
+- ближайшие скважины/объекты/сейсмика;
+- расстояния PostGIS geography;
+- карта, DEM, гидрография, land cover и инфраструктура при наличии разрешённых данных.
 
-### Field / Deposit
-
+### Field / Geological Object
 - положение;
-- геологическое строение;
 - тектоника;
 - стратиграфия;
-- продуктивные горизонты;
 - литология;
+- продуктивные горизонты;
 - нефть/газ/вода;
 - свойства коллекторов;
-- давления/температуры;
+- pressure/temperature;
 - скважины;
 - сейсмика;
 - история изучения;
 - источники и конфликты.
 
 ### Well / Wellbore
-
 - паспорт;
 - координаты;
 - траектория MD/TVD/TVDSS;
-- геологический разрез;
-- formation tops;
 - интервалы;
+- formation tops / markers;
 - ГИС/well logs;
 - керн/образцы;
 - испытания;
-- притоки нефти/газа/воды;
+- дебиты нефти/газа/воды;
 - pressure/temperature;
-- документы и evidence.
+- документы/evidence.
+
+### Well Correlation
+- опорная и соседние скважины;
+- стратиграфические/геофизические реперы;
+- визуальные колонки разрезов;
+- линии одинаковых реперов;
+- литологические интервалы;
+- выделение коллекторов;
+- нефть/газ/вода;
+- текстовые различия глубин и мощности;
+- сопоставление по TVDSS с безопасным fallback;
+- provenance каждой корреляционной отметки;
+- ручная экспертная корректировка на будущем этапе.
 
 ### Seismic / Geophysics
-
-- 2D surveys/lines;
-- 3D surveys/volumes;
+- 2D/3D surveys;
+- lines/volumes;
+- coverage;
 - acquisition metadata;
 - processing history;
-- SEG-Y dataset catalog;
-- interpretations: horizons/faults/contacts;
-- spatial coverage.
+- SEG-Y catalog;
+- горизонты/разломы/интерпретации.
 
 ### Documents / Evidence
-
-- Source;
-- Document;
-- Page;
-- Fact;
-- Evidence;
-- Conflict;
-- revisions/audit.
+- Source / Document / Page;
+- Fact / Evidence / Conflict;
+- revisions/audit;
+- OCR/raw text;
+- object/file storage.
 
 ### Integrations
-
-- RAW external records;
-- normalization;
+- RAW staging;
 - checksum/diff;
-- entity matching;
+- normalization;
+- matching;
 - review queue;
-- periodic/manual sync.
+- manual/periodic sync.
 
-## 5. Модель данных по происхождению
+## 4. Текущий статус кода
 
-```text
-RAW         — неизменённая запись/файл внешнего источника
-NORMALIZED  — приведённое к модели GeoKZ представление
-VERIFIED    — проверенные мастер-данные GeoKZ
-```
+### Platform / API
+- ✅ FastAPI + `/api/v1`;
+- ✅ PostgreSQL/PostGIS schema foundation;
+- ✅ evidence model;
+- ✅ API «О программе» RU/KK/EN;
+- ✅ авторские metadata Sarmuldin Rinat / ura07srr@gmail.com;
+- ✅ контекстный help catalog RU/KK/EN;
+- ✅ help API;
+- 🧪 общий CI требует повторной проверки после последних изменений.
 
-Внешняя синхронизация никогда не выполняет прямой overwrite проверенных геологических значений.
+### External data
+- ✅ ExternalDataSource / ExternalRecord / ExternalSyncRun / ExternalEntityLink;
+- ✅ общий `ExternalDataConnector` Protocol;
+- ✅ SHA-256 checksum;
+- ✅ Kazakhstan Open Data API v4 connector;
+- ✅ секреты через environment;
+- ⬜ persistence sync use case;
+- ⬜ manual sync endpoint;
+- ⬜ registry официальных datasets;
+- ⬜ scheduled sync;
+- ⬜ USGS/Macrostrat/OGC connectors.
 
-## 6. GeoKZ Core Dataset
+### Territory / spatial search
+- ✅ Territory Explorer contract/service;
+- ✅ Geological Entity Passport contract/service;
+- ✅ PostGIS nearby search service;
+- ✅ coordinate input models принимают точку и запятую;
+- ✅ projected X/Y model с CRS и axis order;
+- 🧪 HTTP endpoint для полного coordinate workflow/CRS transformation;
+- ⬜ pyproj/PROJ transformation service;
+- ⬜ CRS presets Казахстана и локальные CRS организации;
+- ⬜ spatial integration tests.
 
-Приложение поставляется с базовым набором:
+### Subsurface
+- ✅ WellTrajectoryPoint model;
+- ✅ WellLogRun / WellLogCurve;
+- ✅ WellTest;
+- ✅ CoreRun / CoreSample;
+- ✅ SeismicSurvey / SeismicLine / SeismicVolume;
+- ✅ агрегированный Well Passport API;
+- 🧪 migration/integration validation после последних изменений;
+- ⬜ LAS/DLIS/WITSML import;
+- ⬜ SEG-Y catalog/import metadata.
 
-- административные регионы Казахстана;
-- основные бассейны и структуры;
-- базовые месторождения/объекты;
-- пилотные скважины и интервалы;
-- базовая стратиграфия/литология;
-- проверенные источники и факты;
-- `ru/kk/en` названия там, где они известны.
+### Well correlation
+- ✅ `WellMarker` model;
+- ✅ migration `20260904_0004`;
+- ✅ correlation response contract;
+- ✅ comparison service с предпочтением TVDSS;
+- ✅ distance from reference well;
+- ✅ marker depth deltas;
+- ✅ защита от несопоставимых depth references;
+- ✅ API `/api/v1/correlation/wells/{reference_well_id}`;
+- 🧪 CI/integration tests;
+- ⬜ вычисление различий мощности коллектора;
+- ⬜ корреляция по ГИС-кривым;
+- ⬜ ручное соединение/разрыв корреляционных линий;
+- ⬜ визуальный cross-section viewer в PySide6;
+- ⬜ экспорт correlation section в PDF/PNG/GeoPackage metadata.
 
-Версии независимы:
+### Documentation
+- ✅ USER_GUIDE_RU;
+- ✅ USER_GUIDE_KK;
+- ✅ USER_GUIDE_EN;
+- ✅ Documentation Policy;
+- ✅ I18N specification;
+- ✅ Business Domain document;
+- ✅ roadmap поддерживается в этой ветке;
+- ⬜ CI contract для обязательного наличия синхронных RU/KK/EN user docs.
 
-```text
-GeoKZ App:          0.2.0
-Database schema:    3+
-GeoKZ Core Dataset: 2026.09
-```
+## 5. Ближайший P0 backlog
 
-## 7. Внешние источники
+1. Исправить/прогнать Ruff + pytest на полном текущем head.
+2. Добавить PostgreSQL/PostGIS service в CI и migration test до `head`.
+3. Закрыть coordinate-search HTTP endpoint.
+4. Реализовать pyproj/PROJ CRS transformation.
+5. Добавить preset/catalog распространённых CRS + локальные настраиваемые CRS.
+6. Persistence service для ExternalRecord/SyncRun.
+7. Manual sync endpoint.
+8. Registry первых официальных Kazakhstan Open Data datasets.
+9. Integration tests для nearby search и correlation.
+10. Добавить seed markers/intervals для демонстрации корреляции.
+11. Расширить текстовую корреляцию сравнением толщины коллекторов и флюидов.
+12. Добавить documentation CI contract RU/KK/EN.
+13. Core Dataset manifest/importer.
+14. Controlled vocabularies для lithology/marker/property kinds/units.
+15. Audit log/revisions.
 
-Приоритет:
+## 6. План релизов
 
-1. Kazakhstan Open Data (`data.egov.kz`);
-2. другие официальные открытые казахстанские наборы/GIS-сервисы с понятной лицензией;
-3. USGS;
-4. Macrostrat;
-5. OneGeology / OGC;
-6. Copernicus;
-7. корпоративные WITSML/OSDU endpoints — только как отдельные настраиваемые интеграции, если организация предоставляет доступ.
+### v0.2 — platform foundation
+Интеграции, provenance, RU/KK/EN, help system, territory/entity/well API, coordinate models, базовая subsurface и correlation foundation.
 
-Для каждого dataset сохраняются условия использования, dataset/version, время получения и raw payload/checksum.
+### v0.3 — spatial + subsurface hardening
+Полный coordinate workflow, CRS transformations, PostGIS integration tests, stable Well Passport, correlation engine, demo data, unit vocabularies.
 
-## 8. Синхронизация
-
-Режимы:
-
-- вручную: «Обновить источник» / «Обновить всё»;
-- автоматически: периодическая фоновая проверка.
-
-Pipeline:
-
-```text
-External API / Dataset
-       ↓
-Connector
-       ↓
-RAW staging
-       ↓
-checksum / dedup / diff
-       ↓
-normalization
-       ↓
-entity/well/field matching
-       ↓
-SAFE metadata OR REVIEW_REQUIRED
-       ↓
-review
-       ↓
-verified master view
-```
-
-Неуспешное обновление не должно блокировать работу приложения.
-
-## 9. Трёхъязычность
-
-Подробности: `docs/I18N.md`.
-
-Поддерживаются `ru`, `kk`, `en` для UI, названий, справочников, поиска, документации и пользовательских сообщений. Исходный текст источника не заменяется переводом.
-
-## 10. Отраслевые ориентиры
-
-GeoKZ не обязан реализовывать стандарты полностью, но проектируется совместимо с ними:
-
-- **WITSML 2.1** — well/drilling/trajectory/well-log data;
-- **Energistics PWLS** — классификация well-log property kinds;
-- **SEG-Y rev 2.x** — seismic exchange;
-- **GeoSciML** — геологические объекты;
-- **OGC API Features / GeoPackage** — GIS interoperability;
-- **OSDU DDMS concepts** — ориентир для разделения wellbore/seismic domain services на будущих этапах.
-
-## 11. План релизов
-
-### v0.2 — фундамент платформы
-
-- [x] FastAPI/PostgreSQL/PostGIS skeleton;
-- [x] evidence model;
-- [x] `/api/v1`;
-- [x] ExternalDataSource / ExternalRecord / ExternalSyncRun / ExternalEntityLink;
-- [x] Connector Protocol;
-- [x] read API статуса источников;
-- [x] `ru/kk/en` contract и API «О программе»;
-- [x] авторские metadata проекта;
-- [x] первый Kazakhstan Open Data API v4 connector;
-- [x] checksum внешних RAW-записей;
-- [ ] persistence sync use case;
-- [ ] ручной sync endpoint;
-- [ ] integration tests PostgreSQL/PostGIS;
-- [ ] registry официальных datasets;
-- [ ] Core Dataset manifest/importer.
-
-### v0.3 — subsurface foundation
-
-- траектория скважины;
-- well-log run/curve metadata;
-- испытания скважин/пластов;
-- керн/образцы;
-- seismic survey/line/volume catalog;
-- унифицированные depth references;
-- унифицированные units/property kinds;
-- API полного паспорта скважины.
-
-### v0.4 — документы и файлы
-
-- PDF/DOCX import;
-- LAS/DLIS catalog/import;
-- SEG-Y catalog/import metadata;
-- SHA-256/object storage;
-- постраничное извлечение текста;
-- OCR fallback;
-- language detection;
-- связь файлов с объектом/скважиной/исследованием.
+### v0.4 — files and logs
+PDF/DOCX, LAS/DLIS/WITSML, SEG-Y metadata, object storage, OCR, file provenance.
 
 ### v0.5 — synchronization + matching
-
-- Kazakhstan Open Data scheduled sync;
-- USGS connector;
-- Macrostrat connector;
-- incremental sync;
-- entity/well matching;
-- deduplication;
-- review queue;
-- audit/revisions.
+Scheduled Kazakhstan Open Data, USGS/Macrostrat, incremental sync, matching, review queue, audit.
 
 ### v0.6 — unified search
+RU/KK/EN full text, aliases, spatial/depth/fluid/lithology/log/test/seismic filters.
 
-- `pg_trgm`;
-- full-text `ru/kk/en`;
-- aliases/transliteration;
-- spatial PostGIS search;
-- поиск по глубине/интервалам/флюиду/литологии;
-- поиск по ГИС/испытаниям/сейсмическому покрытию.
+### v0.7 — GIS/Desktop visualization
+MapLibre/PySide6, maps, cross-well correlation viewer, depth tracks, seismic coverage, GeoPackage/QGIS.
 
-### v0.7 — GIS application
-
-- MapLibre;
-- GeoJSON API;
-- bbox/intersects/within/distance;
-- слои месторождений/скважин/сейсмики/геологии;
-- GeoPackage export;
-- QGIS integration.
-
-### v0.8 — geological model
-
-- controlled vocabularies;
-- GeologicalUnit / StratigraphicUnit / Lithology / GeologicalAge;
-- Fault / Contact;
-- Basin / Field / Deposit / Occurrence;
-- reservoir intervals;
-- harmonization с GeoSciML/Energistics concepts.
+### v0.8 — geological model hardening
+Controlled vocabularies, GeologicalUnit, StratigraphicUnit, Lithology, GeologicalAge, Fault/Contact, reservoir concepts, GeoSciML alignment.
 
 ### v0.9 — AI-assisted extraction
+Только candidates + human review; никаких прямых verified updates.
 
-ИИ создаёт только candidates:
+### v1.0 — production desktop
+RU/KK/EN, Territory Explorer, Coordinate Search, Field Passport, Well Passport, Correlation Viewer, updates center, documents/evidence, network mode и offline core/cache.
 
-- EntityCandidate;
-- WellCandidate;
-- IntervalCandidate;
-- FactCandidate;
-- EvidenceCandidate;
-- RelationCandidate.
+## 7. Definition of Done пользовательской функции
 
-Публикация — только после validation/review.
+Функция считается завершённой только если:
 
-### v1.0 — GeoKZ Desktop
-
-- PySide6;
-- RU/KK/EN;
-- Territory Explorer;
-- Field/Deposit Passport;
-- Well Passport;
-- depth track viewer;
-- well-log viewer metadata/curves;
-- seismic catalog/map coverage;
-- documents/evidence;
-- source comparison;
-- data update center;
-- network mode;
-- offline core/cache.
-
-## 12. P0 backlog
-
-1. Завершить CI текущего v0.2 среза.
-2. Persistence service для ExternalRecord и SyncRun.
-3. Manual sync use case/API.
-4. Registry первых Kazakhstan Open Data datasets.
-5. PostgreSQL/PostGIS integration tests.
-6. Core Dataset manifest.
-7. WellTrajectoryPoint model.
-8. WellLogRun / WellLogCurve metadata models.
-9. WellTest model.
-10. SeismicSurvey / SeismicLine / SeismicVolume models.
-11. CoreRun / CoreSample models.
-12. API агрегированного Well Passport.
-13. API Territory Explorer.
-14. API Field Passport.
-15. Controlled vocabularies + unit model.
-16. Audit log/revisions.
-17. RU/KK/EN search.
-18. Spatial indexes/queries.
-19. Document/file storage abstraction.
-20. Review queue.
-
-## 13. Definition of Done внешнего connector
-
-1. задокументированы API/лицензия/версия набора;
-2. секреты только через environment/config;
-3. RAW сохраняется без потери данных;
-4. импорт идемпотентен;
-5. stable external id + checksum;
-6. транзакционная обработка ошибок;
-7. unit/integration tests;
-8. языковые варианты не смешиваются;
-9. статус доступен приложению;
-10. verified master data не изменяются автоматически.
-
-## 14. Definition of Done subsurface observation
-
-1. привязка к объекту/скважине;
-2. depth/reference system определены;
-3. числовое значение имеет unit;
-4. оригинальная единица не теряется;
-5. есть source/evidence либо явно указан статус неизвестного происхождения;
-6. observation отделён от interpretation;
-7. поддерживается verification status;
-8. импорт повторяем и идемпотентен;
-9. API не зависит от конкретного файлового формата;
-10. данные доступны на `ru/kk/en` там, где локализация применима.
+1. есть рабочий API/domain implementation;
+2. есть validation/error handling;
+3. есть tests;
+4. обновлена БД/migration при необходимости;
+5. обновлены RU/KK/EN подсказки;
+6. обновлены `USER_GUIDE_RU/KK/EN`;
+7. обновлён этот roadmap;
+8. данные имеют provenance/verification там, где это применимо;
+9. UI не скрывает неоднозначность CRS/depth/unit;
+10. CI зелёный.
