@@ -20,6 +20,16 @@ Large metric X/Y values require the source coordinate reference system: EPSG, UT
 ## Well passport
 The well passport includes coordinates, type/operator/status, dates, total depth, MD/TVD/TVDSS trajectory, geological intervals, stratigraphy, lithology, oil/gas/water indications, porosity/permeability, well logs, tests, flow rates, pressure/temperature, core/samples and related documents.
 
+## Cross-well section correlation
+Select a reference well and nearby wells. GeoKZ compares the sections in two complementary forms:
+
+- visual: vertical well columns, lithology intervals, reservoirs, oil/gas/water intervals and lines connecting common markers;
+- textual: marker depths, structural differences, interval thickness changes, lithology differences, reservoir properties and test-result differences.
+
+TVDSS is preferred for comparison. If available depth references are incompatible, GeoKZ shows a warning and does not draw a misleading automatic correlation.
+
+Each marker is stored separately with a code, localized name, depth, interpretation method, source, confidence and verification status. A correlation line should be traceable to the source document or well-log evidence supporting it.
+
 ## Sources and updates
 Important values expose provenance and verification status. External data never silently overwrites verified GeoKZ master values. Manual and periodic synchronization are supported, while the local database remains usable offline.
 
