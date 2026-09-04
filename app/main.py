@@ -5,12 +5,13 @@ from fastapi.responses import ORJSONResponse
 import app.models  # noqa: F401 — регистрирует все SQLAlchemy-модели
 from app.api.router import api_router
 from app.core.config import get_settings
+from app.core.project_info import PROJECT_VERSION
 
 settings = get_settings()
 
 app = FastAPI(
     title=settings.app_name,
-    version="0.1.0",
+    version=PROJECT_VERSION,
     debug=settings.debug,
     default_response_class=ORJSONResponse,
     docs_url="/docs",
