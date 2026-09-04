@@ -10,6 +10,7 @@ from app.api.routes import (
     help,
     integrations,
     sources,
+    spatial,
     wells,
 )
 from app.core.config import get_settings
@@ -47,6 +48,11 @@ api_router.include_router(
     explorer.territories_router,
     prefix=f"{settings.api_prefix}/territories",
     tags=["territories"],
+)
+api_router.include_router(
+    spatial.router,
+    prefix=f"{settings.api_prefix}/spatial",
+    tags=["spatial"],
 )
 api_router.include_router(
     facts.router,
