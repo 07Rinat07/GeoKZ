@@ -27,7 +27,14 @@ GeoKZ — Қазақстан геологиясы бойынша бірыңға�
 - ✅ `POST /api/v1/correlation/wells` — тірек және таңдалған көршілес ұңғымалар үшін; GET үйлесімділік үшін сақталды.
 - ✅ POST correlation нақты PostGIS базасында тексеріледі.
 - ✅ 4 көршілес ұңғыма, R1/R2 және J-II бар synthetic demo dataset.
-- ✅ Kazakhstan Open Data API v4 connector және external integration foundation.
+- ✅ external integration foundation: RAW/staging, checksum, SyncRun, source status және қауіпсіз жаңарту.
+- ✅ Kazakhstan Open Data API v4 үшін әмбебап connector.
+- ✅ ресми Kazakhstan Open Data registry: `stat_kgn_117/v10` (мұнай-газ кен орындары) және `zher_koinauyn_geologiyalyk_zer2/v6` (геологиялық зерттеу лицензиялары).
+- ✅ `GET /api/v1/integrations/kazakhstan/catalog` — ресми dataset каталогы.
+- ✅ `POST /api/v1/integrations/kazakhstan/register` — дереккөздерді жергілікті GeoKZ БД-сына тіркеу.
+- ✅ `POST /api/v1/integrations/kazakhstan/{code}/sync` — RAW/staging қабатына қолмен REST-синхрондау.
+- ✅ дереккөздер `AUTOMATIC`, 168 сағаттық интервалмен тіркеледі; нақты scheduler әлі іске асырылмаған.
+- ✅ API key тек `GEOKZ_EGOV_API_KEY` арқылы оқылады; кілт болмаса жергілікті база жұмысын жалғастырады.
 - ✅ RU/KK/EN user guides/roadmaps және documentation CI contract.
 
 ## Жақын P0
@@ -36,16 +43,17 @@ GeoKZ — Қазақстан геологиясы бойынша бірыңға�
 3. Ұйымның local CRS сақтау/баптау; СК-42/Гаусс–Крюгер тек расталған EPSG/WKT/PROJ арқылы.
 4. Correlation distance query ішіндегі SQLAlchemy cartesian-product warning-ті жою.
 5. Lithology/markers/property kinds/units controlled vocabularies.
-6. External sync persistence + manual/scheduled sync.
-7. Ресми Kazakhstan Open Data dataset registry.
-8. Core Dataset manifest/importer.
-9. Audit log/revisions.
+6. Сыртқы дереккөздерді мерзімді синхрондау scheduler-і және «Барлығын жаңарту» функциясы.
+7. Kazakhstan Open Data жазбаларын GeoKZ GeologicalEntity/кен орындарымен нормализациялау және matching.
+8. Схемасы, лицензиясы және сапасы тексерілгеннен кейін Қазақстанның келесі ресми dataset-терін қосу.
+9. Core Dataset manifest/importer.
+10. Audit log/revisions.
 
 ## Релиздер
-- `v0.2`: platform/integration/help/spatial/subsurface/correlation foundation.
-- `v0.3`: visual correlation data contract, CRS/local settings, complete demo workflow.
+- `v0.2`: platform/integration/help/spatial/subsurface/correlation foundation + Қазақстанның алғашқы ресми REST integrations.
+- `v0.3`: visual correlation data contract, CRS/local settings, complete demo workflow, scheduled external sync.
 - `v0.4`: PDF/DOCX/LAS/DLIS/WITSML/SEG-Y.
-- `v0.5`: scheduled sync/matching/review/audit.
+- `v0.5`: external source matching/review/audit.
 - `v0.6`: unified RU/KK/EN search.
 - `v0.7`: GIS/PySide6 + visual correlation viewer.
 - `v0.8`: geological model hardening / GeoSciML alignment.
