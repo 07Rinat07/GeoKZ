@@ -43,6 +43,32 @@ GeoKZ ресми `apiUri` мен `version` мәндерін бөлек сақт�
 
 Дереккөздер үшін автоматты жаңарту аралығы 168 сағат (аптасына бір рет) ретінде тіркеледі, сонымен бірге қолмен синхрондау кез келген уақытта орындалады.
 
+### «Барлығын жаңарту» және жоспарлы sync
+
+Барлық enabled source-ты қолмен жаңарту:
+
+```text
+POST /api/v1/integrations/sync-all
+```
+
+GeoKZ жалпы batch summary және әр source үшін жеке result қайтарады. Бір provider қатесі басқа source-тарды тоқтатпайды. Нәтижелерде `SUCCESS`, `FAILED`, `ALREADY_RUNNING`, `SKIPPED_DISABLED` және `SKIPPED_UNSUPPORTED` болуы мүмкін.
+
+Scheduler күйі:
+
+```text
+GET /api/v1/integrations/scheduler/status
+```
+
+`next_due_at`, `due` және `running_run_id` болашақ PySide6 UI-ға source қашан қайта тексерілетінін және sync қазір орындалып жатқанын көрсетуге мүмкіндік береді.
+
+Dedicated scheduler process тек due болған `AUTOMATIC` source-тарды орындайды:
+
+```text
+POST /api/v1/integrations/scheduler/run-due
+```
+
+Docker ішінде ол `geokz-external-sync-scheduler` service ретінде іске қосылады. FastAPI worker ішінде background loop жоқ. PostgreSQL row lock бір source үшін екі қатар `RUNNING` run ашылуына жол бермейді. Configurable timeout-тан ескі `RUNNING` `FAILED` күйіне ауысып, кейін жаңа sync іске қосылады.
+
 `kz-egov-oil-gas-fields` синхрондалғаннан кейін `process` қадамын іске қосуға болады. GeoKZ кен орны атауын нормализациялап, бар `field` объектілері және олардың aliases бойынша сәйкестендіреді. Сәйкестік автоматты түрде verified болмайды: `REVIEW_REQUIRED` кандидаты жасалады. Бірнеше ықтимал сәйкестік және табылмаған жазбалар сараптамалық review үшін сақталады.
 
 ## Сыртқы кен орындарын сараптамалық тексеру
@@ -82,23 +108,27 @@ POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/c
 
 ## GeoKZ REST API
 
+- `GET /api/v1/integrations/sources` — сыртқы source-тар және соңғы sync күйі;
+- `GET /api/v1/integrations/scheduler/status` — scheduler due/running/error күйі;
+- `POST /api/v1/integrations/sync-all` — қолмен «Барлығын жаңарту»;
+- `POST /api/v1/integrations/scheduler/run-due` — scheduled due алгоритмін бір рет орындау;
 - `GET /api/v1/integrations/kazakhstan/catalog` — ресми resources, `api_uri`, version және endpoint-тер;
 - `GET /api/v1/integrations/kazakhstan/{code}/schema` — импортқа дейін ресми metadata және mapping алу;
 - `POST /api/v1/integrations/kazakhstan/register` — ресурстарды жергілікті GeoKZ БД-сына тіркеу;
 - `POST /api/v1/integrations/kazakhstan/{code}/sync` — таңдалған ресурсты қолмен синхрондау;
 - `POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process` — RAW кен орындарын нормализациялау және GeoKZ объектілерімен safe matching жасау;
 - `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review` — техникалық сараптамалық review кезегін көрсету;
-- `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view` — локализацияланған UI/view-model review queue contract алу;
-- `GET /api/v1/integrations/sources` — сыртқы дереккөздер мен соңғы синхрондау күйін көрсету.
+- `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view` — локализацияланған UI/view-model review queue contract алу.
 
-Деректерді жүктеу үшін `data.egov.kz` developer API key талап етеді. Кілт тек `GEOKZ_EGOV_API_KEY` орта айнымалысында сақталады және Git репозиторийіне жазылмайды. Кілт болмаса да GeoKZ жергілікті базамен толық жұмыс істейді.
+Деректерді жүктеу үшін `data.egov.kz` developer API key талап етеді. Кілт тек `GEOKZ_EGOV_API_KEY` орта айнымалысында сақталады және Git репозиторийіне жазылмайды. Кілт болмаса да GeoKZ жергілікті базамен толық жұмыс істейді; scheduler нақты source қатесін жазып, process жұмысын жалғастырады.
 
 Толық нұсқаулықтар:
 
 - `docs/EXTERNAL_API_KEYS_KK.md` — API key алу және баптау;
 - `docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_KK.md` — `apiUri`, mapping, endpoint, processing және GeoKZ resource naming ережелері;
 - `docs/KAZAKHSTAN_FIELD_REVIEW_KK.md` — confirm/reject/manual-link/create-draft-field review workflow;
-- `docs/EXTERNAL_REVIEW_UI_CONTRACT_KK.md` — PySide6/web клиентіне арналған тұрақты review queue contract.
+- `docs/EXTERNAL_REVIEW_UI_CONTRACT_KK.md` — PySide6/web клиентіне арналған тұрақты review queue contract;
+- `docs/EXTERNAL_SYNC_SCHEDULER_KK.md` — scheduler, Update All, due/retry және parallel-run protection.
 
 ## Көмектер мен кеңестер
 Күрделі өрістер үшін қысқа кеңес, кеңейтілген түсіндірме, қадамдық шебер және диагностикалық ескерту қолданылады. CRS, X/Y реті, MD/TVD/TVDSS, ҰГЗ, корреляция және сыртқы дереккөздерді баптау үшін контекстік көмек міндетті.
