@@ -1,6 +1,7 @@
 import hashlib
 import json
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 
 def calculate_payload_checksum(payload: Mapping[str, Any]) -> str:
