@@ -235,3 +235,26 @@ record_type: geological_study_license
 - `docs/USER_GUIDE_KK.md` — сыртқы дереккөздермен жұмыс;
 - `docs/PROJECT_PLAN_V0_2_KK.md` — өзекті roadmap;
 - `docs/DOCUMENTATION_POLICY.md` — RU/KK/EN құжаттамасын синхронды жаңарту ережесі.
+
+## 10. Мұнай-газ кен орындарын нормализациялау және matching
+
+`kz-egov-oil-gas-fields` үшін RAW синхрондаудан кейінгі processing endpoint іске асырылды:
+
+```text
+POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process
+```
+
+GeoKZ осы dataset нақты беретін деректі ғана нормализациялайды — кен орнының атауын. RAW payload өзгеріссіз сақталады. Нормализацияланған payload ішінде `entity_type=field`, `name_ru`, matching key және бастапқы field атауы сақталады.
+
+Matching бар `GeologicalEntity(object_type="field")` объектілерімен және `EntityName` aliases арқылы орындалады. Регистр, типографиялық тырнақшалар, артық бос орындар және `ё/е` айырмасы салыстыру үшін нормализацияланады, бірақ upstream бастапқы мәні өзгертілмейді.
+
+Қауіпсіздік ережелері:
+
+- exact name match тек `ExternalEntityLink(status=REVIEW_REQUIRED)` жасайды;
+- alias match те review талап етеді;
+- бірнеше кандидат `AMBIGUOUS` ретінде белгіленеді;
+- кандидат жоқ болса `UNMATCHED` болады;
+- адам бұрын `VERIFIED` немесе `REJECTED` еткен link reviewer-locked және автоматты түрде өзгертілмейді;
+- сыртқы dataset жаңа verified `GeologicalEntity` объектісін автоматты түрде жасамайды немесе жарияламайды.
+
+Endpoint жауабында `processed`, `normalized`, `exact_matches`, `alias_matches`, `ambiguous`, `unmatched`, `normalization_errors`, `reviewer_locked` санағыштары беріледі.
