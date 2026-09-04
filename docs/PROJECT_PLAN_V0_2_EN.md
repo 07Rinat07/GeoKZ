@@ -19,30 +19,31 @@ GeoKZ is a single working window for geology in Kazakhstan: territory/coordinate
 - ✅ PostgreSQL/PostGIS CI: clean DB, migrations `0001 → 0004`, PostGIS/pg_trgm/unaccent and geography-distance checks.
 - ✅ Territory Explorer, Geological Entity Passport and Well Passport.
 - ✅ latitude/longitude and projected X/Y; dot/comma decimals; CRS; both X/Y axis orders.
-- ✅ pyproj/PROJ `CoordinateResolver` and transformation to WGS84.
-- ✅ `POST /api/v1/spatial/nearby` for nearby geological objects, wells and seismic surveys.
-- ✅ HTTP integration test for `/api/v1/spatial/nearby` against a real PostGIS database.
+- ✅ pyproj/PROJ `CoordinateResolver` and WGS84 transformation.
+- ✅ `POST /api/v1/spatial/nearby` with a real PostGIS HTTP integration test.
+- ✅ `GET /api/v1/spatial/crs-presets`: WGS84, UTM 38N–45N and RU/KK/EN warning; no silent CRS guessing.
 - ✅ trajectory, well-log, test, core and seismic models.
-- ✅ Well Correlation: markers, TVDSS preference, thickness/net pay, porosity/permeability, lithology/fluid/hydrocarbon differences.
-- ✅ real PostGIS correlation integration test.
+- ✅ Well Correlation: markers, TVDSS, thickness/net pay, porosity/permeability, lithology/fluid/hydrocarbon differences.
+- ✅ `POST /api/v1/correlation/wells` for a selected reference and neighboring wells; GET remains for compatibility.
+- ✅ POST correlation is tested against a real PostGIS database.
 - ✅ synthetic demo dataset with 4 nearby wells, R1/R2 and J-II.
 - ✅ Kazakhstan Open Data API v4 connector and external-integration foundation.
 - ✅ RU/KK/EN user guides/roadmaps and documentation CI contract.
 
 ## Near-term P0
-1. Connect coordinate-search results to nearby-well selection and correlation launch.
-2. Add a Kazakhstan CRS catalog and configurable local organization CRS definitions.
-3. Remove the SQLAlchemy warning in the correlation distance query.
-4. Define the API data model for the visual cross-section viewer.
-5. Build a demo workflow: coordinate → 4 wells → correlation.
+1. API/view-model for the visual cross-section viewer: well columns, depth scale, markers, intervals and correlation lines.
+2. Demo application workflow: coordinate → 4 nearby demo wells → selection → correlation section.
+3. Persistent/configurable organization-local CRS definitions; SK-42/Gauss-Kruger only from confirmed EPSG/WKT/PROJ definitions.
+4. Remove the SQLAlchemy cartesian-product warning in the correlation distance query.
+5. Controlled vocabularies for lithology/markers/property kinds/units.
 6. External sync persistence + manual/scheduled sync.
 7. Registry of official Kazakhstan Open Data datasets.
 8. Core Dataset manifest/importer.
-9. Controlled vocabularies + audit/revisions.
+9. Audit log/revisions.
 
 ## Releases
 - `v0.2`: platform/integration/help/spatial/subsurface/correlation foundation.
-- `v0.3`: coordinate/CRS hardening + correlation demo workflow.
+- `v0.3`: visual correlation data contract, CRS/local settings, complete demo workflow.
 - `v0.4`: PDF/DOCX/LAS/DLIS/WITSML/SEG-Y.
 - `v0.5`: scheduled sync/matching/review/audit.
 - `v0.6`: unified RU/KK/EN search.
