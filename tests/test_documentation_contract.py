@@ -27,17 +27,25 @@ TRILINGUAL_KZ_OPEN_DATA_GUIDES = (
     DOCS / "KAZAKHSTAN_OPEN_DATA_INTEGRATION_EN.md",
 )
 
+PROCESS_ENDPOINT = (
+    "/api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process"
+)
+
 
 def test_trilingual_user_guides_exist_and_are_not_empty() -> None:
     for path in TRILINGUAL_USER_GUIDES:
         assert path.is_file(), f"Missing user guide: {path.name}"
-        assert len(path.read_text(encoding="utf-8").strip()) > 500
+        content = path.read_text(encoding="utf-8").strip()
+        assert len(content) > 500
+        assert PROCESS_ENDPOINT in content
 
 
 def test_trilingual_roadmaps_exist_and_are_not_empty() -> None:
     for path in TRILINGUAL_ROADMAPS:
         assert path.is_file(), f"Missing roadmap: {path.name}"
-        assert len(path.read_text(encoding="utf-8").strip()) > 1000
+        content = path.read_text(encoding="utf-8").strip()
+        assert len(content) > 1000
+        assert PROCESS_ENDPOINT in content
 
 
 def test_trilingual_api_key_guides_exist_and_are_not_empty() -> None:
@@ -58,6 +66,8 @@ def test_trilingual_kazakhstan_open_data_guides_exist_and_follow_contract() -> N
         assert "record_type" in content
         assert "/api/v4/mapping/{apiUri}/{version}" in content
         assert "/api/v1/integrations/kazakhstan/{code}/schema" in content
+        assert PROCESS_ENDPOINT in content
+        assert "REVIEW_REQUIRED" in content
 
 
 def test_documentation_policy_exists() -> None:
