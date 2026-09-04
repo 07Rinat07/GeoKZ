@@ -35,6 +35,8 @@ GeoKZ — единое рабочее окно по геологии Казах�
 - ✅ `POST /api/v1/integrations/kazakhstan/{code}/sync` — ручная REST-синхронизация в RAW/staging.
 - ✅ источники регистрируются как `AUTOMATIC` с интервалом 168 часов; фактический scheduler ещё не реализован.
 - ✅ API key хранится только в `GEOKZ_EGOV_API_KEY`; без ключа локальная база продолжает работать.
+- ✅ отдельные инструкции по получению/настройке API-ключей на RU/KK/EN: `EXTERNAL_API_KEYS_RU.md`, `EXTERNAL_API_KEYS_KK.md`, `EXTERNAL_API_KEYS_EN.md`.
+- ✅ README содержит краткую инструкцию по получению ключа `data.egov.kz` и безопасной настройке `.env`.
 - ✅ USER_GUIDE и roadmap на RU/KK/EN + documentation CI contract.
 
 ## Ближайший P0
