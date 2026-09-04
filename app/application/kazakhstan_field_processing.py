@@ -15,7 +15,11 @@ from app.integrations.types import (
     MatchMethod,
 )
 from app.models.entity import EntityName, GeologicalEntity
-from app.models.integration import ExternalDataSource, ExternalEntityLink, ExternalRecord
+from app.models.integration import (
+    ExternalDataSource,
+    ExternalEntityLink,
+    ExternalRecord,
+)
 
 
 OIL_GAS_FIELDS_SOURCE_CODE = "kz-egov-oil-gas-fields"
