@@ -27,7 +27,14 @@ GeoKZ is a single working window for geology in Kazakhstan: territory/coordinate
 - ✅ `POST /api/v1/correlation/wells` for a selected reference and neighboring wells; GET remains for compatibility.
 - ✅ POST correlation is tested against a real PostGIS database.
 - ✅ synthetic demo dataset with 4 nearby wells, R1/R2 and J-II.
-- ✅ Kazakhstan Open Data API v4 connector and external-integration foundation.
+- ✅ external-integration foundation: RAW/staging, checksum, SyncRun, source status and safe updates.
+- ✅ generic Kazakhstan Open Data API v4 connector.
+- ✅ official Kazakhstan Open Data registry: `stat_kgn_117/v10` (oil and gas fields) and `zher_koinauyn_geologiyalyk_zer2/v6` (geological-study licenses).
+- ✅ `GET /api/v1/integrations/kazakhstan/catalog` — official dataset catalog.
+- ✅ `POST /api/v1/integrations/kazakhstan/register` — register the sources in the local GeoKZ database.
+- ✅ `POST /api/v1/integrations/kazakhstan/{code}/sync` — manual REST synchronization into RAW/staging.
+- ✅ sources are registered as `AUTOMATIC` with a 168-hour interval; the actual scheduler is still pending.
+- ✅ the API key is read only from `GEOKZ_EGOV_API_KEY`; the local database remains usable without it.
 - ✅ RU/KK/EN user guides/roadmaps and documentation CI contract.
 
 ## Near-term P0
@@ -36,16 +43,17 @@ GeoKZ is a single working window for geology in Kazakhstan: territory/coordinate
 3. Persistent/configurable organization-local CRS definitions; SK-42/Gauss-Kruger only from confirmed EPSG/WKT/PROJ definitions.
 4. Remove the SQLAlchemy cartesian-product warning in the correlation distance query.
 5. Controlled vocabularies for lithology/markers/property kinds/units.
-6. External sync persistence + manual/scheduled sync.
-7. Registry of official Kazakhstan Open Data datasets.
-8. Core Dataset manifest/importer.
-9. Audit log/revisions.
+6. Scheduled external-source synchronization and an Update All workflow.
+7. Normalize and match Kazakhstan Open Data records to GeoKZ GeologicalEntity/field records.
+8. Add more official Kazakhstan datasets after schema/license/data-quality review.
+9. Core Dataset manifest/importer.
+10. Audit log/revisions.
 
 ## Releases
-- `v0.2`: platform/integration/help/spatial/subsurface/correlation foundation.
-- `v0.3`: visual correlation data contract, CRS/local settings, complete demo workflow.
+- `v0.2`: platform/integration/help/spatial/subsurface/correlation foundation + first official Kazakhstan REST integrations.
+- `v0.3`: visual correlation data contract, CRS/local settings, complete demo workflow, scheduled external sync.
 - `v0.4`: PDF/DOCX/LAS/DLIS/WITSML/SEG-Y.
-- `v0.5`: scheduled sync/matching/review/audit.
+- `v0.5`: external-source matching/review/audit.
 - `v0.6`: unified RU/KK/EN search.
 - `v0.7`: GIS/PySide6 + visual correlation viewer.
 - `v0.8`: geological-model hardening / GeoSciML alignment.
