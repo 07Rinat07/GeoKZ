@@ -62,11 +62,14 @@ class KazakhstanOpenDataService:
         source.dataset_version = dataset.version
         source.source_config = {
             "provider": "data.egov.kz",
-            "dataset": dataset.dataset,
+            "api_uri": dataset.api_uri,
             "version": dataset.version,
             "record_type": dataset.record_type,
             "official_url": dataset.official_url,
             "metadata_url": dataset.metadata_url,
+            "mapping_url": dataset.mapping_url,
+            "data_url_template": dataset.data_url_template,
+            "detailed_url_template": dataset.detailed_url_template,
             "api_key_env": "GEOKZ_EGOV_API_KEY",
         }
         await self.session.flush()
