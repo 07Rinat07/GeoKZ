@@ -56,9 +56,39 @@ class MarkerDifference(BaseModel):
     reason: str | None = None
 
 
+class ReservoirDifference(BaseModel):
+    horizon: str
+    compared_well_id: UUID
+    reference_interval_id: UUID
+    compared_interval_id: UUID
+    depth_reference: DepthReference | None
+    reference_thickness_m: Decimal
+    compared_thickness_m: Decimal
+    thickness_delta_m: Decimal | None
+    reference_net_pay_m: Decimal | None
+    compared_net_pay_m: Decimal | None
+    net_pay_delta_m: Decimal | None
+    reference_porosity_percent: Decimal | None
+    compared_porosity_percent: Decimal | None
+    reference_permeability_md: Decimal | None
+    compared_permeability_md: Decimal | None
+    reference_lithologies: list[str]
+    compared_lithologies: list[str]
+    lithology_changed: bool
+    reference_fluid_type: FluidType
+    compared_fluid_type: FluidType
+    fluid_changed: bool
+    reference_hydrocarbon_status: HydrocarbonStatus
+    compared_hydrocarbon_status: HydrocarbonStatus
+    hydrocarbon_status_changed: bool
+    comparable_thickness: bool
+    reason: str | None = None
+
+
 class WellCorrelationResponse(BaseModel):
     language: SupportedLanguage
     reference_well_id: UUID
     columns: list[CorrelationWellColumn]
     marker_differences: list[MarkerDifference]
+    reservoir_differences: list[ReservoirDifference]
     comparison_note: str
