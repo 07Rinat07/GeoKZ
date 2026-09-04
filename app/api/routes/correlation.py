@@ -5,9 +5,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.correlation import WellCorrelationService
+from app.application.correlation_view import WellCrossSectionViewService
 from app.application.errors import ResourceNotFoundError
 from app.core.database import get_session
-from app.schemas.correlation import WellCorrelationRequest, WellCorrelationResponse
+from app.schemas.correlation import (
+    WellCorrelationRequest,
+    WellCorrelationResponse,
+    WellCrossSectionViewResponse,
+)
 
 router = APIRouter()
 
@@ -20,6 +25,22 @@ async def correlate_selected_wells(
     service = WellCorrelationService(session)
     try:
         return await service.compare(
+            reference_well_id=request.reference_well_id,
+            well_ids=request.well_ids,
+            language=request.language,
+        )
+    except ResourceNotFoundError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+
+
+@router.post("/wells/view", response_model=WellCrossSectionViewResponse)
+async def build_selected_wells_cross_section(
+    request: WellCorrelationRequest,
+    session: AsyncSession = Depends(get_session),
+) -> WellCrossSectionViewResponse:
+    service = WellCrossSectionViewService(session)
+    try:
+        return await service.build(
             reference_well_id=request.reference_well_id,
             well_ids=request.well_ids,
             language=request.language,
