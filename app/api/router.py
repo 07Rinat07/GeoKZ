@@ -1,6 +1,17 @@
 from fastapi import APIRouter
 
-from app.api.routes import about, entities, explorer, facts, health, integrations, sources, wells
+from app.api.routes import (
+    about,
+    correlation,
+    entities,
+    explorer,
+    facts,
+    health,
+    help,
+    integrations,
+    sources,
+    wells,
+)
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -11,6 +22,11 @@ api_router.include_router(
     about.router,
     prefix=f"{settings.api_prefix}/about",
     tags=["about"],
+)
+api_router.include_router(
+    help.router,
+    prefix=f"{settings.api_prefix}/help",
+    tags=["help"],
 )
 api_router.include_router(
     sources.router,
@@ -41,6 +57,11 @@ api_router.include_router(
     wells.router,
     prefix=f"{settings.api_prefix}/wells",
     tags=["wells"],
+)
+api_router.include_router(
+    correlation.router,
+    prefix=f"{settings.api_prefix}/correlation",
+    tags=["correlation"],
 )
 api_router.include_router(
     integrations.router,
