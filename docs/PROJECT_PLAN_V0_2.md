@@ -2,7 +2,7 @@
 
 Статус документа: `2026-09-04`, ветка `feature/external-data-sync-v0.2`.
 
-Обозначения: `✅` реализовано в коде; `🧪` реализовано/частично реализовано, требует CI или интеграционной проверки; `⬜` запланировано.
+Обозначения: `✅` реализовано в коде; `🧪` реализовано/частично реализовано, требует интеграционной проверки; `⬜` запланировано.
 
 ## 1. Продуктовый смысл
 GeoKZ — единое рабочее окно по геологической информации Казахстана. Пользователь выбирает территорию, координату, месторождение, структуру или скважину и получает максимально полную доступную информацию из встроенной проверенной базы и разрешённых внешних источников.
@@ -69,7 +69,7 @@ RAW staging, checksum/diff, normalization, matching, review queue, manual/period
 - ✅ About API RU/KK/EN;
 - ✅ авторские metadata Sarmuldin Rinat / ura07srr@gmail.com;
 - ✅ contextual Help catalog/API RU/KK/EN;
-- 🧪 полный CI требует повторной проверки после последних изменений.
+- ✅ текущий head прошёл `compileall`, Ruff и pytest в GitHub Actions.
 
 ### External data
 - ✅ ExternalDataSource / ExternalRecord / ExternalSyncRun / ExternalEntityLink;
@@ -99,7 +99,7 @@ RAW staging, checksum/diff, normalization, matching, review queue, manual/period
 - ✅ CoreRun / CoreSample;
 - ✅ SeismicSurvey / SeismicLine / SeismicVolume;
 - ✅ Well Passport API;
-- 🧪 migration/integration validation;
+- 🧪 PostgreSQL/PostGIS migration/integration validation;
 - ⬜ LAS/DLIS/WITSML import;
 - ⬜ SEG-Y catalog/import metadata.
 
@@ -116,7 +116,8 @@ RAW staging, checksum/diff, normalization, matching, review queue, manual/period
 - ✅ net-pay delta;
 - ✅ porosity/permeability comparison;
 - ✅ lithology/fluid/hydrocarbon-status differences;
-- 🧪 CI/PostGIS integration tests;
+- ✅ unit-level CI проходит;
+- 🧪 PostGIS integration tests;
 - ⬜ correlation по ГИС-кривым;
 - ⬜ ручное соединение/разрыв линий;
 - ⬜ PySide6 cross-section viewer;
@@ -126,25 +127,24 @@ RAW staging, checksum/diff, normalization, matching, review queue, manual/period
 - ✅ USER_GUIDE RU/KK/EN;
 - ✅ roadmap RU/KK/EN;
 - ✅ Documentation Policy;
-- ✅ I18N/Business Domain docs;
+- ✅ I18N/Business Domain/WELL_CORRELATION docs;
 - ✅ CI test обязательного наличия трёх guides и трёх roadmaps.
 
 ## 5. Ближайший P0 backlog
-1. Полный Ruff + pytest на текущем head.
-2. PostgreSQL/PostGIS service в CI + migrate-to-head test.
-3. Coordinate-search HTTP endpoint.
-4. PROJ/pyproj CRS transformation.
-5. CRS presets Казахстана + локальные настраиваемые CRS.
-6. Persistence service ExternalRecord/SyncRun.
-7. Manual sync endpoint.
-8. Registry первых Kazakhstan Open Data datasets.
-9. Integration tests nearby search + correlation.
-10. Seed markers/intervals для демонстрации корреляции.
-11. Unit tests marker/reservoir comparison.
-12. Core Dataset manifest/importer.
-13. Controlled vocabularies lithology/marker/property kinds/units.
-14. Audit log/revisions.
-15. Prototype visual correlation data model for PySide6.
+1. PostgreSQL/PostGIS service в CI + migrate-to-head test.
+2. Coordinate-search HTTP endpoint.
+3. PROJ/pyproj CRS transformation.
+4. CRS presets Казахстана + локальные настраиваемые CRS.
+5. Persistence service ExternalRecord/SyncRun.
+6. Manual sync endpoint.
+7. Registry первых Kazakhstan Open Data datasets.
+8. Integration tests nearby search + correlation.
+9. Seed markers/intervals для демонстрации корреляции.
+10. Unit tests marker/reservoir comparison.
+11. Core Dataset manifest/importer.
+12. Controlled vocabularies lithology/marker/property kinds/units.
+13. Audit log/revisions.
+14. Prototype visual correlation data model for PySide6.
 
 ## 6. План релизов
 - `v0.2`: platform/integration/help/spatial/subsurface/correlation foundation;
