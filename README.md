@@ -56,17 +56,54 @@ GeoKZ — доказательная геологическая информац
 
 Внешние данные проходят RAW → checksum/diff → normalization → matching → review → verified master view.
 
-### Официальные Kazakhstan Open Data datasets
+### Официальные Kazakhstan Open Data resources
 
 На этапе `v0.2-dev` подключён реестр:
 
 - `kz-egov-oil-gas-fields` — нефтегазовые месторождения Республики Казахстан;
 - `kz-egov-geological-study-licenses` — лицензии на геологическое изучение недр.
 
-Каталог доступен через:
+GeoKZ использует официальную терминологию `data.egov.kz`:
+
+```text
+apiUri   = технический индекс ресурса на портале
+version  = версия ресурса, например v10
+fields   = технические имена полей
+source   = JSON-параметр API v4 для from/size/query/sort
+```
+
+Пример:
+
+```text
+GeoKZ code:  kz-egov-oil-gas-fields
+apiUri:      stat_kgn_117
+version:     v10
+record_type: oil_gas_field
+```
+
+`GeoKZ code` — стабильный внутренний slug connector-а. Официальный `apiUri` не переводится, не сокращается и хранится отдельно от версии.
+
+Официальные формы endpoint-ов:
+
+```text
+GET /meta/{apiUri}/{version}
+GET /api/v4/mapping/{apiUri}/{version}
+GET /api/v4/{apiUri}/{version}?source={JSON}
+GET /api/detailed/{apiUri}/{version}?source={JSON}
+```
+
+Перед подключением нового набора GeoKZ должен сначала прочитать metadata и mapping, сверить имена/типы полей, выполнить небольшой sample-запрос, а только затем добавлять normalization/matching.
+
+Каталог GeoKZ:
 
 ```text
 GET /api/v1/integrations/kazakhstan/catalog
+```
+
+Проверка официальных metadata + mapping до импорта:
+
+```text
+GET /api/v1/integrations/kazakhstan/{code}/schema
 ```
 
 Регистрация известных источников:
@@ -80,6 +117,12 @@ POST /api/v1/integrations/kazakhstan/register
 ```text
 POST /api/v1/integrations/kazakhstan/{code}/sync
 ```
+
+Подробная инструкция по подключению, именованию ресурсов и добавлению новых datasets:
+
+- RU: [`docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md`](docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md)
+- KK: [`docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_KK.md`](docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_KK.md)
+- EN: [`docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_EN.md`](docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_EN.md)
 
 ### Как получить API-ключ data.egov.kz
 
@@ -137,6 +180,7 @@ docker compose up --build
 - help: `/api/v1/help/topics?lang=ru`
 - external sources: `/api/v1/integrations/sources`
 - Kazakhstan catalog: `/api/v1/integrations/kazakhstan/catalog`
+- Kazakhstan resource schema: `/api/v1/integrations/kazakhstan/{code}/schema`
 - well passport: `/api/v1/wells/{well_id}/passport`
 - correlation: `/api/v1/correlation/wells/{reference_well_id}`
 
@@ -156,6 +200,11 @@ docker compose up --build
 - RU: [`docs/EXTERNAL_API_KEYS_RU.md`](docs/EXTERNAL_API_KEYS_RU.md)
 - KK: [`docs/EXTERNAL_API_KEYS_KK.md`](docs/EXTERNAL_API_KEYS_KK.md)
 - EN: [`docs/EXTERNAL_API_KEYS_EN.md`](docs/EXTERNAL_API_KEYS_EN.md)
+
+### Интеграция Kazakhstan Open Data
+- RU: [`docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md`](docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md)
+- KK: [`docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_KK.md`](docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_KK.md)
+- EN: [`docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_EN.md`](docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_EN.md)
 
 ### Другие документы
 - [`docs/BUSINESS_DOMAIN.md`](docs/BUSINESS_DOMAIN.md) — предметная модель;
