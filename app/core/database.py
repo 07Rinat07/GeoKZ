@@ -5,16 +5,28 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
+from sqlalchemy.pool import NullPool
 
 from app.core.config import get_settings
 
 settings = get_settings()
 
-engine = create_async_engine(
-    settings.database_url,
-    echo=settings.sql_echo,
-    pool_pre_ping=True,
-)
+if settings.environment == "test":
+    # pytest-asyncio может создавать отдельный event loop для разных тестов.
+    # asyncpg-соединение из обычного пула привязано к loop, в котором оно создано,
+    # поэтому в integration tests используем новые соединения вместо межтестового reuse.
+    engine = create_async_engine(
+        settings.database_url,
+        echo=settings.sql_echo,
+        pool_pre_ping=True,
+        poolclass=NullPool,
+    )
+else:
+    engine = create_async_engine(
+        settings.database_url,
+        echo=settings.sql_echo,
+        pool_pre_ping=True,
+    )
 
 AsyncSessionFactory = async_sessionmaker(
     bind=engine,
