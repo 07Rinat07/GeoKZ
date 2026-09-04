@@ -17,6 +17,7 @@ GeoKZ — доказательная геологическая информац
 - 2D/3D seismic catalog;
 - корреляция разрезов соседних скважин по реперам и интервалам;
 - backend-owned visual cross-section view-model с общей depth scale и готовыми correlation lines;
+- complete synthetic demo workflow: координата → nearby demo wells → selection → cross-section;
 - evidence/provenance и конфликты источников;
 - встроенный GeoKZ Core Dataset + обновляемые внешние источники;
 - контекстные подсказки и помощники RU/KK/EN.
@@ -31,6 +32,7 @@ GeoKZ — доказательная геологическая информац
 - **Safe depth/CRS handling:** MD/TVD/TVDSS и разные CRS не смешиваются молча.
 - **Server-owned review rules:** PySide6/web UI получает готовые action descriptors и не дублирует backend business rules.
 - **Server-owned cross-section rendering contract:** клиент отображает готовую depth axis/columns/lines и не придумывает собственные depth conversions или correlation links.
+- **Synthetic isolation:** demo workflow принимает только явно маркированный synthetic dataset и не смешивает его с production wells даже при совпадающих координатах.
 - **Dedicated sync scheduler:** periodic external sync выполняется отдельным process/service, не background loop внутри FastAPI workers.
 - **Documentation-as-code:** пользовательские инструкции и roadmap поддерживаются на RU/KK/EN и проверяются CI-контрактом.
 
@@ -260,6 +262,28 @@ POST /api/v1/correlation/wells/view
 - KK: [`docs/CROSS_SECTION_VIEW_CONTRACT_KK.md`](docs/CROSS_SECTION_VIEW_CONTRACT_KK.md)
 - EN: [`docs/CROSS_SECTION_VIEW_CONTRACT_EN.md`](docs/CROSS_SECTION_VIEW_CONTRACT_EN.md)
 
+## Complete synthetic demo workflow
+
+Для воспроизводимой проверки UI используется:
+
+```text
+POST /api/v1/correlation/demo/workflow
+```
+
+Первый вызов с coordinate/radius возвращает `stage=DISCOVERY`, только `nearby_demo_wells`, suggested reference и selection contract. Второй вызов с `reference_well_id` и `well_ids` возвращает `stage=CROSS_SECTION_READY` и готовый `cross_section`. Dataset `synthetic-correlation-demo-v1` изолирован от обычных wells: production well не может попасть в demo selection только из-за близости или совпадающей координаты. Invalid selection отклоняется HTTP `422`.
+
+Seed demo dataset:
+
+```text
+python -m scripts.seed_correlation_demo
+```
+
+Контракты:
+
+- RU: [`docs/DEMO_CORRELATION_WORKFLOW_RU.md`](docs/DEMO_CORRELATION_WORKFLOW_RU.md)
+- KK: [`docs/DEMO_CORRELATION_WORKFLOW_KK.md`](docs/DEMO_CORRELATION_WORKFLOW_KK.md)
+- EN: [`docs/DEMO_CORRELATION_WORKFLOW_EN.md`](docs/DEMO_CORRELATION_WORKFLOW_EN.md)
+
 ## Разработка
 
 ```powershell
@@ -294,6 +318,7 @@ docker compose up --build
 - well passport: `/api/v1/wells/{well_id}/passport`
 - correlation: `/api/v1/correlation/wells/{reference_well_id}`
 - visual cross-section view-model: `/api/v1/correlation/wells/view`
+- complete demo correlation workflow: `/api/v1/correlation/demo/workflow`
 
 ## Документация
 
@@ -336,6 +361,11 @@ docker compose up --build
 - RU: [`docs/CROSS_SECTION_VIEW_CONTRACT_RU.md`](docs/CROSS_SECTION_VIEW_CONTRACT_RU.md)
 - KK: [`docs/CROSS_SECTION_VIEW_CONTRACT_KK.md`](docs/CROSS_SECTION_VIEW_CONTRACT_KK.md)
 - EN: [`docs/CROSS_SECTION_VIEW_CONTRACT_EN.md`](docs/CROSS_SECTION_VIEW_CONTRACT_EN.md)
+
+### Demo correlation workflow
+- RU: [`docs/DEMO_CORRELATION_WORKFLOW_RU.md`](docs/DEMO_CORRELATION_WORKFLOW_RU.md)
+- KK: [`docs/DEMO_CORRELATION_WORKFLOW_KK.md`](docs/DEMO_CORRELATION_WORKFLOW_KK.md)
+- EN: [`docs/DEMO_CORRELATION_WORKFLOW_EN.md`](docs/DEMO_CORRELATION_WORKFLOW_EN.md)
 
 ### Другие документы
 - [`docs/BUSINESS_DOMAIN.md`](docs/BUSINESS_DOMAIN.md) — предметная модель;

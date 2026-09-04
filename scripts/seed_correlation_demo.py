@@ -6,6 +6,7 @@ from geoalchemy2.elements import WKTElement
 from sqlalchemy import select
 
 from app.core.database import AsyncSessionFactory
+from app.core.demo_data import DEMO_CORRELATION_DATASET
 from app.models.correlation import WellMarker
 from app.models.entity import GeologicalEntity
 from app.models.enums import (
@@ -17,7 +18,7 @@ from app.models.enums import (
 )
 from app.models.well import Well, WellInterval
 
-DEMO_TAG = "synthetic-correlation-demo-v1"
+DEMO_TAG = DEMO_CORRELATION_DATASET
 
 
 async def get_or_create_entity(session, **values: Any) -> GeologicalEntity:
@@ -107,10 +108,46 @@ async def seed() -> None:
             "04": {"R1": Decimal("2462.0"), "R2": Decimal("2528.5")},
         }
         reservoir_specs = {
-            "01": ("2450", "2478", "18.2", "17.4", "124", ["sandstone"], FluidType.OIL, HydrocarbonStatus.TESTED_FLOW),
-            "02": ("2471", "2492", "12.7", "15.8", "83", ["sandstone", "siltstone"], FluidType.MIXED, HydrocarbonStatus.LOG_INTERPRETATION),
-            "03": ("2436", "2469", "21.1", "18.1", "148", ["sandstone"], FluidType.OIL, HydrocarbonStatus.TESTED_FLOW),
-            "04": ("2460", "2485", "9.4", "14.9", "61", ["siltstone", "sandstone"], FluidType.WATER, HydrocarbonStatus.NEGATIVE),
+            "01": (
+                "2450",
+                "2478",
+                "18.2",
+                "17.4",
+                "124",
+                ["sandstone"],
+                FluidType.OIL,
+                HydrocarbonStatus.TESTED_FLOW,
+            ),
+            "02": (
+                "2471",
+                "2492",
+                "12.7",
+                "15.8",
+                "83",
+                ["sandstone", "siltstone"],
+                FluidType.MIXED,
+                HydrocarbonStatus.LOG_INTERPRETATION,
+            ),
+            "03": (
+                "2436",
+                "2469",
+                "21.1",
+                "18.1",
+                "148",
+                ["sandstone"],
+                FluidType.OIL,
+                HydrocarbonStatus.TESTED_FLOW,
+            ),
+            "04": (
+                "2460",
+                "2485",
+                "9.4",
+                "14.9",
+                "61",
+                ["siltstone", "sandstone"],
+                FluidType.WATER,
+                HydrocarbonStatus.NEGATIVE,
+            ),
         }
 
         for code, longitude, latitude, total_depth in well_specs:

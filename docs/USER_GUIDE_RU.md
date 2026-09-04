@@ -145,3 +145,16 @@ POST /api/v1/correlation/wells/view
 Backend выбирает одну общую шкалу глубин с приоритетом `TVDSS → TVD → MD`. Реперы и интервалы, которые нельзя безопасно представить на выбранной шкале, возвращаются с `renderable=false` и не соединяются линиями автоматически. `correlation_lines` содержит готовые сегменты типов `MARKER` и `HORIZON`, а `warnings` — стабильные коды `DEPTH_REFERENCE_MISMATCH`, `NO_RENDERABLE_DATA`, `NO_CORRELATION_LINES` и другие диагностические состояния.
 
 Клиент должен отображать `VerificationStatus` и предупреждения, но не должен самостоятельно пересчитывать глубины или создавать новые корреляционные связи. Полный контракт: `docs/CROSS_SECTION_VIEW_CONTRACT_RU.md`.
+
+## Полный demo workflow корреляции
+Для проверки интерфейса без смешивания с production data используется единый сценарий:
+
+```text
+POST /api/v1/correlation/demo/workflow
+```
+
+Первый запрос содержит координату/radius и возвращает `stage=DISCOVERY`, `nearby_demo_wells`, `suggested_reference_well_id`, `can_build_cross_section` и обязательное `synthetic=true`. Затем UI выбирает одну reference well и 1–20 compared wells только из текущего `nearby_demo_wells` и повторяет тот же endpoint с `reference_well_id` и `well_ids`. При успешном выборе response имеет `stage=CROSS_SECTION_READY` и содержит готовый `cross_section`.
+
+Dataset `synthetic-correlation-demo-v1` отделён от обычных скважин: даже production well в той же точке не попадает в demo selection. Неполный выбор, дубликаты, reference well внутри `well_ids` или UUID вне текущего discovery отклоняются HTTP `422`. Demo-набор создаётся командой `python -m scripts.seed_correlation_demo` и не является источником производственных фактов.
+
+Подробный контракт и пошаговые примеры: `docs/DEMO_CORRELATION_WORKFLOW_RU.md`.
