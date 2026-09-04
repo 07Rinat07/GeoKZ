@@ -157,7 +157,7 @@ async def test_correlation_uses_real_postgis_and_compares_reservoirs() -> None:
             assert marker_difference.delta_m == Decimal("18.400")
 
             reservoir_difference = result.reservoir_differences[0]
-            assert reservoir_difference.horizon == "j-ii"
+            assert reservoir_difference.horizon == "J-II"
             assert reservoir_difference.comparable_thickness is True
             assert reservoir_difference.reference_thickness_m == Decimal("28.000")
             assert reservoir_difference.compared_thickness_m == Decimal("21.000")
