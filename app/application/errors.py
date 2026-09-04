@@ -11,4 +11,20 @@ class CoordinateResolutionError(ApplicationError):
 
 
 class DemoCorrelationSelectionError(ApplicationError):
-    """Выбор скважин не соответствует безопасному demo workflow."""
+    """Demo correlation selection is incomplete or outside the discovered synthetic set."""
+
+
+class CrsDefinitionNotFoundError(ApplicationError):
+    """Сохранённое определение CRS не найдено."""
+
+
+class CrsDefinitionValidationError(ApplicationError):
+    """Определение CRS не прошло безопасную проверку PROJ/pyproj."""
+
+
+class CrsDefinitionNotConfirmedError(ApplicationError):
+    """Сохранённая CRS не подтверждена или отключена и не может использоваться."""
+
+
+class CrsDefinitionConflictError(ApplicationError):
+    """Код сохранённой CRS уже используется."""

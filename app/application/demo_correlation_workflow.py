@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.application.coordinates import CoordinateResolver
+from app.application.coordinate_resolution import CoordinateResolutionService
 from app.application.correlation_view import WellCrossSectionViewService
 from app.application.errors import DemoCorrelationSelectionError
 from app.application.spatial_search import SpatialSearchService
@@ -92,7 +92,9 @@ class DemoCorrelationWorkflowService:
         self,
         request: DemoCorrelationWorkflowRequest,
     ) -> DemoCorrelationWorkflowResponse:
-        resolved = CoordinateResolver().resolve(request.coordinate)
+        resolved = await CoordinateResolutionService(self.session).resolve(
+            request.coordinate
+        )
         demo_well_ids = list(
             await self.session.scalars(
                 select(Well.id)

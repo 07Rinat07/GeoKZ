@@ -62,6 +62,15 @@ class CoordinateResolver:
         self,
         coordinate: ProjectedCoordinateInput,
     ) -> ResolvedCoordinate:
+        if coordinate.crs is None:
+            raise CoordinateResolutionError(
+                "registered_crs_code требует registry-aware coordinate resolution service."
+            )
+        if coordinate.axis_order is None:
+            raise CoordinateResolutionError(
+                "Для явной projected CRS необходимо указать axis_order."
+            )
+
         source_crs = self._parse_crs(coordinate.crs)
         if not source_crs.is_projected:
             raise CoordinateResolutionError(
