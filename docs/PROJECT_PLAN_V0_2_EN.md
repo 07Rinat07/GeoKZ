@@ -23,24 +23,27 @@ GeoKZ is a single working window for geology in Kazakhstan: territory/coordinate
 - ✅ catalog/register/schema/sync REST endpoints.
 - ✅ `stat_kgn_117` normalizer and matching against `GeologicalEntity(object_type="field")` and `EntityName` aliases.
 - ✅ `POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process` — normalize + match after RAW sync.
-- ✅ automatic exact/alias candidates remain `REVIEW_REQUIRED`; ambiguous/unmatched records remain available for expert review; reviewer decisions survive reprocessing.
+- ✅ automatic exact/alias candidates remain `REVIEW_REQUIRED`; ambiguous/unmatched records remain available for expert review.
+- ✅ repeated `process` is idempotent for unresolved automatic links and does not create duplicate `ExternalEntityLink` pairs.
+- ✅ reviewer-locked decisions (`VERIFIED`, `REJECTED`, `MANUAL`, reviewer/comment) survive reprocessing.
 - ✅ review queue: `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review`.
 - ✅ review actions: confirm/reject candidate, manual linking to an existing field, and explicit creation of a new field only from `UNMATCHED`.
 - ✅ a field created from an external record always starts with `verification_status=DRAFT`; a verified source association never makes the geological object VERIFIED automatically.
 - ✅ reviewer identity/comment are stored on `ExternalEntityLink`; full authentication and AuditLog are still planned.
+- ✅ review/matching backend is validated by green `Python quality checks` and PostgreSQL/PostGIS integration tests on the same head.
 - ✅ trilingual documentation for external integration, resource naming and field review, enforced by CI.
 
 ## Near-term P0
-1. Bring the review backend to fully green PostgreSQL/PostGIS CI and define the review-queue UI contract.
-2. Scheduled external synchronization and Update All.
+1. Define the external review-queue UI/view-model contract for future PySide6: change list, RAW/normalized/GeoKZ comparison, confirm/reject/manual-link/create DRAFT actions.
+2. Scheduled external synchronization and Update All with protection against concurrent sync runs.
 3. Visual cross-section viewer API/view-model and complete demo workflow.
-4. Persistent/configurable organization-local CRS definitions.
-5. Remove the remaining SQLAlchemy cartesian-product warning in correlation distance queries.
-6. Controlled vocabularies for lithology/markers/property kinds/units.
-7. Add normalization/review for the geological-study licenses resource after mapping/license/data-quality validation.
-8. Core Dataset manifest/importer.
-9. Authentication + AuditLog/revisions.
-10. Production PySide6 review/integration UI.
+4. Coordinate → nearby demo wells → selection → correlation section end-to-end flow.
+5. Persistent/configurable organization-local CRS definitions; SK-42/Gauss-Kruger only from confirmed EPSG/WKT/PROJ definitions.
+6. Remove the remaining SQLAlchemy cartesian-product warning in correlation distance queries without changing PostGIS distance results.
+7. Controlled vocabularies for lithology/markers/property kinds/units.
+8. Add normalization/review for the geological-study licenses resource after mapping/license/data-quality validation.
+9. Core Dataset manifest/importer.
+10. Authentication + AuditLog/revisions for review and master-data changes.
 
 ## Releases
 - `v0.2`: platform/integration/help/spatial/subsurface/correlation foundation + first Kazakhstan REST integrations + safe oil/gas-field normalization/matching/review.
