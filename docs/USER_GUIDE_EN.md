@@ -43,12 +43,15 @@ GeoKZ stores the official `apiUri` and `version` separately. Before a resource i
 
 Sources are registered with a 168-hour automatic update interval (weekly), while manual synchronization is available at any time.
 
+After `kz-egov-oil-gas-fields` has been synchronized, the `process` step can be run. GeoKZ normalizes the field name and matches it against existing `field` objects and their aliases. A match is never treated as verified automatically: a `REVIEW_REQUIRED` candidate is created. Ambiguous and unmatched records remain available for expert review.
+
 GeoKZ REST API:
 
 - `GET /api/v1/integrations/kazakhstan/catalog` — list official resources, `api_uri`, version and endpoint templates;
 - `GET /api/v1/integrations/kazakhstan/{code}/schema` — fetch official metadata and mapping before ingestion;
 - `POST /api/v1/integrations/kazakhstan/register` — register resources in the local GeoKZ database;
 - `POST /api/v1/integrations/kazakhstan/{code}/sync` — manually synchronize one resource;
+- `POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process` — normalize RAW field records and perform safe matching against GeoKZ entities;
 - `GET /api/v1/integrations/sources` — show external sources and latest synchronization state.
 
 The `data.egov.kz` data API requires a developer API key. The key is read only from the `GEOKZ_EGOV_API_KEY` environment variable and must never be committed to Git. Without the key, GeoKZ continues to operate fully on the local database.
@@ -56,7 +59,7 @@ The `data.egov.kz` data API requires a developer API key. The key is read only f
 Detailed guides:
 
 - `docs/EXTERNAL_API_KEYS_EN.md` — obtaining and configuring the API key;
-- `docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_EN.md` — `apiUri`, mapping, endpoint patterns and GeoKZ resource naming rules.
+- `docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_EN.md` — `apiUri`, mapping, endpoint patterns, processing and GeoKZ resource naming rules.
 
 ## Hints and assistants
 Complex fields use a short hint, expanded contextual help, step-by-step wizard and diagnostic warning. Contextual help is especially important for CRS, X/Y axis order, MD/TVD/TVDSS, well logs, correlation and external-source configuration.
