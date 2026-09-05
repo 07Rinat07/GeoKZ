@@ -19,6 +19,7 @@ Documentation is part of Definition of Done. Пайдаланушыға арна
 При изменении соответствующей области обновляются все три языковые версии:
 
 - Core Dataset: `docs/CORE_DATASET_RU.md`, `docs/CORE_DATASET_KK.md`, `docs/CORE_DATASET_EN.md`;
+- signed Core Dataset update channel: `docs/CORE_DATASET_UPDATE_CHANNEL_RU.md`, `docs/CORE_DATASET_UPDATE_CHANNEL_KK.md`, `docs/CORE_DATASET_UPDATE_CHANNEL_EN.md`;
 - external API secrets: `docs/EXTERNAL_API_KEYS_RU.md`, `docs/EXTERNAL_API_KEYS_KK.md`, `docs/EXTERNAL_API_KEYS_EN.md`;
 - Kazakhstan Open Data: `docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md`, `docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_KK.md`, `docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_EN.md`;
 - oil/gas field review: `docs/KAZAKHSTAN_FIELD_REVIEW_RU.md`, `docs/KAZAKHSTAN_FIELD_REVIEW_KK.md`, `docs/KAZAKHSTAN_FIELD_REVIEW_EN.md`;
@@ -45,8 +46,10 @@ Documentation is part of Definition of Done. Пайдаланушыға арна
 11. **Append-only history.** AuditLog/revisions не перезаписываются и не удаляются обычными application paths.
 12. **Desktop HTTP boundary.** PySide6 не импортирует SQLAlchemy models и не подключается к PostgreSQL напрямую.
 13. **Backend-owned actions.** Desktop/UI исполняет server action descriptors (`enabled`, `required_fields`, `method`, `path`) и не дублирует review business rules.
-14. **Secret safety.** Реальные API keys, passwords и bearer tokens запрещено включать в Git, docs, issues, PRs, screenshots или examples.
-15. **RU/KK/EN parity.** Пользовательская функция не complete, если инструкция/подсказка отсутствует хотя бы на одном из трёх языков.
+14. **Signed updates.** Online Core Dataset release активируется только после Ed25519 signature, SHA-256, archive-safety и compatibility validation.
+15. **No destructive rollback.** Rollback не выполняет hard delete; при изменившихся `external_id` identity sets безопасный rollback блокируется.
+16. **Secret safety.** Реальные API keys, passwords, bearer tokens и signing private keys запрещено включать в Git, docs, issues, PRs, screenshots или examples.
+17. **RU/KK/EN parity.** Пользовательская функция не complete, если инструкция/подсказка отсутствует хотя бы на одном из трёх языков.
 
 ## Core Dataset rules
 
@@ -60,6 +63,16 @@ Documentation is part of Definition of Done. Пайдаланушыға арна
 - transactional install/rollback;
 - idempotence (`changed=false`);
 - отсутствие вымышленных production geological facts в bootstrap.
+
+Signed update-channel documentation additionally documents:
+
+```text
+GET  /api/v1/core-dataset/update/status
+POST /api/v1/core-dataset/update/apply
+POST /api/v1/core-dataset/update/rollback
+```
+
+и обязана фиксировать `Ed25519`, `SHA-256`, `GEOKZ_CORE_DATASET_UPDATE_TRUSTED_PUBLIC_KEYS`, admin-only activation, compatibility по application/Alembic/Core Dataset schema, staging before activation, AuditLog и non-destructive rollback semantics.
 
 ## Desktop rules
 
