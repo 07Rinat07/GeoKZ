@@ -81,6 +81,9 @@ class KazakhstanOpenDataService:
         source.name_kk = dataset.name_kk
         source.name_en = dataset.name_en
         source.base_url = "https://data.egov.kz"
+        # Sync policy is registry-owned. Re-registration restores the safe code contract,
+        # while the user's enabled/disabled choice is intentionally preserved.
+        source.sync_mode = dataset.sync_mode
         source.sync_interval_hours = dataset.sync_interval_hours
         if dataset.pinned_version is not None:
             source.dataset_version = dataset.pinned_version
