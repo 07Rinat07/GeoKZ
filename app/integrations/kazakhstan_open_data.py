@@ -7,6 +7,8 @@ from app.integrations.providers.egov_open_data import (
 )
 from app.integrations.types import SyncMode
 
+LATEST_MAPPING_VERSION = "LATEST_MAPPING"
+
 
 @dataclass(frozen=True, slots=True)
 class KazakhstanOpenDataDataset:
@@ -18,7 +20,7 @@ class KazakhstanOpenDataDataset:
     description_kk: str
     description_en: str
     api_uri: str
-    version: str | None
+    version: str
     record_type: str
     identity_alias_groups: tuple[tuple[str, ...], ...]
     official_url: str
@@ -34,13 +36,21 @@ class KazakhstanOpenDataDataset:
 
     @property
     def version_policy(self) -> str:
-        return "PINNED" if self.version is not None else "LATEST_MAPPING"
+        return (
+            LATEST_MAPPING_VERSION
+            if self.version == LATEST_MAPPING_VERSION
+            else "PINNED"
+        )
+
+    @property
+    def pinned_version(self) -> str | None:
+        return None if self.version_policy == LATEST_MAPPING_VERSION else self.version
 
     def connector_config(self) -> EgovDatasetConfig:
         return EgovDatasetConfig(
             source_code=self.code,
             dataset=self.api_uri,
-            version=self.version,
+            version=self.pinned_version,
             record_type=self.record_type,
             identity_alias_groups=self.identity_alias_groups,
             language="ru",
@@ -159,7 +169,7 @@ KAZAKHSTAN_OPEN_DATASETS: tuple[KazakhstanOpenDataDataset, ...] = (
             "mapping endpoint."
         ),
         api_uri="stat_kgn_118",
-        version=None,
+        version=LATEST_MAPPING_VERSION,
         record_type="solid_mineral_field",
         identity_alias_groups=(
             (
@@ -206,7 +216,7 @@ KAZAKHSTAN_OPEN_DATASETS: tuple[KazakhstanOpenDataDataset, ...] = (
             "before synchronization is enabled."
         ),
         api_uri="stat_kgn_120",
-        version=None,
+        version=LATEST_MAPPING_VERSION,
         record_type="groundwater_field",
         identity_alias_groups=(
             (
