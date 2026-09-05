@@ -118,6 +118,9 @@ class ExternalRecord(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         server_default="false",
         nullable=False,
     )
+    reviewed_by: Mapped[str | None] = mapped_column(String(300))
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    review_comment: Mapped[str | None] = mapped_column(Text)
 
     source: Mapped[ExternalDataSource] = relationship(back_populates="records")
     entity_links: Mapped[list["ExternalEntityLink"]] = relationship(
