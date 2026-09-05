@@ -1,74 +1,124 @@
-# GeoKZ — Current Development Plan v0.2+
+# GeoKZ — Current Development Plan v0.3+
 
-Status: `2026-09-04`, branch `feature/local-crs-registry-v0.3`.
+Status: `2026-09-05`, current feature slice `feature/geological-study-license-review-v0.3`.
 
 ## Purpose
-GeoKZ is an evidence-first geological information system for Kazakhstan: territory/coordinate → object → well → intervals/logs/core/tests → correlation → source and evidence.
+GeoKZ is being built as an evidence-based geological workspace for Kazakhstan: territory/coordinate → nearby fields, structures, wells and seismic → passports → lithology, reservoirs, logs, core, tests, oil/gas/water → neighboring-well correlation → primary sources, provenance, conflicts and expert review.
 
-## Mandatory principles
-- RU/KK/EN for all user-facing features and documentation.
-- Verified master data is never changed by external APIs or AI without review.
-- RAW/source documents remain separate from interpretation.
-- CRS, axis order, MD/TVD/TVDSS and units are explicit.
-- The Core Dataset works without mandatory internet access.
-- Synthetic/demo data stays separate from production data.
-- UI clients do not duplicate backend business rules.
-- Periodic external synchronization runs as a dedicated process/service.
+The user-facing product and documentation are maintained in RU/KK/EN. External APIs enrich the local database but are not mandatory runtime dependencies and never overwrite verified master data automatically.
 
-## Implemented
-- ✅ FastAPI + PostgreSQL/PostGIS + async SQLAlchemy + Alembic.
-- ✅ PostgreSQL/PostGIS CI with migrations, PostGIS, pg_trgm and unaccent.
-- ✅ Territory Explorer, Geological Entity Passport and Well Passport.
-- ✅ geographic/projected coordinate input, WGS84/UTM helper and pyproj/PROJ resolution.
-- ✅ `POST /api/v1/spatial/nearby` with a real PostGIS integration test.
-- ✅ trajectory, well logs, tests, core, seismic and Well Correlation.
-- ✅ `POST /api/v1/correlation/wells` and backend-owned `POST /api/v1/correlation/wells/view`.
-- ✅ safe visual cross-section contract: `TVDSS → TVD → MD`, renderability, MARKER/HORIZON lines and warnings.
-- ✅ synthetic demo dataset and complete `POST /api/v1/correlation/demo/workflow` from coordinate to cross-section.
-- ✅ external RAW/staging, checksum, SyncRun and ExternalEntityLink foundation.
-- ✅ Kazakhstan Open Data API v4 connector with `stat_kgn_117/v10` and `zher_koinauyn_geologiyalyk_zer2/v6` registry.
-- ✅ oil/gas-field normalization, safe matching, review queue/actions and RU/KK/EN review UI contract.
-- ✅ dedicated external sync scheduler, due/retry policy, row-lock protection and Update All.
-- ✅ persistent organization/local CRS registry: `organization_crs_definitions`, migration `20260904_0005`.
-- ✅ local CRS entries accept exact `EPSG`, `WKT`, or `PROJ`, and store canonical WKT plus `source_reference`.
-- ✅ explicit confirmation workflow; only active + `is_confirmed=true` entries resolve through `registered_crs_code`.
-- ✅ changing the definition, axis order, or source reference automatically clears confirmation.
-- ✅ spatial nearby and demo correlation use registry-aware coordinate resolution; unconfirmed CRS entries are blocked.
-- ✅ local CRS registry has unit coverage and a real PostgreSQL/PostGIS API integration test.
-- ✅ dedicated `LOCAL_CRS_REGISTRY_*` documentation exists in RU/KK/EN.
+## Implemented and merged into main
 
-## Stable API contracts
-- `POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process` — normalize and match RAW field records.
-- `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review` — technical review queue.
-- `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view` — UI-ready review view-model.
-- `POST /api/v1/integrations/sync-all` — manual Update All.
-- `GET /api/v1/integrations/scheduler/status` — scheduler state.
-- `POST /api/v1/integrations/scheduler/run-due` — one scheduled-due pass.
-- `POST /api/v1/correlation/wells/view` — visual cross-section view-model.
-- `POST /api/v1/correlation/demo/workflow` — complete synthetic demo workflow.
-- `GET /api/v1/spatial/crs-definitions` — organization CRS list.
-- `POST /api/v1/spatial/crs-definitions` — create an unconfirmed CRS entry.
-- `POST /api/v1/spatial/crs-definitions/{definition_id}/confirm` — explicit confirmation.
+- FastAPI + PostgreSQL/PostGIS + async SQLAlchemy + Alembic;
+- real PostgreSQL/PostGIS CI with migration-to-head gate;
+- territory explorer, Geological Entity Passport and Well Passport;
+- geographic/projected X/Y input, dot/comma parsing, WGS84/UTM helper;
+- confirmed persistent organization-local CRS registry using EPSG/WKT/PROJ;
+- PostGIS nearby search;
+- trajectory, logs, tests, core and 2D/3D seismic subsurface models;
+- WellMarker and depth-safe TVDSS/TVD/MD correlation;
+- visual cross-section endpoint: `POST /api/v1/correlation/wells/view`;
+- synthetic end-to-end demo: `POST /api/v1/correlation/demo/workflow`;
+- official Kazakhstan Open Data connector with metadata/mapping/schema inspection;
+- Update All: `POST /api/v1/integrations/sync-all`;
+- scheduler status: `GET /api/v1/integrations/scheduler/status`;
+- run due: `POST /api/v1/integrations/scheduler/run-due`;
+- oil/gas field processing: `POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process`;
+- field review: `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review`;
+- localized field-review view: `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view`;
+- persistent controlled vocabularies (`lithology`, `marker_type`, `property_kind`, `unit`) plus canonical bindings to subsurface records while preserving RAW/source wording;
+- correlation distance-query cartesian-product warning removed and protected by a PostGIS regression test.
 
-## Near-term P0
-1. Remove the remaining SQLAlchemy cartesian-product warning in the correlation distance query without changing PostGIS distance results.
-2. Add controlled vocabularies for lithology/markers/property kinds/units.
-3. Add normalizer/review for the geological-study licenses resource after mapping/license/data-quality validation.
-4. Add the Core Dataset manifest/importer.
-5. Add Authentication + AuditLog/revisions for review, CRS confirmation, and master-data changes.
-6. Build the production PySide6 external-review screen on the stable backend view-model contract.
-7. Expand to USGS/Macrostrat/OneGeology only after license and contract validation.
+## Current P0 — geological study license register
 
-## Releases
-- `v0.2`: platform/evidence/integration/spatial/subsurface/correlation foundation and first Kazakhstan Open Data integrations — merged to `main`.
-- `v0.3`: review UI, scheduled sync, visual cross-section, complete demo workflow, and persistent local CRS registry.
-- `v0.4`: PDF/DOCX/LAS/DLIS/WITSML/SEG-Y import.
-- `v0.5`: expanded external matching/review/audit.
-- `v0.6`: unified RU/KK/EN search.
-- `v0.7`: GIS/PySide6 + production visual correlation viewer.
-- `v0.8`: geological-model hardening / GeoSciML alignment.
-- `v0.9`: AI candidates + human review.
-- `v1.0`: production GeoKZ Desktop.
+```text
+GeoKZ code:  kz-egov-geological-study-licenses
+apiUri:      zher_koinauyn_geologiyalyk_zer2
+version:     v6
+record_type: geological_study_license
+```
+
+Implemented in the current feature branch:
+
+- administrative license normalizer;
+- immutable `raw_payload` preservation;
+- normalized `license_number`, `issue_date`, type/scope, term, basis, authority, holder and BIN;
+- Alembic `20260905_0008` with generic record-review metadata: `reviewed_by`, `reviewed_at`, `review_comment`;
+- record-level `REVIEW_REQUIRED → ACCEPTED/REJECTED`;
+- no automatic `ExternalEntityLink`, because the verified v6 dataset card does not expose a stable geological-object/geometry identifier;
+- upstream `CHANGED` invalidates the old human review decision;
+- unit and PostgreSQL/PostGIS HTTP integration tests;
+- dedicated RU/KK/EN documentation.
+
+API:
+
+```text
+POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/process
+GET  /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/records
+POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/records/{record_id}/accept
+POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/records/{record_id}/reject
+```
+
+Merge gate: final exact-head Python quality and PostgreSQL/PostGIS integration must both be green, followed by green PR-CI on the same head, then squash merge to `main`.
+
+## Next P0 after merge
+
+### 1. GeoKZ Core Dataset manifest/importer
+
+- versioned `manifest.json`;
+- dataset/schema version, created_at and SHA-256;
+- transactional import/update with rollback;
+- baseline entities/sources/facts/regions/vocabularies;
+- Core Dataset version exposed in About/Data Sources;
+- checksum validation and preparation for digital signatures;
+- tests for repeated import, incompatible schema and rollback.
+
+### 2. Authentication + AuditLog/Revision
+
+- expert/editor/admin roles;
+- audit trail for review and scientific master-data changes;
+- Fact/Entity/geometry/interpretation revision history;
+- verified data cannot be silently overwritten;
+- controlled-vocabulary write API only after roles/audit exist.
+
+### 3. Production PySide6 review/data-source screens
+
+- Data Sources + Update All;
+- scheduler due/running/error/version state;
+- field review driven by server-owned action descriptors;
+- license ACCEPT/REJECT queue;
+- provenance panel and RU/KK/EN contextual help.
+
+### 4. More official Kazakhstan geology datasets
+
+Each new source is onboarded only after current metadata/mapping/license/terms verification. Reuse the provider SDK, RAW + checksum/diff, typed normalizer, review rules and contract tests instead of duplicating bespoke business logic for every dataset.
+
+### 5. Global/open geology context
+
+After the official Kazakhstan integration layer is stable:
+
+- USGS Mineral Resources;
+- Macrostrat;
+- OneGeology/OGC;
+- Copernicus observation assets.
+
+Every external record preserves source/version/retrieved_at/license/attribution. Authority is not equivalent to truth: conflicting values remain traceable and are resolved by expert review.
 
 ## Definition of Done
-A user-facing feature is complete only with implementation, validation, tests, required migration, RU/KK/EN docs/help, provenance/verification rules, and green CI.
+
+```text
+feature branch
+→ code + migrations
+→ unit tests
+→ PostgreSQL/PostGIS integration
+→ README + USER_GUIDE RU/KK/EN
+→ roadmap RU/KK/EN
+→ dedicated RU/KK/EN feature docs when needed
+→ exact-head CI green
+→ PR
+→ PR-CI green on the same head
+→ squash merge into main
+→ next roadmap item
+```
+
+Core rule: GeoKZ must remain usable without external services; internet access safely enriches its local evidence-based database.
