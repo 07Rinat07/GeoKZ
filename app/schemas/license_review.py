@@ -21,12 +21,13 @@ class LicenseReviewRecordRead(BaseModel):
 
 
 class LicenseReviewDecisionRequest(BaseModel):
-    reviewer: str = Field(min_length=2, max_length=300)
+    # Legacy compatibility only. The authenticated principal is authoritative.
+    reviewer: str | None = Field(default=None, min_length=2, max_length=300)
     comment: str | None = Field(default=None, max_length=2000)
 
 
 class LicenseReviewRejectRequest(BaseModel):
-    reviewer: str = Field(min_length=2, max_length=300)
+    reviewer: str | None = Field(default=None, min_length=2, max_length=300)
     comment: str = Field(min_length=2, max_length=2000)
 
 
