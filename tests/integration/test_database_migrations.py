@@ -19,7 +19,7 @@ async def test_alembic_head_and_required_extensions() -> None:
     try:
         async with engine.connect() as connection:
             revision = await connection.scalar(text("SELECT version_num FROM alembic_version"))
-            assert revision == "20260905_0009"
+            assert revision == "20260905_0010"
 
             extensions = set(
                 (
@@ -64,6 +64,10 @@ async def test_alembic_head_and_required_extensions() -> None:
                 "organization_crs_definitions",
                 "controlled_vocabulary_terms",
                 "core_dataset_states",
+                "user_accounts",
+                "auth_sessions",
+                "audit_logs",
+                "master_data_revisions",
             } <= tables
 
             vocabulary_constraint = await connection.scalar(
@@ -87,7 +91,8 @@ async def test_alembic_head_and_required_extensions() -> None:
                             "WHERE table_schema = 'public' AND table_name IN "
                             "('well_intervals', 'well_markers', 'well_log_curves', "
                             "'well_tests', 'core_samples', 'external_records', "
-                            "'core_dataset_states')"
+                            "'core_dataset_states', 'user_accounts', 'auth_sessions', "
+                            "'audit_logs', 'master_data_revisions')"
                         )
                     )
                 ).tuples()
@@ -112,6 +117,17 @@ async def test_alembic_head_and_required_extensions() -> None:
                 ("core_dataset_states", "installed_at"),
                 ("core_dataset_states", "file_checksums"),
                 ("core_dataset_states", "item_counts"),
+                ("user_accounts", "username"),
+                ("user_accounts", "role"),
+                ("user_accounts", "password_hash"),
+                ("auth_sessions", "token_hash"),
+                ("auth_sessions", "expires_at"),
+                ("auth_sessions", "revoked_at"),
+                ("audit_logs", "actor_username"),
+                ("audit_logs", "action"),
+                ("audit_logs", "resource_type"),
+                ("master_data_revisions", "revision_number"),
+                ("master_data_revisions", "snapshot"),
             } <= columns
 
             postgis_version = await connection.scalar(text("SELECT PostGIS_Version()"))
