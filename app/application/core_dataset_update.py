@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import hashlib
 from dataclasses import dataclass
 from enum import StrEnum
@@ -86,6 +87,11 @@ class CoreDatasetUpdateOperationResult:
     signature_key_id: str | None
 
 
+@dataclass(frozen=True, slots=True)
+class _RollbackBundleValidation:
+    target_version: str
+
+
 @dataclass(slots=True)
 class CoreDatasetUpdateService:
     session: AsyncSession
@@ -110,9 +116,7 @@ class CoreDatasetUpdateService:
                 signature_key_id=None,
                 signature_verified=False,
                 compatible=False,
-                compatibility_issues=(
-                    "Core Dataset update channel is not configured",
-                ),
+                compatibility_issues=("Core Dataset update channel is not configured",),
                 rollback_available=rollback_available,
                 rollback_version=rollback_version,
             )
@@ -172,22 +176,38 @@ class CoreDatasetUpdateService:
             )
 
         descriptor = await self._fetch_descriptor(settings)
-        installed = await self._installed_state(for_update=not dry_run)
+        installed = await self._installed_state()
         issues = await self._compatibility_issues(descriptor, installed)
         if issues:
             raise CoreDatasetUpdateCompatibilityError("; ".join(issues))
-        assert installed is not None  # compatibility gate above requires the bundled baseline.
+        assert installed is not None  # compatibility gate requires a bundled baseline.
 
         if installed.manifest_sha256 == descriptor.manifest_sha256:
-            result = CoreDatasetImportResult(
-                dataset_code=installed.dataset_code,
-                dataset_version=installed.dataset_version,
-                schema_version=installed.schema_version,
-                manifest_sha256=installed.manifest_sha256,
-                installed_at=installed.installed_at,
-                item_counts=dict(installed.item_counts),
-                changed=False,
+            return self._unchanged_result(
+                installed,
+                descriptor=descriptor,
+                source_url=settings.core_dataset_update_manifest_url,
                 dry_run=dry_run,
+            )
+
+        baseline_manifest_sha256 = installed.manifest_sha256
+        dataset_code = installed.dataset_code
+        bundle_bytes = await self._download_bundle(descriptor, settings)
+        try:
+            manifest_path = await asyncio.to_thread(
+                extract_verified_update_bundle,
+                bundle_bytes,
+                descriptor=descriptor,
+                cache_root=settings.core_dataset_update_cache_dir,
+                max_extracted_bytes=settings.core_dataset_update_max_bytes,
+            )
+        except CoreDatasetUpdateDescriptorError as error:
+            raise CoreDatasetUpdateError(str(error)) from error
+
+        if dry_run:
+            result = await CoreDatasetImporter(self.session).import_bundle(
+                manifest_path,
+                dry_run=True,
             )
             return CoreDatasetUpdateOperationResult(
                 operation="update",
@@ -197,41 +217,34 @@ class CoreDatasetUpdateService:
                 signature_key_id=descriptor.key_id,
             )
 
-        bundle_bytes = await self._download_bundle(descriptor, settings)
-        manifest_path = extract_verified_update_bundle(
-            bundle_bytes,
-            descriptor=descriptor,
-            cache_root=settings.core_dataset_update_cache_dir,
-            max_extracted_bytes=settings.core_dataset_update_max_bytes,
-        )
-
         try:
-            if dry_run:
-                result = await CoreDatasetImporter(self.session).import_bundle(
-                    manifest_path,
-                    dry_run=True,
+            await self._lock_dataset(dataset_code)
+            locked = await self._installed_state(for_update=True)
+            if locked is None:
+                raise CoreDatasetUpdateCompatibilityError(
+                    "Core Dataset baseline disappeared while update was being prepared"
                 )
-                return CoreDatasetUpdateOperationResult(
-                    operation="update",
-                    import_result=result,
-                    source_url=settings.core_dataset_update_manifest_url,
-                    bundle_sha256=descriptor.bundle_sha256,
-                    signature_key_id=descriptor.key_id,
+            await self.session.refresh(locked)
+            if locked.manifest_sha256 != baseline_manifest_sha256:
+                raise CoreDatasetUpdateCompatibilityError(
+                    "Installed Core Dataset changed while the update was being prepared; retry the update"
                 )
+            locked_issues = await self._compatibility_issues(descriptor, locked)
+            if locked_issues:
+                raise CoreDatasetUpdateCompatibilityError("; ".join(locked_issues))
 
-            await self._lock_dataset(installed.dataset_code)
-            self._save_previous_state(installed)
-            installed.last_update_source_url = settings.core_dataset_update_manifest_url
-            installed.last_update_bundle_sha256 = descriptor.bundle_sha256
-            installed.last_update_key_id = descriptor.key_id
+            self._save_previous_state(locked)
+            locked.last_update_source_url = settings.core_dataset_update_manifest_url
+            locked.last_update_bundle_sha256 = descriptor.bundle_sha256
+            locked.last_update_key_id = descriptor.key_id
             await AuditRevisionService(self.session).append_audit(
                 actor=actor,
                 action=AuditAction.INSTALL,
                 resource_type="core_dataset",
-                resource_id=installed.dataset_code,
+                resource_id=locked.dataset_code,
                 reason="signed_online_update",
                 details={
-                    "from_version": installed.previous_dataset_version,
+                    "from_version": locked.previous_dataset_version,
                     "to_version": descriptor.dataset_version,
                     "manifest_sha256": descriptor.manifest_sha256,
                     "bundle_sha256": descriptor.bundle_sha256,
@@ -240,9 +253,6 @@ class CoreDatasetUpdateService:
                 },
             )
             result = await CoreDatasetImporter(self.session).import_bundle(manifest_path)
-        except (CoreDatasetImportError, CoreDatasetUpdateDescriptorError):
-            await self.session.rollback()
-            raise
         except Exception:
             await self.session.rollback()
             raise
@@ -256,56 +266,63 @@ class CoreDatasetUpdateService:
         )
 
     async def rollback(self, *, actor: AuditActor) -> CoreDatasetUpdateOperationResult:
-        installed = await self._installed_state(for_update=True)
+        installed = await self._installed_state()
         if installed is None:
             raise CoreDatasetRollbackError("Core Dataset is not installed")
         if not installed.previous_source_path or not installed.previous_manifest_sha256:
             raise CoreDatasetRollbackError("No previous Core Dataset snapshot is available")
+        if not installed.source_path:
+            raise CoreDatasetRollbackError("Current Core Dataset manifest path is unavailable")
 
-        current_path = Path(installed.source_path) if installed.source_path else None
+        current_manifest_sha256 = installed.manifest_sha256
+        previous_manifest_sha256 = installed.previous_manifest_sha256
+        current_path = Path(installed.source_path)
         previous_path = Path(installed.previous_source_path)
-        if current_path is None or not current_path.is_file() or not previous_path.is_file():
-            raise CoreDatasetRollbackError(
-                "Rollback bundle is unavailable on disk; refusing an unverifiable rollback"
-            )
-
         try:
-            current_identity = inspect_bundle_identity(current_path)
-            previous_identity = inspect_bundle_identity(previous_path)
-            previous_bundle = validate_core_dataset_bundle(previous_path)
+            validation = await asyncio.to_thread(
+                _validate_rollback_bundle,
+                current_path,
+                previous_path,
+                previous_manifest_sha256,
+            )
+        except CoreDatasetRollbackError:
+            raise
         except (CoreDatasetUpdateDescriptorError, ValueError) as error:
             raise CoreDatasetRollbackError(str(error)) from error
 
-        if current_identity != previous_identity:
-            raise CoreDatasetRollbackError(
-                "Safe rollback is blocked because the two Core Dataset snapshots do not contain "
-                "the same external_id identity sets; GeoKZ will not hard-delete newer master data"
-            )
-        if previous_bundle.manifest_sha256 != installed.previous_manifest_sha256:
-            raise CoreDatasetRollbackError(
-                "Previous Core Dataset manifest checksum no longer matches rollback metadata"
-            )
-
-        await self._lock_dataset(installed.dataset_code)
-        from_version = installed.dataset_version
-        target_version = installed.previous_dataset_version or previous_bundle.manifest.dataset_version
-        await AuditRevisionService(self.session).append_audit(
-            actor=actor,
-            action=AuditAction.INSTALL,
-            resource_type="core_dataset",
-            resource_id=installed.dataset_code,
-            reason="safe_rollback",
-            details={
-                "from_version": from_version,
-                "to_version": target_version,
-                "target_manifest_sha256": installed.previous_manifest_sha256,
-            },
-        )
-        self._clear_previous_state(installed)
-        installed.last_update_source_url = None
-        installed.last_update_bundle_sha256 = None
-        installed.last_update_key_id = None
         try:
+            await self._lock_dataset(installed.dataset_code)
+            locked = await self._installed_state(for_update=True)
+            if locked is None:
+                raise CoreDatasetRollbackError(
+                    "Core Dataset disappeared while rollback was being prepared"
+                )
+            await self.session.refresh(locked)
+            if (
+                locked.manifest_sha256 != current_manifest_sha256
+                or locked.previous_manifest_sha256 != previous_manifest_sha256
+            ):
+                raise CoreDatasetRollbackError(
+                    "Core Dataset state changed while rollback was being prepared; retry rollback"
+                )
+
+            from_version = locked.dataset_version
+            await AuditRevisionService(self.session).append_audit(
+                actor=actor,
+                action=AuditAction.INSTALL,
+                resource_type="core_dataset",
+                resource_id=locked.dataset_code,
+                reason="safe_rollback",
+                details={
+                    "from_version": from_version,
+                    "to_version": validation.target_version,
+                    "target_manifest_sha256": previous_manifest_sha256,
+                },
+            )
+            self._clear_previous_state(locked)
+            locked.last_update_source_url = None
+            locked.last_update_bundle_sha256 = None
+            locked.last_update_key_id = None
             result = await CoreDatasetImporter(self.session).import_bundle(previous_path)
         except Exception:
             await self.session.rollback()
@@ -345,9 +362,7 @@ class CoreDatasetUpdateService:
                 payload,
                 settings.core_dataset_update_trusted_public_keys,
             )
-        except CoreDatasetUpdateSignatureError as error:
-            raise CoreDatasetUpdateError(str(error)) from error
-        except CoreDatasetUpdateDescriptorError as error:
+        except (CoreDatasetUpdateSignatureError, CoreDatasetUpdateDescriptorError) as error:
             raise CoreDatasetUpdateError(str(error)) from error
 
     async def _download_bundle(
@@ -365,7 +380,9 @@ class CoreDatasetUpdateService:
                 response.raise_for_status()
                 content_length = response.headers.get("content-length")
                 if content_length and int(content_length) > settings.core_dataset_update_max_bytes:
-                    raise CoreDatasetUpdateError("Core Dataset update bundle exceeds download-size limit")
+                    raise CoreDatasetUpdateError(
+                        "Core Dataset update bundle exceeds download-size limit"
+                    )
                 content = response.content
         except ValueError as error:
             raise CoreDatasetUpdateTransportError(
@@ -460,8 +477,60 @@ class CoreDatasetUpdateService:
         state.previous_file_checksums = None
         state.previous_item_counts = None
 
+    @staticmethod
+    def _unchanged_result(
+        installed: CoreDatasetState,
+        *,
+        descriptor: CoreDatasetUpdateDescriptor,
+        source_url: str | None,
+        dry_run: bool,
+    ) -> CoreDatasetUpdateOperationResult:
+        result = CoreDatasetImportResult(
+            dataset_code=installed.dataset_code,
+            dataset_version=installed.dataset_version,
+            schema_version=installed.schema_version,
+            manifest_sha256=installed.manifest_sha256,
+            installed_at=installed.installed_at,
+            item_counts=dict(installed.item_counts),
+            changed=False,
+            dry_run=dry_run,
+        )
+        return CoreDatasetUpdateOperationResult(
+            operation="update",
+            import_result=result,
+            source_url=source_url,
+            bundle_sha256=descriptor.bundle_sha256,
+            signature_key_id=descriptor.key_id,
+        )
+
     async def _lock_dataset(self, dataset_code: str) -> None:
         await self.session.execute(
             text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
             {"key": f"core-dataset-update:{dataset_code}"},
         )
+
+
+def _validate_rollback_bundle(
+    current_path: Path,
+    previous_path: Path,
+    expected_previous_manifest_sha256: str,
+) -> _RollbackBundleValidation:
+    if not current_path.is_file() or not previous_path.is_file():
+        raise CoreDatasetRollbackError(
+            "Rollback bundle is unavailable on disk; refusing an unverifiable rollback"
+        )
+
+    current_identity = inspect_bundle_identity(current_path)
+    previous_identity = inspect_bundle_identity(previous_path)
+    if current_identity != previous_identity:
+        raise CoreDatasetRollbackError(
+            "Safe rollback is blocked because the two Core Dataset snapshots do not contain "
+            "the same external_id identity sets; GeoKZ will not hard-delete newer master data"
+        )
+
+    previous_bundle = validate_core_dataset_bundle(previous_path)
+    if previous_bundle.manifest_sha256 != expected_previous_manifest_sha256:
+        raise CoreDatasetRollbackError(
+            "Previous Core Dataset manifest checksum no longer matches rollback metadata"
+        )
+    return _RollbackBundleValidation(target_version=previous_bundle.manifest.dataset_version)
