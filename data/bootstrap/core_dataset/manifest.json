@@ -1,0 +1,37 @@
+{
+  "dataset_code": "geokz-core",
+  "dataset_version": "2026.09.0-bootstrap",
+  "schema_version": 1,
+  "created_at": "2026-09-05T01:45:00Z",
+  "minimum_app_version": "0.2.0-dev",
+  "external_id_prefix": "geokz-core:",
+  "dependencies": {
+    "controlled_vocabularies": "1.0.0"
+  },
+  "files": [
+    {
+      "path": "sources.jsonl",
+      "kind": "sources",
+      "sha256": "855984268e9e4386fd24629e7e67ed97252342eda6ee0914d0fe0f8012aa4cc9",
+      "required": true
+    },
+    {
+      "path": "regions.geojson",
+      "kind": "regions",
+      "sha256": "4c58488c84985f73ba359a79627539c6556dcfa30469bfec946b892f7d6677a9",
+      "required": true
+    },
+    {
+      "path": "entities.jsonl",
+      "kind": "entities",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "required": true
+    },
+    {
+      "path": "facts.jsonl",
+      "kind": "facts",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "required": true
+    }
+  ]
+}

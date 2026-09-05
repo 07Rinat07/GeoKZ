@@ -36,6 +36,55 @@ POST /api/v1/correlation/demo/workflow
 
 Dataset `synthetic-correlation-demo-v1` is strictly isolated from production wells and follows `DISCOVERY` → selection → `CROSS_SECTION_READY`.
 
+## GeoKZ Core Dataset
+
+GeoKZ ships an independently versioned baseline dataset. Its version is separate from both the application version and the Alembic database revision.
+
+Current bundled snapshot:
+
+```text
+dataset_code:    geokz-core
+dataset_version: 2026.09.0-bootstrap
+schema_version:  1
+```
+
+Inspect the bundled version and the state installed in the current database:
+
+```text
+GET /api/v1/core-dataset/status
+```
+
+`update_available=true` means the bundled manifest differs from the installed state or Core Dataset has not yet been installed.
+
+Validate without writing to the database:
+
+```text
+POST /api/v1/core-dataset/install?dry_run=true&lang=en
+```
+
+Install the bundled snapshot:
+
+```text
+POST /api/v1/core-dataset/install?lang=en
+```
+
+Before any database write, GeoKZ validates manifest schema, `schema_version`, required files, SHA-256 checksums, path-traversal protection, payload types, duplicate `external_id` values, the `geokz-core:` namespace, and bundle-internal references. All upserts run in one transaction. A failure causes rollback and no installed state is recorded.
+
+Reinstalling the same manifest is idempotent and returns `changed=false`.
+
+The first bootstrap is deliberately minimal: it contains internal metadata and a country-level Republic of Kazakhstan navigation record without asserting a boundary geometry. Geological `entities` and `facts` are not invented without defensible sources.
+
+Administrative CLI:
+
+```text
+python -m scripts.core_dataset validate
+python -m scripts.core_dataset install --dry-run
+python -m scripts.core_dataset install
+python -m scripts.core_dataset status
+```
+
+Detailed guide: `docs/CORE_DATASET_EN.md`.
+
 ## External sources and updates
 External rows never overwrite verified master data directly. General pipeline:
 
@@ -142,6 +191,9 @@ Never store the key in Git, README examples with real values, issues, pull reque
 
 ## REST API quick reference
 
+- `GET /api/v1/about` — application and bundled Core Dataset version;
+- `GET /api/v1/core-dataset/status` — bundled/installed Core Dataset state;
+- `POST /api/v1/core-dataset/install` — dry-run or transactional bundled install;
 - `GET /api/v1/integrations/sources` — external source registry;
 - `GET /api/v1/integrations/scheduler/status` — scheduler state;
 - `POST /api/v1/integrations/sync-all` — Update All;
@@ -158,6 +210,8 @@ Never store the key in Git, README examples with real values, issues, pull reque
 - `POST /api/v1/correlation/demo/workflow` — complete synthetic demo.
 
 ## Help and safety
-The client should show contextual hints/wizards for CRS, axis order, MD/TVD/TVDSS, external-data review, and correlation. RAW source wording and provenance remain preserved, and automation must never silently replace a reviewer decision.
+The client should show contextual hints/wizards for CRS, axis order, MD/TVD/TVDSS, Core Dataset, external-data review, and correlation. RAW source wording and provenance remain preserved, and automation must never silently replace a reviewer decision.
+
+Detailed Core Dataset policy: `docs/CORE_DATASET_EN.md`.
 
 Current roadmap: `docs/PROJECT_PLAN_V0_2_EN.md`.

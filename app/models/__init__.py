@@ -1,6 +1,7 @@
 from app.models.administrative_region import AdministrativeRegion
 from app.models.base import Base
 from app.models.conflict import ConflictRecord, conflict_facts
+from app.models.core_dataset import CoreDatasetState
 from app.models.correlation import WellMarker
 from app.models.crs import OrganizationCrsDefinition
 from app.models.document import Document, DocumentPage
@@ -36,6 +37,7 @@ __all__ = [
     "Base",
     "ConflictRecord",
     "ControlledVocabularyTerm",
+    "CoreDatasetState",
     "CoreRun",
     "CoreSample",
     "Document",

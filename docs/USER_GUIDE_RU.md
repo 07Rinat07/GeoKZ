@@ -31,6 +31,55 @@ CRS-помощник предлагает WGS84 и UTM-зоны 38N–45N, по�
 
 Демонстрационный набор GeoKZ содержит только явно маркированные synthetic/demo скважины и предназначен для проверки интерфейса; он не является производственной геологической информацией.
 
+## GeoKZ Core Dataset
+
+GeoKZ поставляет независимо версионируемый базовый набор данных. Его версия не равна версии приложения и не равна Alembic revision.
+
+Текущий bundled snapshot:
+
+```text
+dataset_code:    geokz-core
+dataset_version: 2026.09.0-bootstrap
+schema_version:  1
+```
+
+Проверить, какая версия вложена в приложение и какая установлена в текущую БД:
+
+```text
+GET /api/v1/core-dataset/status
+```
+
+`update_available=true` означает, что bundled manifest отличается от установленного состояния или Core Dataset ещё не установлен.
+
+Перед записью можно выполнить dry-run:
+
+```text
+POST /api/v1/core-dataset/install?dry_run=true&lang=ru
+```
+
+Установить bundled snapshot:
+
+```text
+POST /api/v1/core-dataset/install?lang=ru
+```
+
+Перед изменением БД GeoKZ проверяет manifest schema, `schema_version`, required files, SHA-256, защиту от path traversal, типы payload, duplicate `external_id`, namespace `geokz-core:` и внутренние ссылки. Все upsert-операции выполняются одной транзакцией. При ошибке происходит rollback; состояние установки фиксируется только после полного успеха.
+
+Повторная установка того же manifest идемпотентна и возвращает `changed=false`.
+
+Первый bootstrap намеренно минимален: содержит внутреннюю metadata-запись и country-level запись «Республика Казахстан» без утверждения boundary geometry. Геологические `entities` и `facts` не добавляются без доказуемых источников.
+
+Для администратора доступны CLI-команды:
+
+```text
+python -m scripts.core_dataset validate
+python -m scripts.core_dataset install --dry-run
+python -m scripts.core_dataset install
+python -m scripts.core_dataset status
+```
+
+Подробно: `docs/CORE_DATASET_RU.md`.
+
 ## Источники и обновление
 Внешние данные не перезаписывают проверенные значения автоматически. GeoKZ хранит полученные записи в RAW/staging-слое, после чего они могут проходить нормализацию, сопоставление с объектами GeoKZ и экспертную проверку.
 
@@ -137,6 +186,9 @@ POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/re
 
 ## REST API GeoKZ
 
+- `GET /api/v1/about` — сведения о приложении и bundled Core Dataset version;
+- `GET /api/v1/core-dataset/status` — bundled/installed Core Dataset state и `update_available`;
+- `POST /api/v1/core-dataset/install` — dry-run или транзакционная установка bundled Core Dataset;
 - `GET /api/v1/integrations/sources` — зарегистрированные внешние источники и последнее состояние;
 - `GET /api/v1/integrations/scheduler/status` — due/running/error состояние scheduler;
 - `POST /api/v1/integrations/sync-all` — ручное «Обновить всё»;
@@ -155,6 +207,7 @@ POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/re
 
 Подробно:
 
+- `docs/CORE_DATASET_RU.md` — versioned baseline, manifest, checksum, install/status и rollback policy;
 - `docs/EXTERNAL_API_KEYS_RU.md` — получение и настройка ключа;
 - `docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md` — официальные `apiUri`, mapping, endpoint-ы, processing и правила именования ресурсов GeoKZ;
 - `docs/KAZAKHSTAN_FIELD_REVIEW_RU.md` — confirm/reject/manual-link/create-draft-field и правила безопасности review;
@@ -163,7 +216,7 @@ POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/re
 - `docs/EXTERNAL_SYNC_SCHEDULER_RU.md` — scheduler, Update All, due/retry и защита от параллельных run.
 
 ## Подсказки и помощники
-Для сложных полей используются короткая подсказка, расширенное объяснение, пошаговый мастер и диагностическое предупреждение. Особенно важны подсказки для CRS, порядка X/Y, MD/TVD/TVDSS, ГИС, корреляции и настройки внешних источников.
+Для сложных полей используются короткая подсказка, расширенное объяснение, пошаговый мастер и диагностическое предупреждение. Особенно важны подсказки для CRS, порядка X/Y, MD/TVD/TVDSS, ГИС, корреляции, Core Dataset и настройки внешних источников.
 
 Актуальный статус реализации: `docs/PROJECT_PLAN_V0_2.md`.
 

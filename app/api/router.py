@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.api.routes import (
     about,
+    core_dataset,
     correlation,
     entities,
     explorer,
@@ -35,6 +36,11 @@ api_router.include_router(
     sources.router,
     prefix=f"{settings.api_prefix}/sources",
     tags=["sources"],
+)
+api_router.include_router(
+    core_dataset.router,
+    prefix=f"{settings.api_prefix}/core-dataset",
+    tags=["core-dataset"],
 )
 api_router.include_router(
     entities.router,

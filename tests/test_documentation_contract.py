@@ -15,6 +15,12 @@ TRILINGUAL_ROADMAPS = (
     DOCS / "PROJECT_PLAN_V0_2_EN.md",
 )
 
+TRILINGUAL_CORE_DATASET_GUIDES = (
+    DOCS / "CORE_DATASET_RU.md",
+    DOCS / "CORE_DATASET_KK.md",
+    DOCS / "CORE_DATASET_EN.md",
+)
+
 TRILINGUAL_API_KEY_GUIDES = (
     DOCS / "EXTERNAL_API_KEYS_RU.md",
     DOCS / "EXTERNAL_API_KEYS_KK.md",
@@ -80,6 +86,8 @@ SCHEDULER_STATUS_ENDPOINT = "/api/v1/integrations/scheduler/status"
 RUN_DUE_ENDPOINT = "/api/v1/integrations/scheduler/run-due"
 CROSS_SECTION_ENDPOINT = "/api/v1/correlation/wells/view"
 DEMO_WORKFLOW_ENDPOINT = "/api/v1/correlation/demo/workflow"
+CORE_DATASET_STATUS_ENDPOINT = "/api/v1/core-dataset/status"
+CORE_DATASET_INSTALL_ENDPOINT = "/api/v1/core-dataset/install"
 
 
 def test_trilingual_user_guides_exist_and_are_not_empty() -> None:
@@ -96,6 +104,8 @@ def test_trilingual_user_guides_exist_and_are_not_empty() -> None:
         assert DEMO_WORKFLOW_ENDPOINT in content
         assert LICENSE_PROCESS_ENDPOINT in content
         assert LICENSE_REVIEW_ENDPOINT in content
+        assert CORE_DATASET_STATUS_ENDPOINT in content
+        assert CORE_DATASET_INSTALL_ENDPOINT in content
 
 
 def test_trilingual_roadmaps_exist_and_are_not_empty() -> None:
@@ -112,6 +122,27 @@ def test_trilingual_roadmaps_exist_and_are_not_empty() -> None:
         assert DEMO_WORKFLOW_ENDPOINT in content
         assert LICENSE_PROCESS_ENDPOINT in content
         assert LICENSE_REVIEW_ENDPOINT in content
+        assert CORE_DATASET_STATUS_ENDPOINT in content
+        assert CORE_DATASET_INSTALL_ENDPOINT in content
+
+
+def test_trilingual_core_dataset_guides_follow_install_safety_contract() -> None:
+    for path in TRILINGUAL_CORE_DATASET_GUIDES:
+        assert path.is_file(), f"Missing Core Dataset guide: {path.name}"
+        content = path.read_text(encoding="utf-8").strip()
+        assert len(content) > 2500
+        assert "2026.09.0-bootstrap" in content
+        assert "schema_version" in content
+        assert "SHA-256" in content
+        assert "geokz-core:" in content
+        assert CORE_DATASET_STATUS_ENDPOINT in content
+        assert CORE_DATASET_INSTALL_ENDPOINT in content
+        assert "dry_run" in content
+        assert "changed=false" in content
+        assert "manifest.json" in content
+        assert "CoreDatasetState" in content
+        assert "minimum_app_version" in content
+        assert "python -m scripts.core_dataset validate" in content
 
 
 def test_trilingual_api_key_guides_exist_and_are_not_empty() -> None:
@@ -250,6 +281,9 @@ def test_documentation_policy_exists() -> None:
     assert "USER_GUIDE_EN.md" in content
     assert "PROJECT_PLAN_V0_2_KK.md" in content
     assert "PROJECT_PLAN_V0_2_EN.md" in content
+    assert "CORE_DATASET_RU.md" in content
+    assert "CORE_DATASET_KK.md" in content
+    assert "CORE_DATASET_EN.md" in content
     assert "EXTERNAL_API_KEYS_RU.md" in content
     assert "EXTERNAL_API_KEYS_KK.md" in content
     assert "EXTERNAL_API_KEYS_EN.md" in content
