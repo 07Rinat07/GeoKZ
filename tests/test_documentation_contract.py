@@ -33,6 +33,12 @@ TRILINGUAL_FIELD_REVIEW_GUIDES = (
     DOCS / "KAZAKHSTAN_FIELD_REVIEW_EN.md",
 )
 
+TRILINGUAL_LICENSE_REVIEW_GUIDES = (
+    DOCS / "KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_RU.md",
+    DOCS / "KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_KK.md",
+    DOCS / "KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_EN.md",
+)
+
 TRILINGUAL_REVIEW_UI_CONTRACTS = (
     DOCS / "EXTERNAL_REVIEW_UI_CONTRACT_RU.md",
     DOCS / "EXTERNAL_REVIEW_UI_CONTRACT_KK.md",
@@ -62,6 +68,13 @@ REVIEW_ENDPOINT = "/api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review
 REVIEW_VIEW_ENDPOINT = (
     "/api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view"
 )
+LICENSE_PROCESS_ENDPOINT = (
+    "/api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/process"
+)
+LICENSE_REVIEW_ENDPOINT = (
+    "/api/v1/integrations/kazakhstan/"
+    "kz-egov-geological-study-licenses/review/records"
+)
 SYNC_ALL_ENDPOINT = "/api/v1/integrations/sync-all"
 SCHEDULER_STATUS_ENDPOINT = "/api/v1/integrations/scheduler/status"
 RUN_DUE_ENDPOINT = "/api/v1/integrations/scheduler/run-due"
@@ -81,6 +94,8 @@ def test_trilingual_user_guides_exist_and_are_not_empty() -> None:
         assert SCHEDULER_STATUS_ENDPOINT in content
         assert CROSS_SECTION_ENDPOINT in content
         assert DEMO_WORKFLOW_ENDPOINT in content
+        assert LICENSE_PROCESS_ENDPOINT in content
+        assert LICENSE_REVIEW_ENDPOINT in content
 
 
 def test_trilingual_roadmaps_exist_and_are_not_empty() -> None:
@@ -95,6 +110,8 @@ def test_trilingual_roadmaps_exist_and_are_not_empty() -> None:
         assert RUN_DUE_ENDPOINT in content
         assert CROSS_SECTION_ENDPOINT in content
         assert DEMO_WORKFLOW_ENDPOINT in content
+        assert LICENSE_PROCESS_ENDPOINT in content
+        assert LICENSE_REVIEW_ENDPOINT in content
 
 
 def test_trilingual_api_key_guides_exist_and_are_not_empty() -> None:
@@ -130,6 +147,28 @@ def test_trilingual_field_review_guides_exist_and_follow_safety_contract() -> No
         assert "VERIFIED" in content
         assert "manual-link" in content
         assert "create-draft-field" in content
+
+
+def test_trilingual_license_review_guides_follow_record_review_contract() -> None:
+    for path in TRILINGUAL_LICENSE_REVIEW_GUIDES:
+        assert path.is_file(), f"Missing geological license review guide: {path.name}"
+        content = path.read_text(encoding="utf-8").strip()
+        assert len(content) > 2500
+        assert "zher_koinauyn_geologiyalyk_zer2" in content
+        assert "v6" in content
+        assert "geological_study_license" in content
+        assert LICENSE_PROCESS_ENDPOINT in content
+        assert LICENSE_REVIEW_ENDPOINT in content
+        assert "REVIEW_REQUIRED" in content
+        assert "ACCEPTED" in content
+        assert "ExternalEntityLink" in content
+        assert "NOT_APPLICABLE" in content
+        assert "raw_payload" in content
+        assert "reviewed_by" in content
+        assert "reviewed_at" in content
+        assert "review_comment" in content
+        assert "GEOKZ_EGOV_API_KEY" in content
+        assert "20260905_0008" in content
 
 
 def test_trilingual_review_ui_contracts_exist_and_follow_action_contract() -> None:
@@ -220,6 +259,9 @@ def test_documentation_policy_exists() -> None:
     assert "KAZAKHSTAN_FIELD_REVIEW_RU.md" in content
     assert "KAZAKHSTAN_FIELD_REVIEW_KK.md" in content
     assert "KAZAKHSTAN_FIELD_REVIEW_EN.md" in content
+    assert "KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_RU.md" in content
+    assert "KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_KK.md" in content
+    assert "KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_EN.md" in content
     assert "EXTERNAL_REVIEW_UI_CONTRACT_RU.md" in content
     assert "EXTERNAL_REVIEW_UI_CONTRACT_KK.md" in content
     assert "EXTERNAL_REVIEW_UI_CONTRACT_EN.md" in content
