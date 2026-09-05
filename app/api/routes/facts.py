@@ -87,6 +87,7 @@ async def update_fact(
 
     try:
         await session.flush()
+        await session.refresh(fact)
         after = _fact_snapshot(fact)
         await AuditRevisionService(session).audit_master_change(
             actor=AuditActor.from_user(principal.user),
