@@ -97,7 +97,11 @@ def _preferred_marker(markers: list[WellMarker]) -> WellMarker:
         markers,
         key=lambda marker: (
             _STATUS_RANK.get(marker.verification_status, 99),
-            -(float(marker.confidence_percent) if marker.confidence_percent is not None else -1.0),
+            -(
+                float(marker.confidence_percent)
+                if marker.confidence_percent is not None
+                else -1.0
+            ),
         ),
     )[0]
 
@@ -107,7 +111,11 @@ def _preferred_interval(intervals: list[WellInterval]) -> WellInterval:
         intervals,
         key=lambda interval: (
             _STATUS_RANK.get(interval.verification_status, 99),
-            -(float(interval.net_pay_m) if interval.net_pay_m is not None else -1.0),
+            -(
+                float(interval.net_pay_m)
+                if interval.net_pay_m is not None
+                else -1.0
+            ),
         ),
     )[0]
 
@@ -197,7 +205,9 @@ class WellCorrelationService:
         if reference_well_id not in wells_by_id:
             raise ResourceNotFoundError("Опорная скважина не найдена")
 
-        missing_ids = [well_id for well_id in ordered_ids if well_id not in wells_by_id]
+        missing_ids = [
+            well_id for well_id in ordered_ids if well_id not in wells_by_id
+        ]
         if missing_ids:
             raise ResourceNotFoundError(
                 f"Скважины не найдены: {', '.join(map(str, missing_ids))}"
@@ -207,33 +217,45 @@ class WellCorrelationService:
             await self.session.scalars(
                 select(WellMarker)
                 .where(WellMarker.well_id.in_(ordered_ids))
-                .order_by(WellMarker.well_id, WellMarker.marker_code, WellMarker.depth_m)
+                .order_by(
+                    WellMarker.well_id,
+                    WellMarker.marker_code,
+                    WellMarker.depth_m,
+                )
             )
         )
         markers_by_well: dict[UUID, list[WellMarker]] = defaultdict(list)
-        markers_by_well_and_code: dict[UUID, dict[str, list[WellMarker]]] = defaultdict(
-            lambda: defaultdict(list)
-        )
+        markers_by_well_and_code: dict[
+            UUID, dict[str, list[WellMarker]]
+        ] = defaultdict(lambda: defaultdict(list))
         for marker in markers:
             markers_by_well[marker.well_id].append(marker)
-            markers_by_well_and_code[marker.well_id][marker.marker_code].append(marker)
+            markers_by_well_and_code[marker.well_id][marker.marker_code].append(
+                marker
+            )
 
         intervals = list(
             await self.session.scalars(
                 select(WellInterval)
                 .where(WellInterval.well_id.in_(ordered_ids))
-                .order_by(WellInterval.well_id, WellInterval.top_depth_m, WellInterval.base_depth_m)
+                .order_by(
+                    WellInterval.well_id,
+                    WellInterval.top_depth_m,
+                    WellInterval.base_depth_m,
+                )
             )
         )
         intervals_by_well: dict[UUID, list[WellInterval]] = defaultdict(list)
-        intervals_by_well_and_horizon: dict[UUID, dict[str, list[WellInterval]]] = defaultdict(
-            lambda: defaultdict(list)
-        )
+        intervals_by_well_and_horizon: dict[
+            UUID, dict[str, list[WellInterval]]
+        ] = defaultdict(lambda: defaultdict(list))
         for interval in intervals:
             intervals_by_well[interval.well_id].append(interval)
             horizon_key = _normalize_horizon(interval.local_horizon)
             if horizon_key is not None:
-                intervals_by_well_and_horizon[interval.well_id][horizon_key].append(interval)
+                intervals_by_well_and_horizon[interval.well_id][horizon_key].append(
+                    interval
+                )
 
         distance_by_well = await self._distances(reference_well_id, ordered_ids)
 
@@ -285,23 +307,27 @@ class WellCorrelationService:
     ) -> dict[UUID, float | None]:
         reference = aliased(Well)
         candidate = aliased(Well)
+        reference_location = (
+            select(reference.location)
+            .where(reference.id == reference_well_id)
+            .scalar_subquery()
+        )
         distance = func.ST_Distance(
             cast(candidate.location, _POINT_GEOGRAPHY),
-            cast(reference.location, _POINT_GEOGRAPHY),
+            cast(reference_location, _POINT_GEOGRAPHY),
         )
         rows = (
             await self.session.execute(
-                select(candidate.id, distance.label("distance_m"))
-                .select_from(candidate, reference)
-                .where(
-                    reference.id == reference_well_id,
+                select(candidate.id, distance.label("distance_m")).where(
                     candidate.id.in_(well_ids),
-                    reference.location.is_not(None),
                     candidate.location.is_not(None),
+                    reference_location.is_not(None),
                 )
             )
         ).all()
-        result: dict[UUID, float | None] = {well_id: None for well_id in well_ids}
+        result: dict[UUID, float | None] = {
+            well_id: None for well_id in well_ids
+        }
         result[reference_well_id] = 0.0
         for well_id, distance_m in rows:
             result[well_id] = float(distance_m)
@@ -323,9 +349,9 @@ class WellCorrelationService:
             reference_depth = _comparison_depth(reference_marker)
 
             for compared_well_id in compared_well_ids:
-                compared_candidates = markers_by_well_and_code[compared_well_id].get(
-                    marker_code
-                )
+                compared_candidates = markers_by_well_and_code[
+                    compared_well_id
+                ].get(marker_code)
                 if not compared_candidates:
                     continue
                 compared_marker = _preferred_marker(compared_candidates)
@@ -354,8 +380,12 @@ class WellCorrelationService:
                         MarkerDifference(
                             marker_code=marker_code,
                             compared_well_id=compared_well_id,
-                            reference_depth_m=reference_depth[1] if reference_depth else None,
-                            compared_depth_m=compared_depth[1] if compared_depth else None,
+                            reference_depth_m=(
+                                reference_depth[1] if reference_depth else None
+                            ),
+                            compared_depth_m=(
+                                compared_depth[1] if compared_depth else None
+                            ),
                             depth_reference=None,
                             delta_m=None,
                             comparable=False,
@@ -385,9 +415,9 @@ class WellCorrelationService:
             )
 
             for compared_well_id in compared_well_ids:
-                compared_candidates = intervals_by_well_and_horizon[compared_well_id].get(
-                    horizon_key
-                )
+                compared_candidates = intervals_by_well_and_horizon[
+                    compared_well_id
+                ].get(horizon_key)
                 if not compared_candidates:
                     continue
                 compared_interval = _preferred_interval(compared_candidates)
@@ -428,15 +458,25 @@ class WellCorrelationService:
                         reference_net_pay_m=reference_interval.net_pay_m,
                         compared_net_pay_m=compared_interval.net_pay_m,
                         net_pay_delta_m=net_pay_delta,
-                        reference_porosity_percent=reference_interval.porosity_percent,
-                        compared_porosity_percent=compared_interval.porosity_percent,
-                        reference_permeability_md=reference_interval.permeability_md,
-                        compared_permeability_md=compared_interval.permeability_md,
+                        reference_porosity_percent=(
+                            reference_interval.porosity_percent
+                        ),
+                        compared_porosity_percent=(
+                            compared_interval.porosity_percent
+                        ),
+                        reference_permeability_md=(
+                            reference_interval.permeability_md
+                        ),
+                        compared_permeability_md=(
+                            compared_interval.permeability_md
+                        ),
                         reference_lithologies=reference_interval.lithologies,
                         compared_lithologies=compared_interval.lithologies,
                         lithology_changed=(
                             set(map(str.casefold, reference_interval.lithologies))
-                            != set(map(str.casefold, compared_interval.lithologies))
+                            != set(
+                                map(str.casefold, compared_interval.lithologies)
+                            )
                         ),
                         reference_fluid_type=reference_interval.fluid_type,
                         compared_fluid_type=compared_interval.fluid_type,
