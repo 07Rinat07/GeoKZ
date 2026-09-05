@@ -19,7 +19,7 @@ async def test_alembic_head_and_required_extensions() -> None:
     try:
         async with engine.connect() as connection:
             revision = await connection.scalar(text("SELECT version_num FROM alembic_version"))
-            assert revision == "20260905_0007"
+            assert revision == "20260905_0008"
 
             extensions = set(
                 (
@@ -85,7 +85,7 @@ async def test_alembic_head_and_required_extensions() -> None:
                             "SELECT table_name, column_name FROM information_schema.columns "
                             "WHERE table_schema = 'public' AND table_name IN "
                             "('well_intervals', 'well_markers', 'well_log_curves', "
-                            "'well_tests', 'core_samples')"
+                            "'well_tests', 'core_samples', 'external_records')"
                         )
                     )
                 ).tuples()
@@ -100,6 +100,9 @@ async def test_alembic_head_and_required_extensions() -> None:
                 ("well_tests", "gas_rate_unit_code"),
                 ("well_tests", "water_rate_unit_code"),
                 ("core_samples", "lithology_codes"),
+                ("external_records", "reviewed_by"),
+                ("external_records", "reviewed_at"),
+                ("external_records", "review_comment"),
             } <= columns
 
             postgis_version = await connection.scalar(text("SELECT PostGIS_Version()"))
