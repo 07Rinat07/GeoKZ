@@ -36,6 +36,55 @@ POST /api/v1/correlation/demo/workflow
 
 `synthetic-correlation-demo-v1` production wells-тан қатаң бөлінген. Workflow `DISCOVERY` → selection → `CROSS_SECTION_READY` сатыларымен жұмыс істейді.
 
+## GeoKZ Core Dataset
+
+GeoKZ қолданбамен бірге тәуелсіз нұсқаланатын baseline dataset береді. Оның нұсқасы application version және Alembic revision мәндерінен бөлек.
+
+Ағымдағы bundled snapshot:
+
+```text
+dataset_code:    geokz-core
+dataset_version: 2026.09.0-bootstrap
+schema_version:  1
+```
+
+Bundled және current DB-ге installed күйін көру:
+
+```text
+GET /api/v1/core-dataset/status
+```
+
+`update_available=true` — bundled manifest installed state-пен сәйкес емес немесе dataset әлі орнатылмаған.
+
+DB-ге жазбас бұрын dry-run:
+
+```text
+POST /api/v1/core-dataset/install?dry_run=true&lang=kk
+```
+
+Bundled snapshot орнату:
+
+```text
+POST /api/v1/core-dataset/install?lang=kk
+```
+
+GeoKZ manifest schema, `schema_version`, required files, SHA-256, path traversal protection, payload types, duplicate `external_id`, `geokz-core:` namespace және bundle ішіндегі references мәндерін DB write алдында тексереді. Барлық upsert бір transaction ішінде орындалады; қате болса rollback жасалады және install state жазылмайды.
+
+Бір manifest қайта орнатылса, операция idempotent және `changed=false` қайтарады.
+
+Алғашқы bootstrap әдейі минималды: ішкі metadata жазбасы және boundary geometry бекітпейтін «Қазақстан Республикасы» country-level navigation record бар. Дәлелді source жоқ geological `entities` немесе `facts` ойдан қосылмайды.
+
+Administrator CLI:
+
+```text
+python -m scripts.core_dataset validate
+python -m scripts.core_dataset install --dry-run
+python -m scripts.core_dataset install
+python -m scripts.core_dataset status
+```
+
+Толық нұсқаулық: `docs/CORE_DATASET_KK.md`.
+
 ## Сыртқы дереккөздер және жаңарту
 GeoKZ сыртқы жазбаны бірден verified master data-ға көшірмейді. Жалпы pipeline:
 
@@ -142,6 +191,9 @@ GEOKZ_EGOV_API_KEY=СІЗДІҢ_НАҚТЫ_КІЛТІҢІЗ
 
 ## REST API қысқаша
 
+- `GET /api/v1/about` — application және bundled Core Dataset version;
+- `GET /api/v1/core-dataset/status` — bundled/installed Core Dataset state;
+- `POST /api/v1/core-dataset/install` — dry-run немесе bundled dataset install;
 - `GET /api/v1/integrations/sources` — external source registry;
 - `GET /api/v1/integrations/scheduler/status` — scheduler status;
 - `POST /api/v1/integrations/sync-all` — Update All;
@@ -158,6 +210,8 @@ GEOKZ_EGOV_API_KEY=СІЗДІҢ_НАҚТЫ_КІЛТІҢІЗ
 - `POST /api/v1/correlation/demo/workflow` — complete synthetic demo.
 
 ## Көмек және қауіпсіздік
-UI күрделі CRS, axis order, MD/TVD/TVDSS, external-data review және correlation әрекеттері үшін contextual hints/wizards көрсетуі тиіс. RAW source wording және provenance сақталады; automation reviewer decision-ді үнсіз алмастырмайды.
+UI күрделі CRS, axis order, MD/TVD/TVDSS, Core Dataset, external-data review және correlation әрекеттері үшін contextual hints/wizards көрсетуі тиіс. RAW source wording және provenance сақталады; automation reviewer decision-ді үнсіз алмастырмайды.
+
+Core Dataset туралы толық policy: `docs/CORE_DATASET_KK.md`.
 
 Ағымдағы roadmap: `docs/PROJECT_PLAN_V0_2_KK.md`.
