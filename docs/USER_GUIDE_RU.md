@@ -1,6 +1,6 @@
 # GeoKZ — руководство пользователя (RU)
 
-Версия: `0.2-dev`.
+Версия: `0.3-dev`.
 
 ## Назначение
 GeoKZ объединяет геологическую информацию по территории, месторождению, структуре и скважине из собственной базы и разрешённых внешних источников.
@@ -106,6 +106,35 @@ POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/c
 
 Повторный `process` не должен молча изменять reviewer-locked решения (`VERIFIED`, `REJECTED`, `MANUAL`, `verified_by` или review comment).
 
+## Экспертная проверка реестра лицензий на геологическое изучение недр
+
+Для `kz-egov-geological-study-licenses` используется другой, record-level workflow. Официальная карточка `v6` содержит административные сведения о лицензии, но не даёт проверяемого стабильного идентификатора месторождения/геологического объекта и geometry, поэтому GeoKZ не создаёт `ExternalEntityLink` автоматически.
+
+После RAW-sync выполните:
+
+```text
+POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/process
+```
+
+Normalizer сохраняет исходный `raw_payload` и отдельно извлекает номер/дату лицензии, вид, срок, основание, issuing authority, holder и БИН. Запись получает `REVIEW_REQUIRED`, а `review.entity_matching=NOT_APPLICABLE`.
+
+Очередь:
+
+```text
+GET /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/records
+```
+
+Решения:
+
+```text
+POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/records/{record_id}/accept
+POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/records/{record_id}/reject
+```
+
+`ACCEPTED` означает только, что административная normalized-запись проверена относительно upstream payload. Это не создаёт `GeologicalEntity`, не подтверждает геологические данные и не повышает `VerificationStatus`. Если upstream checksum изменился, прежние `reviewed_by`, `reviewed_at`, `review_comment` сбрасываются и требуется новая проверка.
+
+Подробно: `docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_RU.md`.
+
 ## REST API GeoKZ
 
 - `GET /api/v1/integrations/sources` — зарегистрированные внешние источники и последнее состояние;
@@ -118,7 +147,9 @@ POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/c
 - `POST /api/v1/integrations/kazakhstan/{code}/sync` — выполнить ручную синхронизацию выбранного ресурса;
 - `POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process` — нормализовать и сопоставить RAW-записи месторождений с объектами GeoKZ, не публикуя совпадения автоматически;
 - `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review` — показать техническую очередь экспертной проверки;
-- `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view` — получить локализованный UI/view-model contract очереди review.
+- `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view` — получить локализованный UI/view-model contract очереди review;
+- `POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/process` — нормализовать RAW-записи лицензий без автоматического entity matching;
+- `GET /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/records` — очередь record-level review лицензий.
 
 Для загрузки данных портал требует API-ключ разработчика. Ключ задаётся только через переменную окружения `GEOKZ_EGOV_API_KEY` и не должен сохраняться в Git. Без ключа GeoKZ продолжает полностью работать с локальной базой, а scheduler фиксирует ошибку конкретного source без остановки приложения.
 
@@ -127,6 +158,7 @@ POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/c
 - `docs/EXTERNAL_API_KEYS_RU.md` — получение и настройка ключа;
 - `docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md` — официальные `apiUri`, mapping, endpoint-ы, processing и правила именования ресурсов GeoKZ;
 - `docs/KAZAKHSTAN_FIELD_REVIEW_RU.md` — confirm/reject/manual-link/create-draft-field и правила безопасности review;
+- `docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_RU.md` — normalizer и record-level review лицензий;
 - `docs/EXTERNAL_REVIEW_UI_CONTRACT_RU.md` — стабильная схема review queue для PySide6/web UI;
 - `docs/EXTERNAL_SYNC_SCHEDULER_RU.md` — scheduler, Update All, due/retry и защита от параллельных run.
 

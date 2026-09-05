@@ -1,24 +1,24 @@
-# GeoKZ v0.2-dev
+# GeoKZ v0.3-dev
 
 GeoKZ — доказательная геологическая информационная система Казахстана и единое рабочее окно для информации по территории, месторождению, структуре и скважине.
 
-## Основные возможности проекта
+## Основные возможности
 
 - RU / KK / EN во всём пользовательском продукте;
 - территория → объект → скважина → интервал → источник;
 - поиск по области/району и координатам;
-- ввод geographic latitude/longitude и projected X/Y;
+- geographic latitude/longitude и projected X/Y, точка и запятая;
+- WGS84/UTM helper и persistent organization-local CRS registry EPSG/WKT/PROJ;
 - PostGIS-поиск ближайших скважин, объектов и сейсмики;
-- паспорт геологического объекта;
-- полный паспорт скважины;
-- траектория MD/TVD/TVDSS;
+- паспорт геологического объекта и полный Well Passport;
+- MD/TVD/TVDSS trajectory;
 - литология, стратиграфия, коллекторы, нефть/газ/вода;
-- ГИС/well logs, испытания, керн;
-- 2D/3D seismic catalog;
-- корреляция разрезов соседних скважин по реперам и интервалам;
-- backend-owned visual cross-section view-model с общей depth scale и готовыми correlation lines;
-- complete synthetic demo workflow: координата → nearby demo wells → selection → cross-section;
-- evidence/provenance и конфликты источников;
+- ГИС/well logs, испытания, керн, 2D/3D seismic catalog;
+- корреляция разрезов по реперам и интервалам;
+- backend-owned visual cross-section view-model;
+- synthetic end-to-end demo workflow;
+- evidence/provenance, conflict storage и human review;
+- versioned controlled vocabularies при сохранении RAW/source wording;
 - встроенный GeoKZ Core Dataset + обновляемые внешние источники;
 - контекстные подсказки и помощники RU/KK/EN.
 
@@ -26,17 +26,15 @@ GeoKZ — доказательная геологическая информац
 
 - **Evidence-first:** факт и интерпретация прослеживаются до источника.
 - **Human-in-the-loop:** внешние API и ИИ не переписывают verified master data автоматически.
-- **Offline-capable core:** базовая информация доступна без обязательного интернета.
-- **Data provenance:** сохраняются источник, версия набора, дата получения, checksum и RAW payload.
-- **GIS-first:** PostgreSQL/PostGIS, далее GeoPackage, OGC API Features и QGIS.
-- **Safe depth/CRS handling:** MD/TVD/TVDSS и разные CRS не смешиваются молча.
-- **Server-owned review rules:** PySide6/web UI получает готовые action descriptors и не дублирует backend business rules.
-- **Server-owned cross-section rendering contract:** клиент отображает готовую depth axis/columns/lines и не придумывает собственные depth conversions или correlation links.
-- **Synthetic isolation:** demo workflow принимает только явно маркированный synthetic dataset и не смешивает его с production wells даже при совпадающих координатах.
-- **Dedicated sync scheduler:** periodic external sync выполняется отдельным process/service, не background loop внутри FastAPI workers.
-- **Documentation-as-code:** пользовательские инструкции и roadmap поддерживаются на RU/KK/EN и проверяются CI-контрактом.
+- **Offline-capable core:** базовая информация работает без обязательного интернета.
+- **Data provenance:** сохраняются source, upstream version, retrieved_at, checksum и RAW payload.
+- **Safe depth/CRS:** MD/TVD/TVDSS и разные CRS не смешиваются молча.
+- **Server-owned UI contracts:** клиент не дублирует review/correlation business rules.
+- **Synthetic isolation:** demo wells не смешиваются с production wells.
+- **Dedicated scheduler:** external sync выполняется отдельным process/service, не в каждом FastAPI worker.
+- **Documentation-as-code:** README, user guides и roadmap поддерживаются на RU/KK/EN и проверяются CI.
 
-## Текущий стек
+## Стек
 
 - Python 3.12;
 - FastAPI;
@@ -46,245 +44,9 @@ GeoKZ — доказательная геологическая информац
 - Pydantic;
 - Docker Compose;
 - GitHub Actions CI;
-- PySide6 запланирован для Windows-клиента.
+- PySide6 — запланированный Windows-клиент.
 
-## Внешние источники
-
-Приоритет интеграции:
-
-1. Kazakhstan Open Data (`data.egov.kz`);
-2. другие официальные открытые казахстанские datasets/GIS services;
-3. USGS;
-4. Macrostrat;
-5. OneGeology / OGC;
-6. Copernicus;
-7. корпоративные WITSML/OSDU endpoints — только при предоставленном организацией доступе.
-
-Внешние данные проходят RAW → checksum/diff → normalization → matching → review → verified master view.
-
-### Официальные Kazakhstan Open Data resources
-
-На этапе `v0.2-dev` подключён реестр:
-
-- `kz-egov-oil-gas-fields` — нефтегазовые месторождения Республики Казахстан;
-- `kz-egov-geological-study-licenses` — лицензии на геологическое изучение недр.
-
-GeoKZ использует официальную терминологию `data.egov.kz`:
-
-```text
-apiUri   = технический индекс ресурса на портале
-version  = версия ресурса, например v10
-fields   = технические имена полей
-source   = JSON-параметр API v4 для from/size/query/sort
-```
-
-Пример:
-
-```text
-GeoKZ code:  kz-egov-oil-gas-fields
-apiUri:      stat_kgn_117
-version:     v10
-record_type: oil_gas_field
-```
-
-`GeoKZ code` — стабильный внутренний slug connector-а. Официальный `apiUri` не переводится, не сокращается и хранится отдельно от версии.
-
-Официальные формы endpoint-ов:
-
-```text
-GET /meta/{apiUri}/{version}
-GET /api/v4/mapping/{apiUri}/{version}
-GET /api/v4/{apiUri}/{version}?source={JSON}
-GET /api/detailed/{apiUri}/{version}?source={JSON}
-```
-
-Перед подключением нового набора GeoKZ должен сначала прочитать metadata и mapping, сверить имена/типы полей, выполнить небольшой sample-запрос, а только затем добавлять normalization/matching.
-
-Каталог GeoKZ:
-
-```text
-GET /api/v1/integrations/kazakhstan/catalog
-```
-
-Проверка официальных metadata + mapping до импорта:
-
-```text
-GET /api/v1/integrations/kazakhstan/{code}/schema
-```
-
-Регистрация известных источников:
-
-```text
-POST /api/v1/integrations/kazakhstan/register
-```
-
-Ручная синхронизация конкретного источника:
-
-```text
-POST /api/v1/integrations/kazakhstan/{code}/sync
-```
-
-### Scheduler и «Обновить всё»
-
-Ручной batch всех включённых источников:
-
-```text
-POST /api/v1/integrations/sync-all
-```
-
-Состояние due/running/error:
-
-```text
-GET /api/v1/integrations/scheduler/status
-```
-
-Однократный запуск scheduled-due алгоритма:
-
-```text
-POST /api/v1/integrations/scheduler/run-due
-```
-
-В Docker Compose scheduler работает отдельным сервисом `geokz-external-sync-scheduler` и запускает `python -m scripts.external_sync_scheduler`. FastAPI workers не содержат фонового scheduler loop. Резервирование `RUNNING` run защищено PostgreSQL row lock; второй параллельный запуск получает `ALREADY_RUNNING`, а stale `RUNNING` после configurable timeout переводится в `FAILED`.
-
-Настройки:
-
-```env
-GEOKZ_EXTERNAL_SCHEDULER_POLL_SECONDS=300
-GEOKZ_EXTERNAL_SYNC_FAILURE_RETRY_HOURS=6
-GEOKZ_EXTERNAL_SYNC_RUNNING_TIMEOUT_HOURS=6
-```
-
-Ошибка одного source не отменяет batch для остальных; per-source результат содержит `SUCCESS`, `FAILED`, `ALREADY_RUNNING` или один из `SKIPPED_*` status.
-
-Нормализация и безопасное сопоставление нефтегазовых месторождений после RAW-синхронизации:
-
-```text
-POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process
-```
-
-Этот шаг извлекает название месторождения, сопоставляет его с существующими `GeologicalEntity(object_type="field")` и `EntityName` aliases и создаёт только review-кандидаты. `VERIFIED` master data автоматически не изменяются.
-
-Техническая очередь экспертной проверки:
-
-```text
-GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review
-```
-
-Локализованная UI/view-model очередь для PySide6/web:
-
-```text
-GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view?lang=ru&limit=100&offset=0
-```
-
-View-model возвращает `total_pending`, pagination, локализованные candidate names, отдельный `entity_verification_status`, стабильный `matching_status` и готовые action descriptors. Доступность и форма действия определяются backend полями `enabled`, `disabled_reason`, `required_fields`, `optional_fields` и `path`.
-
-Стабильные action codes:
-
-```text
-CONFIRM_LINK
-REJECT_LINK
-MANUAL_LINK
-CREATE_DRAFT_FIELD
-```
-
-Поддерживаются явные действия review:
-
-```text
-POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/links/{link_id}/confirm
-POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/links/{link_id}/reject
-POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/manual-link
-POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/create-draft-field
-```
-
-Ключевое правило: `ExternalEntityLink(status=VERIFIED)` подтверждает связь внешней записи с объектом, но не делает сам `GeologicalEntity` проверенным автоматически. Новый объект из `UNMATCHED` создаётся только как `DRAFT`.
-
-Подробная документация:
-
-- RU: [`docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md`](docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md)
-- KK: [`docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_KK.md`](docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_KK.md)
-- EN: [`docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_EN.md`](docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_EN.md)
-- review RU: [`docs/KAZAKHSTAN_FIELD_REVIEW_RU.md`](docs/KAZAKHSTAN_FIELD_REVIEW_RU.md)
-- review KK: [`docs/KAZAKHSTAN_FIELD_REVIEW_KK.md`](docs/KAZAKHSTAN_FIELD_REVIEW_KK.md)
-- review EN: [`docs/KAZAKHSTAN_FIELD_REVIEW_EN.md`](docs/KAZAKHSTAN_FIELD_REVIEW_EN.md)
-- review UI contract RU: [`docs/EXTERNAL_REVIEW_UI_CONTRACT_RU.md`](docs/EXTERNAL_REVIEW_UI_CONTRACT_RU.md)
-- review UI contract KK: [`docs/EXTERNAL_REVIEW_UI_CONTRACT_KK.md`](docs/EXTERNAL_REVIEW_UI_CONTRACT_KK.md)
-- review UI contract EN: [`docs/EXTERNAL_REVIEW_UI_CONTRACT_EN.md`](docs/EXTERNAL_REVIEW_UI_CONTRACT_EN.md)
-- scheduler RU: [`docs/EXTERNAL_SYNC_SCHEDULER_RU.md`](docs/EXTERNAL_SYNC_SCHEDULER_RU.md)
-- scheduler KK: [`docs/EXTERNAL_SYNC_SCHEDULER_KK.md`](docs/EXTERNAL_SYNC_SCHEDULER_KK.md)
-- scheduler EN: [`docs/EXTERNAL_SYNC_SCHEDULER_EN.md`](docs/EXTERNAL_SYNC_SCHEDULER_EN.md)
-
-### Как получить API-ключ data.egov.kz
-
-Фактическая загрузка данных с `data.egov.kz` требует персонального API-ключа разработчика.
-
-1. Откройте официальный портал: `https://data.egov.kz/`.
-2. Авторизуйтесь через доступный способ входа eGov.
-3. Перейдите в раздел **«Разработчикам»**.
-4. Откройте **«Кабинет разработчика»**.
-5. Создайте или скопируйте свой API key.
-6. В корне GeoKZ создайте локальный `.env`:
-
-```powershell
-Copy-Item .env.example .env
-```
-
-7. Запишите ключ только в локальный `.env`:
-
-```env
-GEOKZ_EGOV_API_KEY=ВАШ_РЕАЛЬНЫЙ_КЛЮЧ
-```
-
-8. Перезапустите GeoKZ API / Docker Compose.
-9. В Swagger проверьте `GET /api/v1/integrations/kazakhstan/catalog`: поле `api_key_configured=true` означает, что GeoKZ видит настроенный ключ.
-10. Выполните `POST /api/v1/integrations/kazakhstan/register`, затем тестовую синхронизацию нужного набора.
-
-**Безопасность:** реальный ключ нельзя коммитить в Git, вставлять в README/исходный код, issue/PR, публиковать на скриншотах или отправлять в чат. В репозитории остаётся только пустой шаблон `GEOKZ_EGOV_API_KEY=`.
-
-Подробные инструкции:
-
-- RU: [`docs/EXTERNAL_API_KEYS_RU.md`](docs/EXTERNAL_API_KEYS_RU.md)
-- KK: [`docs/EXTERNAL_API_KEYS_KK.md`](docs/EXTERNAL_API_KEYS_KK.md)
-- EN: [`docs/EXTERNAL_API_KEYS_EN.md`](docs/EXTERNAL_API_KEYS_EN.md)
-
-## Визуальный корреляционный разрез
-
-UI-ready view-model строится поверх существующего `WellCorrelationService`:
-
-```text
-POST /api/v1/correlation/wells/view
-```
-
-Контракт выбирает одну depth axis с приоритетом `TVDSS → TVD → MD`, возвращает ordered well columns, markers/intervals, `renderable`, готовые `MARKER`/`HORIZON` correlation lines и стабильные warnings. Несовместимые системы глубин не преобразуются и не соединяются молча. Клиент отображает `VerificationStatus` и предупреждения, но не дублирует backend correlation logic.
-
-Полный трёхъязычный контракт:
-
-- RU: [`docs/CROSS_SECTION_VIEW_CONTRACT_RU.md`](docs/CROSS_SECTION_VIEW_CONTRACT_RU.md)
-- KK: [`docs/CROSS_SECTION_VIEW_CONTRACT_KK.md`](docs/CROSS_SECTION_VIEW_CONTRACT_KK.md)
-- EN: [`docs/CROSS_SECTION_VIEW_CONTRACT_EN.md`](docs/CROSS_SECTION_VIEW_CONTRACT_EN.md)
-
-## Complete synthetic demo workflow
-
-Для воспроизводимой проверки UI используется:
-
-```text
-POST /api/v1/correlation/demo/workflow
-```
-
-Первый вызов с coordinate/radius возвращает `stage=DISCOVERY`, только `nearby_demo_wells`, suggested reference и selection contract. Второй вызов с `reference_well_id` и `well_ids` возвращает `stage=CROSS_SECTION_READY` и готовый `cross_section`. Dataset `synthetic-correlation-demo-v1` изолирован от обычных wells: production well не может попасть в demo selection только из-за близости или совпадающей координаты. Invalid selection отклоняется HTTP `422`.
-
-Seed demo dataset:
-
-```text
-python -m scripts.seed_correlation_demo
-```
-
-Контракты:
-
-- RU: [`docs/DEMO_CORRELATION_WORKFLOW_RU.md`](docs/DEMO_CORRELATION_WORKFLOW_RU.md)
-- KK: [`docs/DEMO_CORRELATION_WORKFLOW_KK.md`](docs/DEMO_CORRELATION_WORKFLOW_KK.md)
-- EN: [`docs/DEMO_CORRELATION_WORKFLOW_EN.md`](docs/DEMO_CORRELATION_WORKFLOW_EN.md)
-
-## Разработка
+## Запуск разработки
 
 ```powershell
 Copy-Item .env.example .env
@@ -297,28 +59,252 @@ Copy-Item .env.example .env
 docker compose up --build
 ```
 
-Полезные endpoints:
+Swagger: `http://localhost:8000/docs`  
+ReDoc: `http://localhost:8000/redoc`
 
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
-- live: `http://localhost:8000/health/live`
-- ready/PostGIS: `http://localhost:8000/health/ready`
+## Внешние источники
+
+Приоритет: Kazakhstan Open Data → другие официальные KZ datasets/GIS → USGS → Macrostrat → OneGeology/OGC → Copernicus → корпоративные WITSML/OSDU при разрешённом доступе.
+
+Общий принцип:
+
+```text
+external API
+  → RAW
+  → checksum / diff
+  → normalization
+  → matching или record-level review
+  → human review
+  → verified master view
+```
+
+### Kazakhstan Open Data
+
+Сейчас зарегистрированы:
+
+```text
+GeoKZ code:  kz-egov-oil-gas-fields
+apiUri:      stat_kgn_117
+version:     v10
+record_type: oil_gas_field
+```
+
+и:
+
+```text
+GeoKZ code:  kz-egov-geological-study-licenses
+apiUri:      zher_koinauyn_geologiyalyk_zer2
+version:     v6
+record_type: geological_study_license
+```
+
+GeoKZ сохраняет официальный `apiUri` без перевода/сокращения и хранит `version` отдельно. Технические names upstream fields остаются в RAW.
+
+Официальные формы API:
+
+```text
+GET /meta/{apiUri}/{version}
+GET /api/v4/mapping/{apiUri}/{version}
+GET /api/v4/{apiUri}/{version}?source={JSON}
+GET /api/detailed/{apiUri}/{version}?source={JSON}
+```
+
+Перед подключением/изменением dataset сначала проверяются metadata и mapping:
+
+```text
+GET /api/v1/integrations/kazakhstan/{code}/schema
+```
+
+Каталог и регистрация:
+
+```text
+GET  /api/v1/integrations/kazakhstan/catalog
+POST /api/v1/integrations/kazakhstan/register
+```
+
+Ручной sync:
+
+```text
+POST /api/v1/integrations/kazakhstan/{code}/sync
+```
+
+### API-ключ data.egov.kz
+
+Фактический API v4 download требует developer API key.
+
+1. Откройте `https://data.egov.kz/`.
+2. Авторизуйтесь через eGov.
+3. Перейдите **Разработчикам → Кабинет разработчика**.
+4. Создайте/скопируйте API key.
+5. Создайте локальный `.env` из `.env.example`.
+6. Сохраните ключ только локально:
+
+```env
+GEOKZ_EGOV_API_KEY=ВАШ_РЕАЛЬНЫЙ_КЛЮЧ
+```
+
+7. Перезапустите backend/Docker Compose.
+8. Проверьте `GET /api/v1/integrations/kazakhstan/catalog`: `api_key_configured=true`.
+
+Реальный secret нельзя коммитить в Git, добавлять в README/код/issue/PR, публиковать на скриншотах или отправлять в чат.
+
+Инструкции:
+- RU: [`docs/EXTERNAL_API_KEYS_RU.md`](docs/EXTERNAL_API_KEYS_RU.md)
+- KK: [`docs/EXTERNAL_API_KEYS_KK.md`](docs/EXTERNAL_API_KEYS_KK.md)
+- EN: [`docs/EXTERNAL_API_KEYS_EN.md`](docs/EXTERNAL_API_KEYS_EN.md)
+
+## Scheduler и «Обновить всё»
+
+```text
+POST /api/v1/integrations/sync-all
+GET  /api/v1/integrations/scheduler/status
+POST /api/v1/integrations/scheduler/run-due
+```
+
+Docker service `geokz-external-sync-scheduler` запускает `python -m scripts.external_sync_scheduler`. PostgreSQL row locking защищает от параллельного `RUNNING`; stale run после configurable timeout становится `FAILED`. Ошибка одного source не отменяет batch для остальных.
+
+Настройки:
+
+```env
+GEOKZ_EXTERNAL_SCHEDULER_POLL_SECONDS=300
+GEOKZ_EXTERNAL_SYNC_FAILURE_RETRY_HOURS=6
+GEOKZ_EXTERNAL_SYNC_RUNNING_TIMEOUT_HOURS=6
+```
+
+## Нефтегазовые месторождения: normalize → match → review
+
+```text
+POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process
+GET  /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review
+GET  /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view?lang=ru&limit=100&offset=0
+```
+
+Matching детерминированный. Кандидат остаётся `REVIEW_REQUIRED` до решения эксперта. UI получает stable action descriptors:
+
+```text
+CONFIRM_LINK
+REJECT_LINK
+MANUAL_LINK
+CREATE_DRAFT_FIELD
+```
+
+Review actions:
+
+```text
+POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/links/{link_id}/confirm
+POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/links/{link_id}/reject
+POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/manual-link
+POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/create-draft-field
+```
+
+`ExternalEntityLink=VERIFIED` подтверждает связь с внешней записью, но не делает `GeologicalEntity=VERIFIED`. Новый объект создаётся только как `DRAFT`.
+
+## Лицензии на геологическое изучение недр: record-level review
+
+Для `zher_koinauyn_geologiyalyk_zer2/v6` GeoKZ использует более строгую схему. Проверенная карточка ресурса содержит административные сведения о лицензии, но не предоставляет стабильный geological-object/deposit identifier или geometry для безопасного автоматического сопоставления.
+
+Поэтому pipeline заканчивается record-level review:
+
+```text
+schema
+→ sync
+→ RAW
+→ process
+→ REVIEW_REQUIRED
+→ ACCEPTED / REJECTED
+```
+
+Нормализация:
+
+```text
+POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/process
+```
+
+Normalizer сохраняет `raw_payload` и отдельно формирует:
+
+- `license_number`;
+- `issue_date`;
+- `license_type_raw` и deterministic `study_scope_code`;
+- `term_raw`;
+- `basis_raw`;
+- `issuing_authority_raw`;
+- `holder_raw`;
+- `holder_bin`;
+- `source_fields`.
+
+Очередь:
+
+```text
+GET /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/records
+```
+
+Решения:
+
+```text
+POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/records/{record_id}/accept
+POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/records/{record_id}/reject
+```
+
+`ACCEPTED` означает только, что эксперт сверил normalized административную запись с upstream payload. Это **не создаёт `ExternalEntityLink`, не создаёт `GeologicalEntity`, не публикует геологический факт и не повышает `VerificationStatus`**.
+
+Если upstream checksum изменился, запись становится `CHANGED`, прежние `reviewed_by`, `reviewed_at`, `review_comment` инвалидируются, и требуется новая проверка. Alembic `20260905_0008` добавляет generic reviewer metadata к `external_records`.
+
+Подробные инструкции:
+- RU: [`docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_RU.md`](docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_RU.md)
+- KK: [`docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_KK.md`](docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_KK.md)
+- EN: [`docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_EN.md`](docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_EN.md)
+
+## Controlled geological vocabularies
+
+GeoKZ хранит canonical dictionaries для `lithology`, `marker_type`, `property_kind`, `unit`, но не уничтожает исходные строки источника. Canonical codes подключены к WellInterval/CoreSample/WellMarker/WellLogCurve/WellTest как отдельный normalization layer. Fuzzy auto-resolution не используется.
+
+## Визуальный корреляционный разрез
+
+```text
+POST /api/v1/correlation/wells/view
+```
+
+Backend выбирает depth axis `TVDSS → TVD → MD`, отдаёт ordered columns, intervals/markers, `renderable`, готовые `MARKER`/`HORIZON` lines и warnings. Клиент не пересчитывает геологию самостоятельно.
+
+Документы:
+- RU: [`docs/CROSS_SECTION_VIEW_CONTRACT_RU.md`](docs/CROSS_SECTION_VIEW_CONTRACT_RU.md)
+- KK: [`docs/CROSS_SECTION_VIEW_CONTRACT_KK.md`](docs/CROSS_SECTION_VIEW_CONTRACT_KK.md)
+- EN: [`docs/CROSS_SECTION_VIEW_CONTRACT_EN.md`](docs/CROSS_SECTION_VIEW_CONTRACT_EN.md)
+
+## Synthetic demo correlation workflow
+
+```text
+POST /api/v1/correlation/demo/workflow
+```
+
+`synthetic-correlation-demo-v1` отделён от production wells. Первый вызов возвращает `DISCOVERY`, затем пользователь выбирает reference/compared wells, второй вызов возвращает `CROSS_SECTION_READY`. Invalid selection получает HTTP `422`.
+
+Seed:
+
+```text
+python -m scripts.seed_correlation_demo
+```
+
+Документы:
+- RU: [`docs/DEMO_CORRELATION_WORKFLOW_RU.md`](docs/DEMO_CORRELATION_WORKFLOW_RU.md)
+- KK: [`docs/DEMO_CORRELATION_WORKFLOW_KK.md`](docs/DEMO_CORRELATION_WORKFLOW_KK.md)
+- EN: [`docs/DEMO_CORRELATION_WORKFLOW_EN.md`](docs/DEMO_CORRELATION_WORKFLOW_EN.md)
+
+## Полезные endpoints
+
+- health live: `/health/live`
+- health ready/PostGIS: `/health/ready`
 - about: `/api/v1/about?lang=ru`
 - help: `/api/v1/help/topics?lang=ru`
 - external sources: `/api/v1/integrations/sources`
-- external scheduler status: `/api/v1/integrations/scheduler/status`
-- external Update All: `/api/v1/integrations/sync-all`
-- external run due: `/api/v1/integrations/scheduler/run-due`
+- scheduler: `/api/v1/integrations/scheduler/status`
+- Update All: `/api/v1/integrations/sync-all`
 - Kazakhstan catalog: `/api/v1/integrations/kazakhstan/catalog`
-- Kazakhstan resource schema: `/api/v1/integrations/kazakhstan/{code}/schema`
-- Kazakhstan sync: `/api/v1/integrations/kazakhstan/{code}/sync`
-- Kazakhstan process/match: `/api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process`
-- Kazakhstan field review: `/api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review`
-- Kazakhstan review UI contract: `/api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view`
-- well passport: `/api/v1/wells/{well_id}/passport`
+- Kazakhstan schema: `/api/v1/integrations/kazakhstan/{code}/schema`
+- Well Passport: `/api/v1/wells/{well_id}/passport`
 - correlation: `/api/v1/correlation/wells/{reference_well_id}`
-- visual cross-section view-model: `/api/v1/correlation/wells/view`
-- complete demo correlation workflow: `/api/v1/correlation/demo/workflow`
+- visual cross-section: `/api/v1/correlation/wells/view`
+- demo workflow: `/api/v1/correlation/demo/workflow`
 
 ## Документация
 
@@ -327,53 +313,33 @@ docker compose up --build
 - KK: [`docs/PROJECT_PLAN_V0_2_KK.md`](docs/PROJECT_PLAN_V0_2_KK.md)
 - EN: [`docs/PROJECT_PLAN_V0_2_EN.md`](docs/PROJECT_PLAN_V0_2_EN.md)
 
-### Руководства пользователя
+### User Guide
 - RU: [`docs/USER_GUIDE_RU.md`](docs/USER_GUIDE_RU.md)
 - KK: [`docs/USER_GUIDE_KK.md`](docs/USER_GUIDE_KK.md)
 - EN: [`docs/USER_GUIDE_EN.md`](docs/USER_GUIDE_EN.md)
 
-### API-ключи внешних источников
-- RU: [`docs/EXTERNAL_API_KEYS_RU.md`](docs/EXTERNAL_API_KEYS_RU.md)
-- KK: [`docs/EXTERNAL_API_KEYS_KK.md`](docs/EXTERNAL_API_KEYS_KK.md)
-- EN: [`docs/EXTERNAL_API_KEYS_EN.md`](docs/EXTERNAL_API_KEYS_EN.md)
-
-### Интеграция Kazakhstan Open Data
+### Kazakhstan Open Data
 - RU: [`docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md`](docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md)
 - KK: [`docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_KK.md`](docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_KK.md)
 - EN: [`docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_EN.md`](docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_EN.md)
 
-### Review внешних месторождений
+### Field review
 - RU: [`docs/KAZAKHSTAN_FIELD_REVIEW_RU.md`](docs/KAZAKHSTAN_FIELD_REVIEW_RU.md)
 - KK: [`docs/KAZAKHSTAN_FIELD_REVIEW_KK.md`](docs/KAZAKHSTAN_FIELD_REVIEW_KK.md)
 - EN: [`docs/KAZAKHSTAN_FIELD_REVIEW_EN.md`](docs/KAZAKHSTAN_FIELD_REVIEW_EN.md)
 
-### UI/View-Model contract external review
-- RU: [`docs/EXTERNAL_REVIEW_UI_CONTRACT_RU.md`](docs/EXTERNAL_REVIEW_UI_CONTRACT_RU.md)
-- KK: [`docs/EXTERNAL_REVIEW_UI_CONTRACT_KK.md`](docs/EXTERNAL_REVIEW_UI_CONTRACT_KK.md)
-- EN: [`docs/EXTERNAL_REVIEW_UI_CONTRACT_EN.md`](docs/EXTERNAL_REVIEW_UI_CONTRACT_EN.md)
+### License review
+- RU: [`docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_RU.md`](docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_RU.md)
+- KK: [`docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_KK.md`](docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_KK.md)
+- EN: [`docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_EN.md`](docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_EN.md)
 
-### Scheduler внешней синхронизации
-- RU: [`docs/EXTERNAL_SYNC_SCHEDULER_RU.md`](docs/EXTERNAL_SYNC_SCHEDULER_RU.md)
-- KK: [`docs/EXTERNAL_SYNC_SCHEDULER_KK.md`](docs/EXTERNAL_SYNC_SCHEDULER_KK.md)
-- EN: [`docs/EXTERNAL_SYNC_SCHEDULER_EN.md`](docs/EXTERNAL_SYNC_SCHEDULER_EN.md)
-
-### Visual cross-section contract
-- RU: [`docs/CROSS_SECTION_VIEW_CONTRACT_RU.md`](docs/CROSS_SECTION_VIEW_CONTRACT_RU.md)
-- KK: [`docs/CROSS_SECTION_VIEW_CONTRACT_KK.md`](docs/CROSS_SECTION_VIEW_CONTRACT_KK.md)
-- EN: [`docs/CROSS_SECTION_VIEW_CONTRACT_EN.md`](docs/CROSS_SECTION_VIEW_CONTRACT_EN.md)
-
-### Demo correlation workflow
-- RU: [`docs/DEMO_CORRELATION_WORKFLOW_RU.md`](docs/DEMO_CORRELATION_WORKFLOW_RU.md)
-- KK: [`docs/DEMO_CORRELATION_WORKFLOW_KK.md`](docs/DEMO_CORRELATION_WORKFLOW_KK.md)
-- EN: [`docs/DEMO_CORRELATION_WORKFLOW_EN.md`](docs/DEMO_CORRELATION_WORKFLOW_EN.md)
-
-### Другие документы
-- [`docs/BUSINESS_DOMAIN.md`](docs/BUSINESS_DOMAIN.md) — предметная модель;
-- [`docs/I18N.md`](docs/I18N.md) — правила RU/KK/EN;
-- [`docs/DOCUMENTATION_POLICY.md`](docs/DOCUMENTATION_POLICY.md) — обязательное сопровождение документации;
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — архитектура;
-- [`docs/WINDOWS_DESKTOP_PLAN.md`](docs/WINDOWS_DESKTOP_PLAN.md) — Windows/PySide6;
-- [`docs/ABOUT.md`](docs/ABOUT.md) — о проекте.
+### Scheduler / review UI / other contracts
+- [`docs/EXTERNAL_SYNC_SCHEDULER_RU.md`](docs/EXTERNAL_SYNC_SCHEDULER_RU.md) + KK/EN;
+- [`docs/EXTERNAL_REVIEW_UI_CONTRACT_RU.md`](docs/EXTERNAL_REVIEW_UI_CONTRACT_RU.md) + KK/EN;
+- [`docs/DOCUMENTATION_POLICY.md`](docs/DOCUMENTATION_POLICY.md);
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md);
+- [`docs/WINDOWS_DESKTOP_PLAN.md`](docs/WINDOWS_DESKTOP_PLAN.md);
+- [`docs/ABOUT.md`](docs/ABOUT.md).
 
 ## Автор
 

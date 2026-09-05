@@ -149,6 +149,7 @@ class KazakhstanDatasetProcessingResponse(BaseModel):
     unmatched: int
     normalization_errors: int
     reviewer_locked: int
+    review_required: int = 0
 
 
 class FieldReviewLinkRead(BaseModel):
