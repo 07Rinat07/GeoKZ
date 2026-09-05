@@ -294,7 +294,7 @@ def test_trilingual_auth_guides_follow_identity_and_audit_contract() -> None:
             "admin",
             "DRAFT",
             "AuditLog",
-            "MasterDataRevision",
+            "master_data_revisions",
             "authenticated",
         ):
             assert value in content
