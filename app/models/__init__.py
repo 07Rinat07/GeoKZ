@@ -28,12 +28,14 @@ from app.models.subsurface import (
     WellTest,
     WellTrajectoryPoint,
 )
+from app.models.vocabulary import ControlledVocabularyTerm
 from app.models.well import Well, WellInterval
 
 __all__ = [
     "AdministrativeRegion",
     "Base",
     "ConflictRecord",
+    "ControlledVocabularyTerm",
     "CoreRun",
     "CoreSample",
     "Document",

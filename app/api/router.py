@@ -12,6 +12,7 @@ from app.api.routes import (
     integrations,
     sources,
     spatial,
+    vocabularies,
     wells,
 )
 from app.core.config import get_settings
@@ -69,6 +70,11 @@ api_router.include_router(
     correlation.router,
     prefix=f"{settings.api_prefix}/correlation",
     tags=["correlation"],
+)
+api_router.include_router(
+    vocabularies.router,
+    prefix=f"{settings.api_prefix}/vocabularies",
+    tags=["vocabularies"],
 )
 api_router.include_router(
     integrations.router,
