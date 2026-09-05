@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.auth_dependencies import CurrentPrincipal, get_current_principal, require_admin
 from app.core.database import get_session
 from app.models.audit import AuditLog, MasterDataRevision
+from app.models.enums import AuditAction
 from app.schemas.audit import AuditLogRead, MasterDataRevisionRead
 
 router = APIRouter()
@@ -15,7 +16,7 @@ router = APIRouter()
 
 @router.get("/logs", response_model=list[AuditLogRead])
 async def list_audit_logs(
-    action: str | None = None,
+    action: AuditAction | None = None,
     resource_type: str | None = None,
     resource_id: str | None = None,
     limit: int = Query(default=100, ge=1, le=500),
@@ -24,7 +25,7 @@ async def list_audit_logs(
     session: AsyncSession = Depends(get_session),
 ) -> list[AuditLog]:
     statement = select(AuditLog)
-    if action:
+    if action is not None:
         statement = statement.where(AuditLog.action == action)
     if resource_type:
         statement = statement.where(AuditLog.resource_type == resource_type)
