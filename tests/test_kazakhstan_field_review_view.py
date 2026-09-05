@@ -47,9 +47,10 @@ def test_unmatched_review_view_exposes_manual_and_draft_actions() -> None:
     manual = actions[FieldReviewActionCode.MANUAL_LINK]
     create_draft = actions[FieldReviewActionCode.CREATE_DRAFT_FIELD]
     assert manual.enabled is True
-    assert manual.required_fields == ["entity_id", "reviewer"]
+    assert manual.required_fields == ["entity_id"]
     assert manual.path.endswith(f"/review/{record_id}/manual-link")
     assert create_draft.enabled is True
+    assert create_draft.required_fields == []
     assert create_draft.disabled_reason is None
     assert create_draft.path.endswith(f"/review/{record_id}/create-draft-field")
 
