@@ -20,3 +20,5 @@ def test_about_endpoint_supports_all_languages() -> None:
             assert payload["author"] == "Sarmuldin Rinat"
             assert payload["email"] == "ura07srr@gmail.com"
             assert payload["supported_languages"] == ["ru", "kk", "en"]
+            assert payload["core_dataset_version"] == "2026.09.0-bootstrap"
+            assert payload["core_dataset_schema_version"] == 1
