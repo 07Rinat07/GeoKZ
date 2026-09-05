@@ -28,6 +28,7 @@ class WellMarker(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     marker_code: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
     marker_type: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    marker_type_code: Mapped[str | None] = mapped_column(String(160), index=True)
     name_ru: Mapped[str | None] = mapped_column(String(500))
     name_kk: Mapped[str | None] = mapped_column(String(500))
     name_en: Mapped[str | None] = mapped_column(String(500))
