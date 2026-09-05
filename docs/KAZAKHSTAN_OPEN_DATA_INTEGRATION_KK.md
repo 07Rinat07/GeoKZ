@@ -1,213 +1,39 @@
 # GeoKZ — Kazakhstan Open Data / data.egov.kz интеграциясы (KK)
 
-Өзектілігі: 2026-09-04.
+Өзектілігі: 2026-09-05.
 
-## 1. data.egov.kz ресми терминологиясы
+## 1. Портал терминологиясы
 
-GeoKZ портал терминдерін өзгертпей қолданады:
+GeoKZ `data.egov.kz` ресми contract мәндерін өзгертпей сақтайды:
 
-- `apiUri` — `data.egov.kz` жүйесіндегі dataset-тің техникалық индексі/идентификаторы;
-- `version` — ресурс нұсқасы, мысалы `v10`;
-- `fields` — dataset өрістерінің техникалық атаулары;
-- `labelRu`, `labelKk`, `labelEn` — metadata ішіндегі пайдаланушыға көрсетілетін атаулар;
-- `source` — API v4 сұрауының JSON-параметрі; онда `from`, `size`, `query`, `sort` және Elasticsearch іздеу параметрлері беріледі.
+- `apiUri` — ресурстың техникалық identifier;
+- `version` — upstream нұсқасы;
+- `fields` — техникалық field names;
+- `labelRu`, `labelKk`, `labelEn` — metadata labels;
+- `source` — API v4 үшін `from`, `size`, `query`, `sort` JSON parameter;
+- `GeoKZ code` — жеке stable ішкі slug;
+- `record_type` — бір жазбаның internal singular snake_case түрі.
 
-GeoKZ ресурс мысалы:
-
-```text
-GeoKZ code:  kz-egov-oil-gas-fields
-apiUri:      stat_kgn_117
-version:     v10
-record_type: oil_gas_field
-```
-
-`GeoKZ code` — connector үшін біздің тұрақты идентификатор. Ол ресми `apiUri` мәнін алмастырмайды және өзгертпейді.
-
-## 2. Ресми REST үлгілері
-
-`{apiUri}` және `{version}` үшін:
-
-```text
-Metadata:
-GET https://data.egov.kz/meta/{apiUri}/{version}
-
-Mapping / өрістер құрылымы:
-GET https://data.egov.kz/api/v4/mapping/{apiUri}/{version}
-
-API v4 деректері:
-GET https://data.egov.kz/api/v4/{apiUri}/{version}?source={JSON}
-
-Detailed API:
-GET https://data.egov.kz/api/detailed/{apiUri}/{version}?source={JSON}
-```
-
-Нақты деректерді алу кезінде GeoKZ портал талаптарына сәйкес пайдаланушының API key мәнін жібереді. Кілт тек `GEOKZ_EGOV_API_KEY` арқылы сақталады.
-
-Ресми API сипаттамасы: `https://data.egov.kz/pages/samples`.
-
-## 3. GeoKZ сыртқы ресурстарды қалай атайды
-
-### 3.1 `code`
-
-GeoKZ ішкі тұрақты slug:
-
-```text
-kz-egov-<domain>
-```
-
-Мысалдар:
-
-```text
-kz-egov-oil-gas-fields
-kz-egov-geological-study-licenses
-```
-
-Ережелер:
-
-- lowercase;
-- ASCII;
-- kebab-case;
-- `data.egov.kz` үшін `kz-egov-` префиксі;
-- ресурс мағынасын білдіреді;
-- нұсқа `code` ішіне кірмейді.
-
-### 3.2 `api_uri`
-
-Порталдың ресми `apiUri` мәні өзгеріссіз сақталады:
-
-```text
-stat_kgn_117
-zher_koinauyn_geologiyalyk_zer2
-```
-
-Оны аударуға, қысқартуға немесе GeoKZ атауымен алмастыруға болмайды.
-
-### 3.3 `version`
-
-Бөлек және өзгеріссіз сақталады:
-
-```text
-v10
-v6
-```
-
-### 3.4 `record_type`
-
-GeoKZ нормализацияланған бір жазба түрі:
-
-```text
-oil_gas_field
-geological_study_license
-```
-
-Ережелер:
-
-- ағылшын тілі;
-- lowercase;
-- singular;
-- snake_case;
-- бір жазбаның мәнін сипаттайды.
-
-### 3.5 RAW өрістері
-
-`data.egov.kz`-тен келген техникалық field атаулары `raw_payload` ішінде өзгеріссіз сақталады. GeoKZ нормализацияланған өрістері бөлек `normalized_payload` немесе domain model ішінде жасалады.
-
-## 4. Жаңа ресурсты дұрыс қосу реті
-
-1. `data.egov.kz` порталынан ресми dataset табу.
-2. Оның `apiUri` және өзекті `version` мәндерін алу.
-3. Metadata тексеру:
+Ресми endpoint templates:
 
 ```text
 GET /meta/{apiUri}/{version}
-```
-
-4. Mapping тексеру:
-
-```text
 GET /api/v4/mapping/{apiUri}/{version}
+GET /api/v4/{apiUri}/{version}?source={JSON}
+GET /api/detailed/{apiUri}/{version}?source={JSON}
 ```
 
-5. Техникалық field атаулары мен типтерін салыстыру.
-6. `source={"size":5}` тәрізді шағын тест сұрауын орындау.
-7. Тұрақты identity field таңдау; field атауы өзгеруі мүмкін болса alias group көрсету.
-8. Ресурсты `app/integrations/kazakhstan_open_data.py` файлына қосу.
-9. RU/KK/EN атаулары мен сипаттамаларын қосу.
-10. Registry, metadata/mapping және parsing tests қосу.
-11. License/terms және attribution тексеру.
-12. Ресурсты GeoKZ БД-сына тіркеу.
-13. Алғашқы синхрондауды тек RAW/staging қабатына орындау.
-14. Тексерілгеннен кейін normalization/matching/review іске асыру.
+`apiUri` аударылмайды және қысқартылмайды. `version` `code` ішіне енгізілмейді.
 
-## 5. GeoKZ арқылы ресурсты тексеру
-
-Каталог:
+## 2. GeoKZ naming
 
 ```text
-GET /api/v1/integrations/kazakhstan/catalog
+code = kz-egov-<domain>
 ```
 
-GeoKZ әр ресурс үшін мыналарды қайтарады:
+Талаптар: lowercase, ASCII, kebab-case, version жоқ.
 
-- `code`;
-- `api_uri`;
-- `version`;
-- `record_type`;
-- `metadata_url`;
-- `mapping_url`;
-- `data_url_template`;
-- `detailed_url_template`;
-- API key конфигурация күйі;
-- тіркелу күйі.
-
-Жүктемес бұрын ресми schema/mapping тексеру:
-
-```text
-GET /api/v1/integrations/kazakhstan/{code}/schema
-```
-
-Жауап:
-
-```text
-code
-api_uri
-version
-metadata
-mapping
-```
-
-Бұл endpoint деректерді нормализацияламайды немесе жарияламайды; ол сыртқы ресурс контрактын тексеруге арналған.
-
-## 6. Тіркеу және синхрондау
-
-Белгілі ресурстарды тіркеу:
-
-```text
-POST /api/v1/integrations/kazakhstan/register
-```
-
-Қолмен синхрондау:
-
-```text
-POST /api/v1/integrations/kazakhstan/{code}/sync
-```
-
-Деректер ағыны:
-
-```text
-data.egov.kz
-  → metadata/mapping validation
-  → RAW/staging
-  → checksum/diff
-  → normalization
-  → matching
-  → review
-  → verified GeoKZ master data
-```
-
-## 7. Қазір қосылған ресурстар
-
-### Қазақстан Республикасының мұнай-газ кен орындары
+`record_type`: English, lowercase, singular, snake_case.
 
 ```text
 code:        kz-egov-oil-gas-fields
@@ -216,8 +42,6 @@ version:     v10
 record_type: oil_gas_field
 ```
 
-### Жер қойнауын геологиялық зерттеуге берілген лицензиялар
-
 ```text
 code:        kz-egov-geological-study-licenses
 apiUri:      zher_koinauyn_geologiyalyk_zer2
@@ -225,36 +49,118 @@ version:     v6
 record_type: geological_study_license
 ```
 
-## 8. Үйлесімділік ережесі
+## 3. Жаңа resource қосу тәртібі
 
-Портал жаңа `v11` нұсқасын шығарса, GeoKZ `code` мәнін өзгертпейді. `version`, endpoint-тер және қажет болса normalization mapping жаңартылады. Нұсқаны ауыстырмас бұрын metadata/mapping салыстырылып, contract tests орындалады.
+1. Ресми dataset card табу.
+2. `apiUri` және current `version` анықтау.
+3. Metadata және mapping тексеру.
+4. Technical fields/types/labels салыстыру.
+5. `source={"size":5}` сияқты sample request жасау.
+6. Stable identity field немесе қауіпсіз deterministic fallback белгілеу.
+7. License/terms/attribution тексеру.
+8. RU/KK/EN names/descriptions қосу.
+9. Алғашқы import тек RAW/staging-ке жасалады.
+10. Typed normalizer қосылады.
+11. Source-specific matching/review semantics анықталады; әр dataset міндетті түрде `GeologicalEntity`-ге сәйкес келеді деп болжауға болмайды.
+12. Unit/contract/PostgreSQL integration tests қосылады.
+13. RU/KK/EN docs жаңартылады.
 
-## 9. Байланысты құжаттар
+Schema inspection:
 
-- `docs/EXTERNAL_API_KEYS_KK.md` — API key алу және қауіпсіз сақтау;
-- `docs/USER_GUIDE_KK.md` — сыртқы дереккөздермен жұмыс;
-- `docs/PROJECT_PLAN_V0_2_KK.md` — өзекті roadmap;
-- `docs/DOCUMENTATION_POLICY.md` — RU/KK/EN құжаттамасын синхронды жаңарту ережесі.
+```text
+GET /api/v1/integrations/kazakhstan/{code}/schema
+```
 
-## 10. Мұнай-газ кен орындарын нормализациялау және matching
+## 4. Registry, sync және scheduler
 
-`kz-egov-oil-gas-fields` үшін RAW синхрондаудан кейінгі processing endpoint іске асырылды:
+```text
+GET  /api/v1/integrations/kazakhstan/catalog
+POST /api/v1/integrations/kazakhstan/register
+POST /api/v1/integrations/kazakhstan/{code}/sync
+POST /api/v1/integrations/sync-all
+GET  /api/v1/integrations/scheduler/status
+POST /api/v1/integrations/scheduler/run-due
+```
+
+Нақты API v4 download үшін `GEOKZ_EGOV_API_KEY` қажет. Қауіпсіз setup: `docs/EXTERNAL_API_KEYS_KK.md`.
+
+## 5. RAW және provenance
+
+Upstream technical keys `raw_payload` ішінде өзгеріссіз сақталады. `normalized_payload` бөлек құрылады.
+
+```text
+data.egov.kz
+→ metadata/mapping check
+→ RAW
+→ checksum/diff
+→ typed normalization
+→ source-specific matching/review
+→ human decision
+→ allowed verified master view
+```
+
+Upstream deletion verified data-ны hard delete етпейді; `is_deleted_upstream`/tombstone қолданылады.
+
+## 6. `stat_kgn_117/v10` мұнай-газ кен орындары
 
 ```text
 POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process
 ```
 
-GeoKZ осы dataset нақты беретін деректі ғана нормализациялайды — кен орнының атауын. RAW payload өзгеріссіз сақталады. Нормализацияланған payload ішінде `entity_type=field`, `name_ru`, matching key және бастапқы field атауы сақталады.
+Normalizer field name-ді шығарады және RAW сақтайды. Deterministic matching existing `GeologicalEntity(object_type="field")` және `EntityName` aliases арқылы орындалады.
 
-Matching бар `GeologicalEntity(object_type="field")` объектілерімен және `EntityName` aliases арқылы орындалады. Регистр, типографиялық тырнақшалар, артық бос орындар және `ё/е` айырмасы салыстыру үшін нормализацияланады, бірақ upstream бастапқы мәні өзгертілмейді.
+- exact/alias → `ExternalEntityLink(status=REVIEW_REQUIRED)`;
+- бірнеше candidate → `AMBIGUOUS`;
+- candidate жоқ → `UNMATCHED`;
+- reviewer-locked `VERIFIED`/`REJECTED`/`MANUAL` автоматты өзгермейді;
+- verified new field автоматты жасалмайды.
 
-Қауіпсіздік ережелері:
+```text
+GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review
+GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view
+```
 
-- exact name match тек `ExternalEntityLink(status=REVIEW_REQUIRED)` жасайды;
-- alias match те review талап етеді;
-- бірнеше кандидат `AMBIGUOUS` ретінде белгіленеді;
-- кандидат жоқ болса `UNMATCHED` болады;
-- адам бұрын `VERIFIED` немесе `REJECTED` еткен link reviewer-locked және автоматты түрде өзгертілмейді;
-- сыртқы dataset жаңа verified `GeologicalEntity` объектісін автоматты түрде жасамайды немесе жарияламайды.
+## 7. `zher_koinauyn_geologiyalyk_zer2/v6` геологиялық зерттеу лицензиялары
 
-Endpoint жауабында `processed`, `normalized`, `exact_matches`, `alias_matches`, `ambiguous`, `unmatched`, `normalization_errors`, `reviewer_locked` санағыштары беріледі.
+Тексерілген v6 dataset card administrative license type, number/date, term, basis, issuing authority және holder мәліметтерін көрсетеді. Stable geological-object/deposit identifier немесе geometry жоқ, сондықтан field-style matching қолданылмайды.
+
+Processing:
+
+```text
+POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/process
+```
+
+Normalized fields: `license_number`, `issue_date`, `license_type_raw`, `study_scope_code`, `term_raw`, `basis_raw`, `issuing_authority_raw`, `holder_raw`, `holder_bin`, `source_fields`.
+
+Жазба `REVIEW_REQUIRED` алады, `review.entity_matching=NOT_APPLICABLE`.
+
+Review queue:
+
+```text
+GET /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/records
+```
+
+Decisions:
+
+```text
+POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/records/{record_id}/accept
+POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/records/{record_id}/reject
+```
+
+`ACCEPTED` тек normalized administrative record тексерілгенін білдіреді. Ол `ExternalEntityLink`, `GeologicalEntity` немесе geological fact жасамайды. Upstream checksum өзгерсе, `CHANGED` күйі бұрынғы `reviewed_by`, `reviewed_at`, `review_comment` шешімін жарамсыз етеді және fresh review талап етеді.
+
+Толық нұсқаулық: `docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_KK.md`.
+
+## 8. Version compatibility
+
+Upstream жаңа version шығарса, GeoKZ stable `code` сақтайды. `version`/endpoint config metadata/mapping салыстыру және contract tests өткеннен кейін ғана өзгереді.
+
+## 9. Байланысты docs
+
+- `docs/EXTERNAL_API_KEYS_KK.md`;
+- `docs/KAZAKHSTAN_FIELD_REVIEW_KK.md`;
+- `docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_KK.md`;
+- `docs/EXTERNAL_SYNC_SCHEDULER_KK.md`;
+- `docs/USER_GUIDE_KK.md`;
+- `docs/PROJECT_PLAN_V0_2_KK.md`;
+- `docs/DOCUMENTATION_POLICY.md`.
