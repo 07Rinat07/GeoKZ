@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal
 
 from pydantic import Field, SecretStr
@@ -40,6 +41,17 @@ class Settings(BaseSettings):
     external_scheduler_poll_seconds: int = Field(default=300, ge=30, le=3600)
     external_sync_failure_retry_hours: int = Field(default=6, ge=1, le=168)
     external_sync_running_timeout_hours: int = Field(default=6, ge=1, le=72)
+
+    # Core Dataset online updates are optional. The channel is disabled until both an HTTPS
+    # descriptor URL and at least one trusted Ed25519 public key are configured.
+    core_dataset_update_manifest_url: str | None = None
+    core_dataset_update_trusted_public_keys: dict[str, str] = Field(default_factory=dict)
+    core_dataset_update_cache_dir: Path = Path("data/runtime/core_dataset_updates")
+    core_dataset_update_max_bytes: int = Field(
+        default=128 * 1024 * 1024,
+        ge=1024 * 1024,
+        le=2 * 1024 * 1024 * 1024,
+    )
 
 
 @lru_cache(maxsize=1)
