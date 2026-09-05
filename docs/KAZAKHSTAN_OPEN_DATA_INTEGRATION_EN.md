@@ -1,215 +1,41 @@
 # GeoKZ — Kazakhstan Open Data / data.egov.kz integration (EN)
 
-Current as of: 2026-09-04.
+Current as of: 2026-09-05.
 
-## 1. Official data.egov.kz terminology
+## 1. Portal terminology
 
-GeoKZ keeps the portal terminology unchanged:
+GeoKZ preserves the official `data.egov.kz` contract:
 
-- `apiUri` — the technical dataset index/identifier on `data.egov.kz`;
-- `version` — the resource version, for example `v10`;
-- `fields` — technical field names of the dataset;
-- `labelRu`, `labelKk`, `labelEn` — user-facing field labels from metadata;
-- `source` — the JSON API v4 query parameter containing `from`, `size`, `query`, `sort`, and other Elasticsearch query options.
+- `apiUri` — technical resource identifier;
+- `version` — upstream version;
+- `fields` — technical upstream field names;
+- `labelRu`, `labelKk`, `labelEn` — metadata labels;
+- `source` — API v4 JSON parameter for `from`, `size`, `query`, and `sort`;
+- `GeoKZ code` — separate stable internal slug;
+- `record_type` — internal singular snake_case type for one record.
 
-Example GeoKZ resource:
-
-```text
-GeoKZ code:  kz-egov-oil-gas-fields
-apiUri:      stat_kgn_117
-version:     v10
-record_type: oil_gas_field
-```
-
-`GeoKZ code` is our stable connector identifier. It never replaces or modifies the official `apiUri`.
-
-## 2. Official REST patterns
-
-For `{apiUri}` and `{version}`:
-
-```text
-Metadata:
-GET https://data.egov.kz/meta/{apiUri}/{version}
-
-Mapping / field structure:
-GET https://data.egov.kz/api/v4/mapping/{apiUri}/{version}
-
-API v4 data:
-GET https://data.egov.kz/api/v4/{apiUri}/{version}?source={JSON}
-
-Detailed API:
-GET https://data.egov.kz/api/detailed/{apiUri}/{version}?source={JSON}
-```
-
-For actual API v4 data retrieval GeoKZ passes the user's API key according to portal requirements. The key is stored only through `GEOKZ_EGOV_API_KEY`.
-
-Official API documentation: `https://data.egov.kz/pages/samples`.
-
-## 3. GeoKZ naming conventions for external resources
-
-### 3.1 `code`
-
-Stable internal GeoKZ slug:
-
-```text
-kz-egov-<domain>
-```
-
-Examples:
-
-```text
-kz-egov-oil-gas-fields
-kz-egov-geological-study-licenses
-```
-
-Rules:
-
-- lowercase;
-- ASCII;
-- kebab-case;
-- `kz-egov-` prefix for `data.egov.kz`;
-- describes the resource meaning;
-- does not include the version.
-
-### 3.2 `api_uri`
-
-Stored exactly as the official portal `apiUri`:
-
-```text
-stat_kgn_117
-zher_koinauyn_geologiyalyk_zer2
-```
-
-Do not translate, shorten, or replace it with a GeoKZ name.
-
-### 3.3 `version`
-
-Stored separately without transformation:
-
-```text
-v10
-v6
-```
-
-### 3.4 `record_type`
-
-Normalized GeoKZ type for one record:
-
-```text
-oil_gas_field
-geological_study_license
-```
-
-Rules:
-
-- English;
-- lowercase;
-- singular;
-- snake_case;
-- describes one record, not the whole dataset title.
-
-### 3.5 RAW field names
-
-Technical field keys returned by `data.egov.kz` remain unchanged in `raw_payload`. GeoKZ normalized fields are created separately in `normalized_payload` or the domain model.
-
-This preserves provenance and allows reprocessing after mapping changes.
-
-## 4. Correct procedure for adding a new resource
-
-1. Find the official dataset on `data.egov.kz`.
-2. Obtain its `apiUri` and current `version`.
-3. Inspect metadata:
+Official endpoint forms:
 
 ```text
 GET /meta/{apiUri}/{version}
-```
-
-4. Inspect mapping:
-
-```text
 GET /api/v4/mapping/{apiUri}/{version}
+GET /api/v4/{apiUri}/{version}?source={JSON}
+GET /api/detailed/{apiUri}/{version}?source={JSON}
 ```
 
-5. Verify technical field names and types.
-6. Run a small sample query such as `source={"size":5}`.
-7. Select a stable identity field; use an alias group if field names may have changed.
-8. Add the resource to `app/integrations/kazakhstan_open_data.py`.
-9. Add RU/KK/EN names and descriptions.
-10. Add registry, metadata/mapping, and parsing tests.
-11. Review license/terms and attribution.
-12. Register the resource in GeoKZ.
-13. Perform the first synchronization into RAW/staging only.
-14. After validation, implement normalization/matching/review.
+The upstream `apiUri` is never translated or shortened. `version` is not embedded in the GeoKZ `code`.
 
-## 5. Inspecting a resource through GeoKZ
-
-Catalog:
+## 2. GeoKZ naming
 
 ```text
-GET /api/v1/integrations/kazakhstan/catalog
+code = kz-egov-<domain>
 ```
 
-GeoKZ returns:
+Rules: lowercase, ASCII, kebab-case, semantic name, no version suffix.
 
-- `code`;
-- `api_uri`;
-- `version`;
-- `record_type`;
-- `metadata_url`;
-- `mapping_url`;
-- `data_url_template`;
-- `detailed_url_template`;
-- API-key configuration status;
-- registration status.
+`record_type`: English, lowercase, singular, snake_case.
 
-Inspect official metadata/mapping before ingestion:
-
-```text
-GET /api/v1/integrations/kazakhstan/{code}/schema
-```
-
-Response:
-
-```text
-code
-api_uri
-version
-metadata
-mapping
-```
-
-This endpoint does not normalize or publish data. It only inspects the upstream resource contract.
-
-## 6. Registration and synchronization
-
-Register known resources:
-
-```text
-POST /api/v1/integrations/kazakhstan/register
-```
-
-Manual synchronization:
-
-```text
-POST /api/v1/integrations/kazakhstan/{code}/sync
-```
-
-Data flow:
-
-```text
-data.egov.kz
-  → metadata/mapping validation
-  → RAW/staging
-  → checksum/diff
-  → normalization
-  → matching
-  → review
-  → verified GeoKZ master data
-```
-
-## 7. Currently connected resources
-
-### Oil and gas fields of the Republic of Kazakhstan
+Examples:
 
 ```text
 code:        kz-egov-oil-gas-fields
@@ -218,8 +44,6 @@ version:     v10
 record_type: oil_gas_field
 ```
 
-### Licenses for geological exploration of subsoil
-
 ```text
 code:        kz-egov-geological-study-licenses
 apiUri:      zher_koinauyn_geologiyalyk_zer2
@@ -227,36 +51,124 @@ version:     v6
 record_type: geological_study_license
 ```
 
-## 8. Compatibility rule
+## 3. Onboarding a new resource
 
-If the portal releases `v11`, GeoKZ keeps the same `code`. The `version`, endpoints, and normalization mapping are updated as needed. Metadata/mapping must be compared and contract tests must pass before switching versions.
+1. Find the official dataset card.
+2. Record `apiUri` and current `version`.
+3. Inspect metadata and mapping.
+4. Verify technical fields, labels, and types.
+5. Run a small sample query such as `source={"size":5}`.
+6. Choose a stable identity field or safe deterministic fallback.
+7. Review license/terms/attribution.
+8. Add RU/KK/EN names and descriptions.
+9. Import first into RAW/staging only.
+10. Add a typed normalizer.
+11. Define source-specific matching/review semantics; never assume every dataset maps to `GeologicalEntity`.
+12. Add unit, contract, and PostgreSQL integration tests.
+13. Update RU/KK/EN documentation.
 
-## 9. Related documents
+GeoKZ schema inspection:
 
-- `docs/EXTERNAL_API_KEYS_EN.md` — obtaining and safely storing API keys;
-- `docs/USER_GUIDE_EN.md` — user workflow for external sources;
-- `docs/PROJECT_PLAN_V0_2_EN.md` — current roadmap;
-- `docs/DOCUMENTATION_POLICY.md` — synchronized RU/KK/EN documentation policy.
+```text
+GET /api/v1/integrations/kazakhstan/{code}/schema
+```
 
-## 10. Oil and gas field normalization and matching
+## 4. Registry, sync, and scheduler
 
-For `kz-egov-oil-gas-fields`, GeoKZ now implements a post-sync processing step:
+```text
+GET  /api/v1/integrations/kazakhstan/catalog
+POST /api/v1/integrations/kazakhstan/register
+POST /api/v1/integrations/kazakhstan/{code}/sync
+POST /api/v1/integrations/sync-all
+GET  /api/v1/integrations/scheduler/status
+POST /api/v1/integrations/scheduler/run-due
+```
+
+Actual API v4 retrieval requires `GEOKZ_EGOV_API_KEY`; secure setup is documented in `docs/EXTERNAL_API_KEYS_EN.md`.
+
+## 5. RAW and provenance
+
+Upstream technical keys are kept unchanged in `raw_payload`; `normalized_payload` is separate.
+
+```text
+data.egov.kz
+→ metadata/mapping check
+→ RAW
+→ checksum/diff
+→ typed normalization
+→ source-specific matching/review
+→ human decision
+→ allowed verified master view
+```
+
+An upstream disappearance is represented through `is_deleted_upstream`/tombstone semantics rather than hard-deleting verified GeoKZ information.
+
+## 6. Oil/gas fields `stat_kgn_117/v10`
+
+Processing:
 
 ```text
 POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process
 ```
 
-GeoKZ normalizes only the fact supported by this dataset: the field name. The original RAW payload remains unchanged. The normalized payload stores `entity_type=field`, `name_ru`, a matching key, and the original source-field name.
-
-Matching is performed against existing `GeologicalEntity(object_type="field")` records and registered `EntityName` aliases. Case, typographic quotes, repeated whitespace, and `ё/е` differences are normalized for comparison, while the upstream value remains untouched.
+The normalizer extracts the field name and preserves RAW. Deterministic matching uses existing `GeologicalEntity(object_type="field")` names and `EntityName` aliases.
 
 Safety rules:
 
-- exact name matches create only `ExternalEntityLink(status=REVIEW_REQUIRED)`;
-- alias matches also require review;
-- multiple candidates are marked `AMBIGUOUS`;
-- no candidate is marked `UNMATCHED`;
-- links already marked `VERIFIED` or `REJECTED` by a reviewer are reviewer-locked and are not overwritten automatically;
-- the external dataset never creates or publishes a new verified `GeologicalEntity` automatically.
+- exact/alias match → `ExternalEntityLink(status=REVIEW_REQUIRED)` only;
+- multiple candidates → `AMBIGUOUS`;
+- no candidate → `UNMATCHED`;
+- reviewer-locked `VERIFIED`/`REJECTED`/`MANUAL` decisions are not overwritten automatically;
+- no verified new field is created automatically.
 
-The endpoint returns `processed`, `normalized`, `exact_matches`, `alias_matches`, `ambiguous`, `unmatched`, `normalization_errors`, and `reviewer_locked` counters.
+Review endpoints:
+
+```text
+GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review
+GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view
+```
+
+## 7. Geological study licenses `zher_koinauyn_geologiyalyk_zer2/v6`
+
+The verified v6 dataset card exposes administrative license type, number/date, term, basis, issuing authority, and holder information. It does not expose a stable geological-object/deposit identifier or geometry, so field-style matching is intentionally not used for this source.
+
+Processing:
+
+```text
+POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/process
+```
+
+Normalized fields include `license_number`, `issue_date`, `license_type_raw`, `study_scope_code`, `term_raw`, `basis_raw`, `issuing_authority_raw`, `holder_raw`, `holder_bin`, and `source_fields`.
+
+The record becomes `REVIEW_REQUIRED` with `review.entity_matching=NOT_APPLICABLE`.
+
+Record-level queue:
+
+```text
+GET /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/records
+```
+
+Decisions:
+
+```text
+POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/records/{record_id}/accept
+POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/records/{record_id}/reject
+```
+
+`ACCEPTED` confirms only the normalized administrative representation. It does not create an `ExternalEntityLink`, `GeologicalEntity`, or geological fact. When the upstream checksum changes, the record becomes `CHANGED`; previous `reviewed_by`, `reviewed_at`, and `review_comment` are invalidated and fresh review is required.
+
+Detailed guide: `docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_EN.md`.
+
+## 8. Version compatibility
+
+When upstream publishes a new version, GeoKZ keeps the stable `code`. `version` and endpoint configuration change only after metadata/mapping comparison and contract tests. Never switch versions without validating field-schema and normalizer assumptions.
+
+## 9. Related documentation
+
+- `docs/EXTERNAL_API_KEYS_EN.md`;
+- `docs/KAZAKHSTAN_FIELD_REVIEW_EN.md`;
+- `docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_EN.md`;
+- `docs/EXTERNAL_SYNC_SCHEDULER_EN.md`;
+- `docs/USER_GUIDE_EN.md`;
+- `docs/PROJECT_PLAN_V0_2_EN.md`;
+- `docs/DOCUMENTATION_POLICY.md`.
