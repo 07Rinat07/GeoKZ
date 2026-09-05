@@ -3,6 +3,12 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.auth_dependencies import (
+    CurrentPrincipal,
+    get_current_principal,
+    require_expert,
+)
+from app.application.audit import AuditActor, AuditRevisionService
 from app.application.kazakhstan_field_processing import OIL_GAS_FIELDS_SOURCE_CODE
 from app.application.kazakhstan_field_review import (
     FieldReviewActionResult,
@@ -23,6 +29,9 @@ from app.application.kazakhstan_license_review import (
 )
 from app.core.database import get_session
 from app.core.project_info import SupportedLanguage
+from app.models.entity import GeologicalEntity
+from app.models.enums import AuditAction
+from app.schemas.entity import GeologicalEntityRead
 from app.schemas.integration import (
     FieldReviewActionResponse,
     FieldReviewCreateDraftRequest,
@@ -86,6 +95,52 @@ def _raise_license_review_error(error: Exception) -> None:
     raise error
 
 
+async def _audit_field_review(
+    session: AsyncSession,
+    *,
+    principal: CurrentPrincipal,
+    action_code: str,
+    result: FieldReviewActionResult,
+    comment: str | None,
+) -> None:
+    await AuditRevisionService(session).append_audit(
+        actor=AuditActor.from_user(principal.user),
+        action=AuditAction.REVIEW,
+        resource_type="external_field_review",
+        resource_id=result.record_id,
+        reason=action_code,
+        details={
+            "link_id": str(result.link_id),
+            "entity_id": str(result.entity_id),
+            "link_status": result.link_status.value,
+            "record_status": result.record_status.value,
+            "comment": comment,
+        },
+    )
+
+
+async def _audit_created_draft_entity(
+    session: AsyncSession,
+    *,
+    principal: CurrentPrincipal,
+    entity_id: UUID,
+    comment: str | None,
+) -> None:
+    entity = await session.get(GeologicalEntity, entity_id)
+    if entity is None:
+        raise RuntimeError("Draft entity created by review service cannot be reloaded")
+    await session.refresh(entity)
+    await AuditRevisionService(session).audit_master_change(
+        actor=AuditActor.from_user(principal.user),
+        action=AuditAction.CREATE,
+        resource_type="geological_entity",
+        resource_id=entity.id,
+        snapshot=GeologicalEntityRead.model_validate(entity).model_dump(mode="json"),
+        reason="external_review_create_draft",
+        details={"review_comment": comment},
+    )
+
+
 @router.get(
     "/kazakhstan/{code}/review/view",
     response_model=FieldReviewQueueViewRead,
@@ -95,6 +150,7 @@ async def get_field_review_queue_view(
     lang: SupportedLanguage = Query(default="ru"),
     limit: int = Query(default=100, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
+    _principal: CurrentPrincipal = Depends(get_current_principal),
     session: AsyncSession = Depends(get_session),
 ) -> FieldReviewQueueViewRead:
     _ensure_supported_code(code)
@@ -118,6 +174,7 @@ async def list_field_review_records(
     code: str,
     limit: int = Query(default=100, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
+    _principal: CurrentPrincipal = Depends(get_current_principal),
     session: AsyncSession = Depends(get_session),
 ) -> list[FieldReviewRecordRead]:
     _ensure_supported_code(code)
@@ -164,6 +221,7 @@ async def confirm_field_review_link(
     record_id: UUID,
     link_id: UUID,
     request: FieldReviewDecisionRequest,
+    principal: CurrentPrincipal = Depends(require_expert),
     session: AsyncSession = Depends(get_session),
 ) -> FieldReviewActionResponse:
     _ensure_supported_code(code)
@@ -171,10 +229,20 @@ async def confirm_field_review_link(
         result = await KazakhstanOilGasFieldReviewService(session).confirm_link(
             record_id=record_id,
             link_id=link_id,
-            reviewer=request.reviewer,
+            reviewer=principal.user.username,
+            comment=request.comment,
+            commit=False,
+        )
+        await _audit_field_review(
+            session,
+            principal=principal,
+            action_code="CONFIRM_LINK",
+            result=result,
             comment=request.comment,
         )
+        await session.commit()
     except Exception as error:
+        await session.rollback()
         _raise_review_error(error)
         raise AssertionError("unreachable") from error
     return _action_response(result)
@@ -189,6 +257,7 @@ async def reject_field_review_link(
     record_id: UUID,
     link_id: UUID,
     request: FieldReviewRejectRequest,
+    principal: CurrentPrincipal = Depends(require_expert),
     session: AsyncSession = Depends(get_session),
 ) -> FieldReviewActionResponse:
     _ensure_supported_code(code)
@@ -196,10 +265,20 @@ async def reject_field_review_link(
         result = await KazakhstanOilGasFieldReviewService(session).reject_link(
             record_id=record_id,
             link_id=link_id,
-            reviewer=request.reviewer,
+            reviewer=principal.user.username,
+            comment=request.comment,
+            commit=False,
+        )
+        await _audit_field_review(
+            session,
+            principal=principal,
+            action_code="REJECT_LINK",
+            result=result,
             comment=request.comment,
         )
+        await session.commit()
     except Exception as error:
+        await session.rollback()
         _raise_review_error(error)
         raise AssertionError("unreachable") from error
     return _action_response(result)
@@ -213,6 +292,7 @@ async def manually_link_field_review_record(
     code: str,
     record_id: UUID,
     request: FieldReviewManualLinkRequest,
+    principal: CurrentPrincipal = Depends(require_expert),
     session: AsyncSession = Depends(get_session),
 ) -> FieldReviewActionResponse:
     _ensure_supported_code(code)
@@ -220,10 +300,20 @@ async def manually_link_field_review_record(
         result = await KazakhstanOilGasFieldReviewService(session).manual_link(
             record_id=record_id,
             entity_id=request.entity_id,
-            reviewer=request.reviewer,
+            reviewer=principal.user.username,
+            comment=request.comment,
+            commit=False,
+        )
+        await _audit_field_review(
+            session,
+            principal=principal,
+            action_code="MANUAL_LINK",
+            result=result,
             comment=request.comment,
         )
+        await session.commit()
     except Exception as error:
+        await session.rollback()
         _raise_review_error(error)
         raise AssertionError("unreachable") from error
     return _action_response(result)
@@ -237,19 +327,36 @@ async def create_draft_field_from_review_record(
     code: str,
     record_id: UUID,
     request: FieldReviewCreateDraftRequest,
+    principal: CurrentPrincipal = Depends(require_expert),
     session: AsyncSession = Depends(get_session),
 ) -> FieldReviewActionResponse:
     _ensure_supported_code(code)
     try:
         result = await KazakhstanOilGasFieldReviewService(session).create_draft_field(
             record_id=record_id,
-            reviewer=request.reviewer,
+            reviewer=principal.user.username,
             comment=request.comment,
             name_ru=request.name_ru,
             name_kk=request.name_kk,
             name_en=request.name_en,
+            commit=False,
         )
+        await _audit_created_draft_entity(
+            session,
+            principal=principal,
+            entity_id=result.entity_id,
+            comment=request.comment,
+        )
+        await _audit_field_review(
+            session,
+            principal=principal,
+            action_code="CREATE_DRAFT_FIELD",
+            result=result,
+            comment=request.comment,
+        )
+        await session.commit()
     except Exception as error:
+        await session.rollback()
         _raise_review_error(error)
         raise AssertionError("unreachable") from error
     return _action_response(result)
@@ -263,6 +370,7 @@ async def list_license_review_records(
     code: str,
     limit: int = Query(default=100, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
+    _principal: CurrentPrincipal = Depends(get_current_principal),
     session: AsyncSession = Depends(get_session),
 ) -> list[LicenseReviewRecordRead]:
     _ensure_license_code(code)
@@ -284,16 +392,28 @@ async def accept_license_review_record(
     code: str,
     record_id: UUID,
     request: LicenseReviewDecisionRequest,
+    principal: CurrentPrincipal = Depends(require_expert),
     session: AsyncSession = Depends(get_session),
 ) -> LicenseReviewActionResponse:
     _ensure_license_code(code)
     try:
         result = await KazakhstanGeologicalStudyLicenseReviewService(session).accept(
             record_id=record_id,
-            reviewer=request.reviewer,
+            reviewer=principal.user.username,
             comment=request.comment,
+            commit=False,
         )
+        await AuditRevisionService(session).append_audit(
+            actor=AuditActor.from_user(principal.user),
+            action=AuditAction.REVIEW,
+            resource_type="external_license_review",
+            resource_id=record_id,
+            reason="ACCEPT",
+            details={"record_status": result.record_status.value, "comment": request.comment},
+        )
+        await session.commit()
     except Exception as error:
+        await session.rollback()
         _raise_license_review_error(error)
         raise AssertionError("unreachable") from error
     return LicenseReviewActionResponse.model_validate(result)
@@ -307,16 +427,28 @@ async def reject_license_review_record(
     code: str,
     record_id: UUID,
     request: LicenseReviewRejectRequest,
+    principal: CurrentPrincipal = Depends(require_expert),
     session: AsyncSession = Depends(get_session),
 ) -> LicenseReviewActionResponse:
     _ensure_license_code(code)
     try:
         result = await KazakhstanGeologicalStudyLicenseReviewService(session).reject(
             record_id=record_id,
-            reviewer=request.reviewer,
+            reviewer=principal.user.username,
             comment=request.comment,
+            commit=False,
         )
+        await AuditRevisionService(session).append_audit(
+            actor=AuditActor.from_user(principal.user),
+            action=AuditAction.REVIEW,
+            resource_type="external_license_review",
+            resource_id=record_id,
+            reason="REJECT",
+            details={"record_status": result.record_status.value, "comment": request.comment},
+        )
+        await session.commit()
     except Exception as error:
+        await session.rollback()
         _raise_license_review_error(error)
         raise AssertionError("unreachable") from error
     return LicenseReviewActionResponse.model_validate(result)
