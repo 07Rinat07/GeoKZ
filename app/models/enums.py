@@ -183,3 +183,10 @@ class ConflictType(StrEnum):
 class ConflictStatus(StrEnum):
     OPEN = "OPEN"
     RESOLVED = "RESOLVED"
+
+
+class VocabularyCode(StrEnum):
+    LITHOLOGY = "lithology"
+    MARKER_TYPE = "marker_type"
+    PROPERTY_KIND = "property_kind"
+    UNIT = "unit"

@@ -19,7 +19,7 @@ async def test_alembic_head_and_required_extensions() -> None:
     try:
         async with engine.connect() as connection:
             revision = await connection.scalar(text("SELECT version_num FROM alembic_version"))
-            assert revision == "20260904_0005"
+            assert revision == "20260905_0006"
 
             extensions = set(
                 (
@@ -62,7 +62,21 @@ async def test_alembic_head_and_required_extensions() -> None:
                 "external_records",
                 "external_sync_runs",
                 "organization_crs_definitions",
+                "controlled_vocabulary_terms",
             } <= tables
+
+            vocabulary_constraint = await connection.scalar(
+                text(
+                    "SELECT pg_get_constraintdef(c.oid) "
+                    "FROM pg_constraint c "
+                    "JOIN pg_class t ON t.oid = c.conrelid "
+                    "WHERE t.relname = 'controlled_vocabulary_terms' "
+                    "AND c.conname = 'ck_controlled_vocabulary_code'"
+                )
+            )
+            assert vocabulary_constraint is not None
+            assert "lithology" in vocabulary_constraint
+            assert "marker_type" in vocabulary_constraint
 
             postgis_version = await connection.scalar(text("SELECT PostGIS_Version()"))
             assert isinstance(postgis_version, str)
