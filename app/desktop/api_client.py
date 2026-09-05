@@ -126,6 +126,13 @@ class GeoKZApiClient:
             authenticated=False,
         )
 
+    def system_versions(self) -> JsonObject:
+        return self._request_json(
+            "GET",
+            "/api/v1/system/versions",
+            authenticated=False,
+        )
+
     def core_dataset_status(self) -> JsonObject:
         return self._request_json(
             "GET",
