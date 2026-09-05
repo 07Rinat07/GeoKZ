@@ -21,6 +21,18 @@ class GeologicalEntityCreate(ORMModel):
     verification_status: VerificationStatus = VerificationStatus.DRAFT
 
 
+class GeologicalEntityUpdate(ORMModel):
+    name_ru: str | None = Field(default=None, min_length=2, max_length=500)
+    name_kk: str | None = None
+    name_en: str | None = None
+    description: str | None = None
+    geological_context: dict | None = None
+    geometry_status: GeometryStatus | None = None
+    geometry_source_id: UUID | None = None
+    verification_status: VerificationStatus | None = None
+    change_reason: str = Field(min_length=3, max_length=1000)
+
+
 class GeologicalEntityRead(GeologicalEntityCreate):
     id: UUID
     created_at: datetime

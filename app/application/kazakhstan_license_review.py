@@ -96,6 +96,7 @@ class KazakhstanGeologicalStudyLicenseReviewService:
         record_id: UUID,
         reviewer: str,
         comment: str | None,
+        commit: bool = True,
     ) -> LicenseReviewActionResult:
         record = await self._get_record(record_id)
         if record.status != ExternalRecordStatus.REVIEW_REQUIRED:
@@ -122,7 +123,8 @@ class KazakhstanGeologicalStudyLicenseReviewService:
                 "reviewed_at": reviewed_at.isoformat(),
             },
         }
-        await self.session.commit()
+        if commit:
+            await self.session.commit()
         return self._result(record)
 
     async def reject(
@@ -131,6 +133,7 @@ class KazakhstanGeologicalStudyLicenseReviewService:
         record_id: UUID,
         reviewer: str,
         comment: str,
+        commit: bool = True,
     ) -> LicenseReviewActionResult:
         record = await self._get_record(record_id)
         if record.status != ExternalRecordStatus.REVIEW_REQUIRED:
@@ -157,7 +160,8 @@ class KazakhstanGeologicalStudyLicenseReviewService:
                 "comment": comment,
             },
         }
-        await self.session.commit()
+        if commit:
+            await self.session.commit()
         return self._result(record)
 
     async def _get_source(self) -> ExternalDataSource:

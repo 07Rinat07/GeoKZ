@@ -11,9 +11,12 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.application.core_dataset import CoreDatasetImporter
 from app.core.database import AsyncSessionFactory
+from app.core.security import hash_password
 from app.main import app
 from app.models.administrative_region import AdministrativeRegion
+from app.models.auth import UserAccount
 from app.models.core_dataset import CoreDatasetState
+from app.models.enums import UserRole
 from app.models.source import Source
 
 INTEGRATION_DATABASE_URL = os.getenv("GEOKZ_INTEGRATION_DATABASE_URL")
@@ -40,12 +43,36 @@ async def _cleanup_bundled_core_dataset() -> None:
         await session.commit()
 
 
+async def _admin_headers(client: AsyncClient) -> dict[str, str]:
+    username = f"core-admin-{uuid4().hex[:10]}"
+    password = "GeoKZ-Core-Admin-2026!"
+    async with AsyncSessionFactory() as session:
+        session.add(
+            UserAccount(
+                username=username,
+                display_name="Core Dataset integration admin",
+                role=UserRole.ADMIN,
+                password_hash=hash_password(password),
+                is_active=True,
+            )
+        )
+        await session.commit()
+
+    login = await client.post(
+        "/api/v1/auth/login",
+        json={"username": username, "password": password},
+    )
+    assert login.status_code == 200, login.text
+    return {"Authorization": f"Bearer {login.json()['access_token']}"}
+
+
 @pytest.mark.asyncio
 async def test_bundled_core_dataset_api_installs_idempotently() -> None:
     await _cleanup_bundled_core_dataset()
     transport = ASGITransport(app=app)
     try:
         async with AsyncClient(transport=transport, base_url="http://test") as client:
+            headers = await _admin_headers(client)
             initial = await client.get("/api/v1/core-dataset/status")
             assert initial.status_code == 200, initial.text
             initial_payload = initial.json()
@@ -56,6 +83,7 @@ async def test_bundled_core_dataset_api_installs_idempotently() -> None:
             dry_run = await client.post(
                 "/api/v1/core-dataset/install",
                 params={"dry_run": "true", "lang": "en"},
+                headers=headers,
             )
             assert dry_run.status_code == 200, dry_run.text
             assert dry_run.json()["dry_run"] is True
@@ -70,6 +98,7 @@ async def test_bundled_core_dataset_api_installs_idempotently() -> None:
             installed = await client.post(
                 "/api/v1/core-dataset/install",
                 params={"lang": "kk"},
+                headers=headers,
             )
             assert installed.status_code == 200, installed.text
             installed_payload = installed.json()
@@ -92,6 +121,7 @@ async def test_bundled_core_dataset_api_installs_idempotently() -> None:
             repeated = await client.post(
                 "/api/v1/core-dataset/install",
                 params={"lang": "ru"},
+                headers=headers,
             )
             assert repeated.status_code == 200, repeated.text
             assert repeated.json()["changed"] is False

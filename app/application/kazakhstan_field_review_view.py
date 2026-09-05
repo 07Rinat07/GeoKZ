@@ -79,7 +79,8 @@ _TEXT = {
         "title": "Проверка внешних нефтегазовых месторождений",
         "policy_note": (
             "Подтверждение связи с официальной записью не делает геологический объект VERIFIED; "
-            "геологические свойства и интерпретации подтверждаются отдельно."
+            "геологические свойства и интерпретации подтверждаются отдельно. "
+            "Личность эксперта берётся из авторизованной сессии."
         ),
         "confirm": "Подтвердить связь",
         "reject": "Отклонить связь",
@@ -92,7 +93,8 @@ _TEXT = {
         "title": "Сыртқы мұнай-газ кен орындарын сараптамалық тексеру",
         "policy_note": (
             "Ресми жазбамен расталған байланыс геологиялық объектіні VERIFIED етпейді; "
-            "геологиялық қасиеттер мен интерпретациялар бөлек тексеріледі."
+            "геологиялық қасиеттер мен интерпретациялар бөлек тексеріледі. "
+            "Сарапшының тұлғасы авторизацияланған сессиядан алынады."
         ),
         "confirm": "Байланысты растау",
         "reject": "Байланысты қабылдамау",
@@ -105,7 +107,8 @@ _TEXT = {
         "title": "Expert review of external oil and gas fields",
         "policy_note": (
             "Verifying a link to an official record does not make the geological entity VERIFIED; "
-            "geological properties and interpretations require separate evidence and review."
+            "geological properties and interpretations require separate evidence and review. "
+            "Reviewer identity is derived from the authenticated session."
         ),
         "confirm": "Confirm link",
         "reject": "Reject link",
@@ -173,7 +176,7 @@ def _candidate_actions(
             path=f"{base}/confirm",
             enabled=unresolved,
             disabled_reason=disabled_reason,
-            required_fields=("reviewer",),
+            required_fields=(),
             optional_fields=("comment",),
         ),
         FieldReviewActionView(
@@ -183,7 +186,7 @@ def _candidate_actions(
             path=f"{base}/reject",
             enabled=unresolved,
             disabled_reason=disabled_reason,
-            required_fields=("reviewer", "comment"),
+            required_fields=("comment",),
             optional_fields=(),
         ),
     )
@@ -209,7 +212,7 @@ def _record_actions(
             path=f"{base}/manual-link",
             enabled=True,
             disabled_reason=None,
-            required_fields=("entity_id", "reviewer"),
+            required_fields=("entity_id",),
             optional_fields=("comment",),
         ),
         FieldReviewActionView(
@@ -221,7 +224,7 @@ def _record_actions(
             disabled_reason=(
                 None if can_create_draft else text["draft_only_unmatched"]
             ),
-            required_fields=("reviewer",),
+            required_fields=(),
             optional_fields=("comment", "name_ru", "name_kk", "name_en"),
         ),
     )

@@ -1,4 +1,6 @@
 from app.models.administrative_region import AdministrativeRegion
+from app.models.audit import AuditLog, MasterDataRevision
+from app.models.auth import AuthSession, UserAccount
 from app.models.base import Base
 from app.models.conflict import ConflictRecord, conflict_facts
 from app.models.core_dataset import CoreDatasetState
@@ -34,6 +36,8 @@ from app.models.well import Well, WellInterval
 
 __all__ = [
     "AdministrativeRegion",
+    "AuditLog",
+    "AuthSession",
     "Base",
     "ConflictRecord",
     "ControlledVocabularyTerm",
@@ -50,11 +54,13 @@ __all__ = [
     "Fact",
     "FactEvidence",
     "GeologicalEntity",
+    "MasterDataRevision",
     "OrganizationCrsDefinition",
     "SeismicLine",
     "SeismicSurvey",
     "SeismicVolume",
     "Source",
+    "UserAccount",
     "Well",
     "WellInterval",
     "WellLogCurve",

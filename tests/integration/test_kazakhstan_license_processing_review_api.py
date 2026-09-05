@@ -6,9 +6,12 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
+from app.core.security import hash_password
 from app.integrations.checksum import calculate_payload_checksum
 from app.integrations.types import ExternalRecordStatus
 from app.main import app
+from app.models.auth import UserAccount
+from app.models.enums import UserRole
 from app.models.integration import ExternalDataSource, ExternalEntityLink, ExternalRecord
 
 INTEGRATION_DATABASE_URL = os.getenv("GEOKZ_INTEGRATION_DATABASE_URL")
@@ -26,6 +29,9 @@ async def test_license_process_and_record_level_review_api() -> None:
     engine = create_async_engine(INTEGRATION_DATABASE_URL, pool_pre_ping=True)
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
     external_id = f"it-license-{uuid4()}"
+    suffix = uuid4().hex[:10]
+    reviewer_username = f"license-expert-{suffix}"
+    reviewer_password = "GeoKZ-License-Expert-2026!"
 
     try:
         async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -41,6 +47,15 @@ async def test_license_process_and_record_level_review_api() -> None:
                     )
                 )
                 assert source is not None
+                session.add(
+                    UserAccount(
+                        username=reviewer_username,
+                        display_name="License review integration expert",
+                        role=UserRole.EXPERT,
+                        password_hash=hash_password(reviewer_password),
+                        is_active=True,
+                    )
+                )
                 raw = {
                     "Вид лицензии на недропользование": (
                         "Геологическое изучение недр (углеводородное сырье)"
@@ -82,9 +97,17 @@ async def test_license_process_and_record_level_review_api() -> None:
             assert process_payload["review_required"] >= 1
             assert process_payload["exact_matches"] == 0
 
+            login = await client.post(
+                "/api/v1/auth/login",
+                json={"username": reviewer_username, "password": reviewer_password},
+            )
+            assert login.status_code == 200, login.text
+            headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+
             queue_response = await client.get(
                 "/api/v1/integrations/kazakhstan/"
-                "kz-egov-geological-study-licenses/review/records"
+                "kz-egov-geological-study-licenses/review/records",
+                headers=headers,
             )
             assert queue_response.status_code == 200, queue_response.text
             items = queue_response.json()
@@ -101,21 +124,22 @@ async def test_license_process_and_record_level_review_api() -> None:
                 "/api/v1/integrations/kazakhstan/"
                 "kz-egov-geological-study-licenses/review/records/"
                 f"{record_id}/accept",
+                headers=headers,
                 json={
-                    "reviewer": "Integration Reviewer",
+                    "reviewer": "Spoofed Client Reviewer",
                     "comment": "Administrative record checked against source payload",
                 },
             )
             assert accept_response.status_code == 200, accept_response.text
             accepted = accept_response.json()
             assert accepted["record_status"] == "ACCEPTED"
-            assert accepted["reviewed_by"] == "Integration Reviewer"
+            assert accepted["reviewed_by"] == reviewer_username
 
             async with session_factory() as session:
                 persisted = await session.get(ExternalRecord, record_id)
                 assert persisted is not None
                 assert persisted.status == ExternalRecordStatus.ACCEPTED
-                assert persisted.reviewed_by == "Integration Reviewer"
+                assert persisted.reviewed_by == reviewer_username
                 assert persisted.reviewed_at is not None
                 links = list(
                     await session.scalars(

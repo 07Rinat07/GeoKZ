@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     sql_echo: bool = False
     cors_origins: list[str] = ["http://localhost:3000"]
 
+    # Opaque bearer sessions are stored only as SHA-256 token hashes in PostgreSQL.
+    auth_session_hours: int = Field(default=12, ge=1, le=720)
+
     # Необязательный ключ бесплатного API Open Data Kazakhstan.
     # Отсутствие ключа не мешает работе локальной базы GeoKZ.
     egov_api_key: SecretStr | None = None

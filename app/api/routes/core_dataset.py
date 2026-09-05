@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.auth_dependencies import CurrentPrincipal, require_admin
 from app.application.core_dataset import CoreDatasetImportError
 from app.application.core_dataset_management import CoreDatasetManagementService
 from app.core.database import get_session
@@ -72,6 +73,7 @@ async def get_core_dataset_status(
 async def install_bundled_core_dataset(
     dry_run: bool = Query(default=False),
     lang: SupportedLanguage = Query(default="ru"),
+    _principal: CurrentPrincipal = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
 ) -> CoreDatasetInstallResponse:
     try:
