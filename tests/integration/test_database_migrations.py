@@ -19,7 +19,7 @@ async def test_alembic_head_and_required_extensions() -> None:
     try:
         async with engine.connect() as connection:
             revision = await connection.scalar(text("SELECT version_num FROM alembic_version"))
-            assert revision == "20260905_0008"
+            assert revision == "20260905_0009"
 
             extensions = set(
                 (
@@ -63,6 +63,7 @@ async def test_alembic_head_and_required_extensions() -> None:
                 "external_sync_runs",
                 "organization_crs_definitions",
                 "controlled_vocabulary_terms",
+                "core_dataset_states",
             } <= tables
 
             vocabulary_constraint = await connection.scalar(
@@ -85,7 +86,8 @@ async def test_alembic_head_and_required_extensions() -> None:
                             "SELECT table_name, column_name FROM information_schema.columns "
                             "WHERE table_schema = 'public' AND table_name IN "
                             "('well_intervals', 'well_markers', 'well_log_curves', "
-                            "'well_tests', 'core_samples', 'external_records')"
+                            "'well_tests', 'core_samples', 'external_records', "
+                            "'core_dataset_states')"
                         )
                     )
                 ).tuples()
@@ -103,6 +105,13 @@ async def test_alembic_head_and_required_extensions() -> None:
                 ("external_records", "reviewed_by"),
                 ("external_records", "reviewed_at"),
                 ("external_records", "review_comment"),
+                ("core_dataset_states", "dataset_code"),
+                ("core_dataset_states", "dataset_version"),
+                ("core_dataset_states", "schema_version"),
+                ("core_dataset_states", "manifest_sha256"),
+                ("core_dataset_states", "installed_at"),
+                ("core_dataset_states", "file_checksums"),
+                ("core_dataset_states", "item_counts"),
             } <= columns
 
             postgis_version = await connection.scalar(text("SELECT PostGIS_Version()"))
