@@ -32,6 +32,23 @@ GeoKZ должен быть единым evidence-based геологически
 
 Последний merged baseline main: PR #11, merge SHA `f70675699aaae53b89eca23f29fefc61bdf78101`.
 
+## Стабильные реализованные API-контракты
+
+```text
+POST /api/v1/integrations/sync-all
+GET  /api/v1/integrations/scheduler/status
+POST /api/v1/integrations/scheduler/run-due
+POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process
+GET  /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review
+GET  /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view
+POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/process
+GET  /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/records
+POST /api/v1/correlation/wells/view
+POST /api/v1/correlation/demo/workflow
+GET  /api/v1/core-dataset/status
+POST /api/v1/core-dataset/install
+```
+
 ## Текущий P0 — GeoKZ Core Dataset manifest/importer
 
 Цель: versioned baseline, который поставляется вместе с приложением и обновляется независимо от Alembic schema migrations и provider sync versions.
