@@ -88,6 +88,9 @@ async def update_entity(
 
     try:
         await session.flush()
+        # server_onupdate timestamps are expired after UPDATE; refresh them explicitly
+        # before serializing the immutable revision snapshot in async SQLAlchemy.
+        await session.refresh(entity)
         after = _entity_snapshot(entity)
         await AuditRevisionService(session).audit_master_change(
             actor=AuditActor.from_user(principal.user),
