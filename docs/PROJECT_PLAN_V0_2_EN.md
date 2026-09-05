@@ -30,6 +30,23 @@ The application and user documentation are maintained in RU/KK/EN. External APIs
 
 Latest merged main baseline: PR #11, merge SHA `f70675699aaae53b89eca23f29fefc61bdf78101`.
 
+## Stable implemented API contracts
+
+```text
+POST /api/v1/integrations/sync-all
+GET  /api/v1/integrations/scheduler/status
+POST /api/v1/integrations/scheduler/run-due
+POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process
+GET  /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review
+GET  /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view
+POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/process
+GET  /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/records
+POST /api/v1/correlation/wells/view
+POST /api/v1/correlation/demo/workflow
+GET  /api/v1/core-dataset/status
+POST /api/v1/core-dataset/install
+```
+
 ## Current P0 — GeoKZ Core Dataset manifest/importer
 
 Goal: an independently versioned baseline shipped with the application but lifecycle-separated from Alembic schema migrations and external-provider sync versions.
