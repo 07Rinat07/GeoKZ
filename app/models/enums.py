@@ -16,6 +16,21 @@ def enum_type[EnumT: StrEnum](enum_class: type[EnumT], name: str) -> Enum:
     )
 
 
+class UserRole(StrEnum):
+    EXPERT = "expert"
+    EDITOR = "editor"
+    ADMIN = "admin"
+
+
+class AuditAction(StrEnum):
+    CREATE = "CREATE"
+    UPDATE = "UPDATE"
+    REVIEW = "REVIEW"
+    LOGIN = "LOGIN"
+    LOGOUT = "LOGOUT"
+    INSTALL = "INSTALL"
+
+
 class SourceDocumentType(StrEnum):
     REPORT = "report"
     BOOK = "book"
