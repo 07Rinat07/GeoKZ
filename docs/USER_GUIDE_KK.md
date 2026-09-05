@@ -2,108 +2,62 @@
 
 Нұсқа: `0.3-dev`.
 
-## Мақсаты
-GeoKZ Қазақстан аумағы, кен орны, геологиялық құрылым және ұңғыма туралы деректерді өзінің evidence-based базасынан және рұқсат етілген сыртқы көздерден бір жұмыс терезесінде көрсетеді.
+GeoKZ — Қазақстанның evidence-based геологиялық ақпараттық жүйесі. Негізгі жол: аумақ немесе координата → кен орындары, құрылымдар, ұңғымалар және сейсмика → паспорттар → интервалдар/ГИС/керн/сынақтар → корреляция → бастапқы дереккөздер, provenance және сараптамалық тексеру.
 
-Негізгі workflow: аумақ немесе координата → кен орындары/құрылымдар/ұңғымалар/сейсмика → object passport → well passport → интервалдар, литология, ГИС, керн, сынақ, мұнай/газ/су → көрші ұңғымаларды корреляциялау → дереккөз және evidence.
+## Деректердің негізгі ережесі
+
+Сыртқы API, импорт немесе AI verified master data-ны автоматты түрде қайта жазбайды. GeoKZ RAW/source wording, normalized мәндер, source, version, checksum және review status сақтайды. Сыртқы жазбамен байланысты растау геологиялық объектіні автоматты түрде VERIFIED етпейді.
 
 ## Тілдер
-Пайдаланушы интерфейсі, help, labels және documentation орыс, қазақ және ағылшын тілдерінде жүргізіледі.
 
-## Координата бойынша іздеу
-Geographic енгізу мысалы: `43.652341 / 51.168420`. Үтір де қабылданады.
+Пайдаланушы интерфейсі мен құжаттама `ru`, `kk`, `en` тілдерінде қолдау табады.
 
-Projected енгізу: `X=5085125.325`, `Y=711157.665`; `5085125,325 / 711157,665` те жарамды.
+## Координата және CRS арқылы іздеу
 
-Үлкен X/Y үшін бастапқы CRS және axis order міндетті. GeoKZ CRS-ті тек сандар бойынша болжамайды. WGS84/UTM helper бар, ал ұйымның local CRS мәндері confirmed EPSG/WKT/PROJ арқылы persistent registry ішінде сақталады.
+GeoKZ WGS84 latitude/longitude және projected X/Y қабылдайды. Projected coordinates үшін расталған CRS және axis order міндетті. Үлкен X/Y мәндері бойынша CRS автоматты түрде болжанбайды. WGS84, UTM 38N–45N және EPSG/WKT/PROJ арқылы organization-local CRS қолданылады.
+
+PostGIS nearby search қашықтықты метрмен есептейді және geological objects, fields, wells, intervals және seismic нәтижелерін қайтарады.
 
 ## Ұңғыма паспорты және корреляция
-Well Passport координата, траектория MD/TVD/TVDSS, интервал, стратиграфия, lithology, reservoir, oil/gas/water, porosity/permeability, logs, tests, core және source/evidence көрсетеді.
 
-Көрші ұңғымалар үшін correlation module реперлерді, горизонттарды және коллекторларды салыстырады. Visual contract:
+Well Passport координаталарды, MD/TVD/TVDSS trajectory, stratigraphy, lithology, reservoirs, fluids, porosity/permeability, logs, tests, core және seismic links біріктіреді.
+
+Көрнекі корреляция:
 
 ```text
 POST /api/v1/correlation/wells/view
 ```
 
-Backend бір depth axis таңдайды: `TVDSS → TVD → MD`. Салыстыруға келмейтін мәндер `renderable=false` болып қалады және жалған correlation line салынбайды.
+Backend depth reference-ті `TVDSS → TVD → MD` тәртібімен қауіпсіз таңдайды. Сәйкес емес depth systems автоматты түрде байланыстырылмайды.
 
-Synthetic end-to-end demo:
+Synthetic demo workflow:
 
 ```text
 POST /api/v1/correlation/demo/workflow
 ```
 
-`synthetic-correlation-demo-v1` production wells-тан қатаң бөлінген. Workflow `DISCOVERY` → selection → `CROSS_SECTION_READY` сатыларымен жұмыс істейді.
+Demo wells production data-дан бөлек сақталады.
 
 ## GeoKZ Core Dataset
 
-GeoKZ қолданбамен бірге тәуелсіз нұсқаланатын baseline dataset береді. Оның нұсқасы application version және Alembic revision мәндерінен бөлек.
-
-Ағымдағы bundled snapshot:
+Bundled baseline application және Alembic-тен тәуелсіз version lifecycle қолданады.
 
 ```text
-dataset_code:    geokz-core
-dataset_version: 2026.09.0-bootstrap
-schema_version:  1
-```
-
-Bundled және current DB-ге installed күйін көру:
-
-```text
-GET /api/v1/core-dataset/status
-```
-
-`update_available=true` — bundled manifest installed state-пен сәйкес емес немесе dataset әлі орнатылмаған.
-
-DB-ге жазбас бұрын dry-run:
-
-```text
+GET  /api/v1/core-dataset/status
 POST /api/v1/core-dataset/install?dry_run=true&lang=kk
-```
-
-Bundled snapshot орнату:
-
-```text
 POST /api/v1/core-dataset/install?lang=kk
 ```
 
-GeoKZ manifest schema, `schema_version`, required files, SHA-256, path traversal protection, payload types, duplicate `external_id`, `geokz-core:` namespace және bundle ішіндегі references мәндерін DB write алдында тексереді. Барлық upsert бір transaction ішінде орындалады; қате болса rollback жасалады және install state жазылмайды.
+Ағымдағы bundled snapshot: `2026.09.0-bootstrap`, `schema_version=1`. Орнатуға дейін manifest schema, SHA-256, path traversal, `geokz-core:` namespace, duplicate IDs және internal references тексеріледі. Install transactional; сол snapshot қайта орнатылса `changed=false` қайтарылады.
 
-Бір manifest қайта орнатылса, операция idempotent және `changed=false` қайтарады.
+## Сыртқы дереккөздер және синхрондау
 
-Алғашқы bootstrap әдейі минималды: ішкі metadata жазбасы және boundary geometry бекітпейтін «Қазақстан Республикасы» country-level navigation record бар. Дәлелді source жоқ geological `entities` немесе `facts` ойдан қосылмайды.
+Қазір Kazakhstan Open Data datasets тіркелген:
 
-Administrator CLI:
+- `kz-egov-oil-gas-fields` → `stat_kgn_117/v10`;
+- `kz-egov-geological-study-licenses` → `zher_koinauyn_geologiyalyk_zer2/v6`.
 
-```text
-python -m scripts.core_dataset validate
-python -m scripts.core_dataset install --dry-run
-python -m scripts.core_dataset install
-python -m scripts.core_dataset status
-```
-
-Толық нұсқаулық: `docs/CORE_DATASET_KK.md`.
-
-## Сыртқы дереккөздер және жаңарту
-GeoKZ сыртқы жазбаны бірден verified master data-ға көшірмейді. Жалпы pipeline:
-
-```text
-external API → RAW → checksum/diff → normalization → matching/review → verified master view
-```
-
-Kazakhstan Open Data үшін екі ресми ресурс тіркелген:
-
-1. `kz-egov-oil-gas-fields`, `apiUri=stat_kgn_117`, `v10`;
-2. `kz-egov-geological-study-licenses`, `apiUri=zher_koinauyn_geologiyalyk_zer2`, `v6`.
-
-Ресурс schema-сы production import алдында тексеріледі:
-
-```text
-GET /api/v1/integrations/kazakhstan/{code}/schema
-```
-
-Барлық sources-ты қолмен жаңарту:
+Барлығын қолмен жаңарту:
 
 ```text
 POST /api/v1/integrations/sync-all
@@ -112,106 +66,128 @@ POST /api/v1/integrations/sync-all
 Scheduler күйі:
 
 ```text
-GET /api/v1/integrations/scheduler/status
-```
-
-Due sources-ты бір рет іске қосу:
-
-```text
+GET  /api/v1/integrations/scheduler/status
 POST /api/v1/integrations/scheduler/run-due
 ```
 
-Periodic scheduler FastAPI worker ішінде жұмыс істемейді; dedicated process және PostgreSQL parallel-run protection қолданылады.
+Scheduler бөлек process/service ретінде жұмыс істейді. PostgreSQL locking параллель `RUNNING` run-дарды шектейді.
 
-## Мұнай-газ кен орындарын processing/review
-RAW field records үшін:
+## Мұнай-газ кен орындары: normalize → match → review
+
+RAW sync-тен кейін:
 
 ```text
 POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process
 ```
 
-Бұл endpoint атауды existing `GeologicalEntity(object_type="field")` және aliases-пен deterministic түрде салыстырады. Нәтиже автоматты түрде VERIFIED болмайды.
-
-Техникалық review queue:
+Техникалық queue:
 
 ```text
 GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review
 ```
 
-UI/view-model:
+UI view contract:
 
 ```text
-GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view
+GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view?lang=kk&limit=100&offset=0
 ```
 
-Action codes: `CONFIRM_LINK`, `REJECT_LINK`, `MANUAL_LINK`, `CREATE_DRAFT_FIELD`. Verified `ExternalEntityLink` geological object-ті автоматты түрде VERIFIED етпейді. Жаңа object тек `DRAFT` болып құрылады.
+Backend `CONFIRM_LINK`, `REJECT_LINK`, `MANUAL_LINK`, `CREATE_DRAFT_FIELD` үшін `enabled`, `disabled_reason`, `required_fields`, `optional_fields`, `method`, `path` береді. Клиент осы business rules-ты қайта есептемейді.
 
-## Геологиялық зерттеу лицензияларын record-level review
+`ExternalEntityLink=VERIFIED` тек official external record-пен байланысты растайды; ол `GeologicalEntity=VERIFIED` етпейді. `UNMATCHED` жазбадан жаңа объект тек `DRAFT` ретінде жасалады.
 
-`kz-egov-geological-study-licenses` — әкімшілік лицензиялар тізілімі. Тексерілген `v6` карточкасы stable deposit/geological-object identifier немесе geometry бермейді, сондықтан GeoKZ бұл source үшін кен орнын автоматты түрде link жасамайды.
+## Геологиялық зерттеу лицензиялары
 
-RAW sync-тен кейін:
+Normalizer:
 
 ```text
 POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/process
 ```
 
-Normalizer `raw_payload` мәнін сақтап, бөлек `license_number`, `issue_date`, license type, term, basis, issuing authority, holder, BIN және `source_fields` жасайды. Normalized жазба `REVIEW_REQUIRED` күйіне өтеді және `review.entity_matching=NOT_APPLICABLE` болады.
-
-Review queue:
+Queue:
 
 ```text
 GET /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/records
 ```
 
-Accept:
+`ACCEPTED` тек normalized administrative record RAW/upstream payload-пен салыстырылып тексерілгенін білдіреді. Бұл `ExternalEntityLink`, `GeologicalEntity` немесе geological fact жасамайды.
+
+## Authentication, roles және audit
+
+Кіру:
 
 ```text
-POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/records/{record_id}/accept
+POST /api/v1/auth/login
+GET  /api/v1/auth/me
+POST /api/v1/auth/logout
 ```
 
-Reject:
+Roles: `editor`, `expert`, `admin`. Scientific review decision үшін `expert/admin` қажет; `admin` users басқарады және толық audit log оқиды.
+
+Reviewer identity authenticated session арқылы серверде анықталады; client жіберетін `reviewer` мәтініне сенім жоқ.
+
+History:
 
 ```text
-POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/records/{record_id}/reject
+GET /api/v1/audit/logs
+GET /api/v1/audit/revisions/{resource_type}/{resource_id}
 ```
 
-`ACCEPTED` тек әкімшілік normalized payload сарапшы арқылы тексерілгенін білдіреді. Ол `ExternalEntityLink`, `GeologicalEntity` немесе geological fact жасамайды және `VerificationStatus` көтермейді. Upstream checksum өзгерсе, бұрынғы `reviewed_by`, `reviewed_at`, `review_comment` жарамсыз болып, жаңа review қажет.
+AuditLog және revisions PostgreSQL деңгейінде append-only қорғанысқа ие.
 
-Толық нұсқаулық: `docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_KK.md`.
+## Production PySide6 Desktop
 
-## API key
-Нақты `data.egov.kz` API v4 жүктеу үшін key қажет:
+Desktop тек HTTP API пайдаланады және SQLAlchemy models импорттамайды.
+
+Орнату:
+
+```powershell
+python -m pip install -e ".[desktop]"
+```
+
+Іске қосу:
+
+```powershell
+geokz-desktop --api-url http://127.0.0.1:8000 --lang kk
+```
+
+немесе:
+
+```powershell
+python -m scripts.desktop --api-url http://127.0.0.1:8000 --lang kk
+```
+
+«Дереккөздер» экраны independent versions contract қолданады:
+
+```text
+GET /api/v1/system/versions
+```
+
+Көрсетіледі: Application version, database/Alembic schema revision, bundled/installed Core Dataset, provider versions, due/running/error state және last success/error.
+
+Desktop құрамында:
+
+- login/logout және process memory ішіндегі bearer token;
+- Data Sources + Update All;
+- server-owned action descriptors бойынша field review;
+- license ACCEPT/REJECT;
+- RAW/normalized provenance;
+- AuditLog/revision viewer;
+- RU/KK/EN contextual help;
+- Qt event loop-ты блоктамау үшін `QThreadPool/QRunnable`.
+
+Толығырақ: `docs/DESKTOP_CLIENT_KK.md` және `docs/AUTH_AUDIT_REVISIONS_KK.md`.
+
+## data.egov.kz API key
+
+Нақты API v4 download үшін developer API key қажет. Ол тек локалды environment ішінде сақталады:
 
 ```env
 GEOKZ_EGOV_API_KEY=СІЗДІҢ_НАҚТЫ_КІЛТІҢІЗ
 ```
 
-Кілт Git, README, issue, PR, screenshot немесе чатқа енгізілмейді. Толық setup: `docs/EXTERNAL_API_KEYS_KK.md`.
+Secret Git, issue/PR, documentation немесе screenshot ішінде жарияланбайды. GeoKZ core бұл кілтсіз де жұмыс істейді.
 
-## REST API қысқаша
+## Автор
 
-- `GET /api/v1/about` — application және bundled Core Dataset version;
-- `GET /api/v1/core-dataset/status` — bundled/installed Core Dataset state;
-- `POST /api/v1/core-dataset/install` — dry-run немесе bundled dataset install;
-- `GET /api/v1/integrations/sources` — external source registry;
-- `GET /api/v1/integrations/scheduler/status` — scheduler status;
-- `POST /api/v1/integrations/sync-all` — Update All;
-- `POST /api/v1/integrations/scheduler/run-due` — run due;
-- `GET /api/v1/integrations/kazakhstan/catalog` — official Kazakhstan datasets;
-- `GET /api/v1/integrations/kazakhstan/{code}/schema` — metadata + mapping;
-- `POST /api/v1/integrations/kazakhstan/{code}/sync` — selected source sync;
-- `POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process` — field processing;
-- `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review` — field review;
-- `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view` — field review UI contract;
-- `POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/process` — license normalization;
-- `GET /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/records` — license review queue;
-- `POST /api/v1/correlation/wells/view` — visual cross-section;
-- `POST /api/v1/correlation/demo/workflow` — complete synthetic demo.
-
-## Көмек және қауіпсіздік
-UI күрделі CRS, axis order, MD/TVD/TVDSS, Core Dataset, external-data review және correlation әрекеттері үшін contextual hints/wizards көрсетуі тиіс. RAW source wording және provenance сақталады; automation reviewer decision-ді үнсіз алмастырмайды.
-
-Core Dataset туралы толық policy: `docs/CORE_DATASET_KK.md`.
-
-Ағымдағы roadmap: `docs/PROJECT_PLAN_V0_2_KK.md`.
+**Sarmuldin Rinat — ura07srr@gmail.com**
