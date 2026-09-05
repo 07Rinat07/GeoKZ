@@ -34,3 +34,18 @@ class CoreDatasetState(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         server_default="{}",
         nullable=False,
     )
+
+    # One-step rollback metadata. The previous bundle remains immutable in the update cache
+    # (or points to the bundled manifest) and can be reactivated only when identity sets match.
+    previous_dataset_version: Mapped[str | None] = mapped_column(String(120))
+    previous_schema_version: Mapped[int | None] = mapped_column(Integer)
+    previous_manifest_sha256: Mapped[str | None] = mapped_column(String(64))
+    previous_installed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    previous_source_path: Mapped[str | None] = mapped_column(Text)
+    previous_file_checksums: Mapped[dict[str, str] | None] = mapped_column(JSONB)
+    previous_item_counts: Mapped[dict[str, int] | None] = mapped_column(JSONB)
+
+    # Provenance of the most recent signed online activation.
+    last_update_source_url: Mapped[str | None] = mapped_column(Text)
+    last_update_bundle_sha256: Mapped[str | None] = mapped_column(String(64))
+    last_update_key_id: Mapped[str | None] = mapped_column(String(120))
