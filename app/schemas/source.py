@@ -33,6 +33,32 @@ class SourceCreate(ORMModel):
     notes: str | None = None
 
 
+class SourceUpdate(ORMModel):
+    title: str | None = Field(default=None, min_length=3)
+    authors: list[str] | None = None
+    organization: str | None = None
+    publication_year: int | None = Field(default=None, ge=1500, le=2100)
+    survey_year_start: int | None = Field(default=None, ge=1500, le=2100)
+    survey_year_end: int | None = Field(default=None, ge=1500, le=2100)
+    document_type: SourceDocumentType | None = None
+    language: str | None = None
+    territories: list[str] | None = None
+    objects: list[str] | None = None
+    inventory_number: str | None = None
+    doi: str | None = None
+    url: str | None = None
+    access_date: date | None = None
+    access_level: AccessLevel | None = None
+    page_count: int | None = Field(default=None, ge=1)
+    map_scale: str | None = None
+    coordinate_system: str | None = None
+    license: str | None = None
+    sha256: str | None = Field(default=None, min_length=64, max_length=64)
+    reliability_level: ReliabilityLevel | None = None
+    notes: str | None = None
+    change_reason: str = Field(min_length=3, max_length=1000)
+
+
 class SourceRead(SourceCreate):
     id: UUID
     created_at: datetime
