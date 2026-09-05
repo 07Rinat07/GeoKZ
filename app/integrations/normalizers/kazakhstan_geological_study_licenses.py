@@ -287,7 +287,9 @@ def _scalar_text(value: object) -> str | None:
 
 
 def _clean(value: str) -> str:
-    return " ".join(unicodedata.normalize("NFKC", value).strip().split())
+    # Preserve source-facing notation such as the numero sign (№). NFKC converts № to
+    # "No", which is useful for search keys but inappropriate for provenance/display.
+    return " ".join(unicodedata.normalize("NFC", value).strip().split())
 
 
 def _clean_optional(value: str | None) -> str | None:
