@@ -1,76 +1,100 @@
 # GeoKZ — Documentation Policy / Құжаттама саясаты / Политика документации
 
-## RU
-Документация является частью Definition of Done. Любая пользовательская функция в том же pull request должна обновлять:
+Documentation is part of Definition of Done. Пайдаланушыға арналған функция және пользовательская функция считается завершённой только вместе с актуальной документацией RU/KK/EN и CI contract.
 
-- `docs/PROJECT_PLAN_V0_2.md`;
-- `docs/PROJECT_PLAN_V0_2_KK.md`;
-- `docs/PROJECT_PLAN_V0_2_EN.md`;
+## Обязательный общий набор / Міндетті жалпы жинақ / Required common set
+
+Каждый user-facing feature slice обновляет при необходимости:
+
+- `README.md`;
 - `docs/USER_GUIDE_RU.md`;
 - `docs/USER_GUIDE_KK.md`;
 - `docs/USER_GUIDE_EN.md`;
-- `docs/CORE_DATASET_RU.md`, `docs/CORE_DATASET_KK.md`, `docs/CORE_DATASET_EN.md`, если меняются manifest/schema Core Dataset, bundled snapshot, checksum/reference validation, install/status API/CLI, транзакционность, idempotence, rollback или version compatibility policy;
-- `docs/EXTERNAL_API_KEYS_RU.md`, `docs/EXTERNAL_API_KEYS_KK.md`, `docs/EXTERNAL_API_KEYS_EN.md`, если меняются внешние API, ключи, секреты или порядок настройки интеграций;
-- `docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md`, `docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_KK.md`, `docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_EN.md`, если меняются Kazakhstan Open Data API, `apiUri`, версии, mapping, naming conventions, endpoints или правила подключения ресурсов;
-- `docs/KAZAKHSTAN_FIELD_REVIEW_RU.md`, `docs/KAZAKHSTAN_FIELD_REVIEW_KK.md`, `docs/KAZAKHSTAN_FIELD_REVIEW_EN.md`, если меняются normalization/matching/review, статусы связей или правила создания DRAFT-объектов из внешних записей;
-- `docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_RU.md`, `docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_KK.md`, `docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_EN.md`, если меняются normalizer, record-level review, поля или правила обработки реестра лицензий на геологическое изучение недр;
-- `docs/EXTERNAL_REVIEW_UI_CONTRACT_RU.md`, `docs/EXTERNAL_REVIEW_UI_CONTRACT_KK.md`, `docs/EXTERNAL_REVIEW_UI_CONTRACT_EN.md`, если меняется UI/view-model contract очереди review, action codes, action availability, pagination или формы действий;
-- `docs/EXTERNAL_SYNC_SCHEDULER_RU.md`, `docs/EXTERNAL_SYNC_SCHEDULER_KK.md`, `docs/EXTERNAL_SYNC_SCHEDULER_EN.md`, если меняются scheduler, Update All, due/retry, parallel-run protection или per-source sync status;
-- `docs/CROSS_SECTION_VIEW_CONTRACT_RU.md`, `docs/CROSS_SECTION_VIEW_CONTRACT_KK.md`, `docs/CROSS_SECTION_VIEW_CONTRACT_EN.md`, если меняются визуальный correlation view-model, выбор depth axis, well columns, marker/horizon lines, renderability или warning codes;
-- `docs/DEMO_CORRELATION_WORKFLOW_RU.md`, `docs/DEMO_CORRELATION_WORKFLOW_KK.md`, `docs/DEMO_CORRELATION_WORKFLOW_EN.md`, если меняются synthetic demo dataset, coordinate→selection→cross-section flow, правила фильтрации demo wells или selection validation;
-- контекстные подсказки `ru/kk/en`, если меняются поля, термины, предупреждения или workflow;
-- архитектурные/предметные документы, если меняются модели данных или интеграции.
-
-Функцию нельзя считать завершённой, если пользовательская инструкция или актуальный план отсутствуют хотя бы на одном из трёх языков. GeoKZ Core Dataset обязан версионироваться отдельно от приложения и Alembic; документация должна явно описывать bundled/installed версии, manifest SHA-256, schema compatibility gate, transactional install/rollback, idempotence и namespace `geokz-core:`. Базовый snapshot не должен заполняться вымышленными геологическими фактами: production geology добавляется только с доказуемым provenance. Для интеграций с авторизованными API также обязательна актуальная трёхъязычная инструкция по получению и безопасному хранению ключей. Для внешних каталогов ресурсов отдельно документируются официальный идентификатор ресурса, версия, схема полей и правила внутреннего именования GeoKZ. Для review-функций обязательно различать статус связи с источником и статус верификации самого геологического объекта: подтверждённый `ExternalEntityLink` не должен автоматически превращать новый объект в `VERIFIED`. Для административного реестра лицензий record-level `ACCEPTED` означает только проверку нормализованного upstream payload и не создаёт автоматически `ExternalEntityLink`, `GeologicalEntity` или геологический факт; изменённый upstream checksum требует повторного review. UI не должен дублировать backend business rules: доступность действий и обязательные поля передаются через стабильный action descriptor. Scheduler не должен запускаться как background loop внутри каждого FastAPI worker; для периодического sync используется отдельный process/service и PostgreSQL-защита от параллельного run. Визуальный корреляционный разрез не должен придумывать новую геологическую интерпретацию: он отображает только существующий correlation result, не смешивает TVDSS/TVD/MD и не строит линии для несопоставимых данных. Demo workflow обязан жёстко отделять synthetic dataset от production wells: совпадение координаты или близость не разрешают обычной скважине попасть в demo selection.
-
-Реальные секреты запрещено включать в документацию. В примерах допускаются только пустые значения или явные placeholders, например `GEOKZ_EGOV_API_KEY=ВАШ_РЕАЛЬНЫЙ_КЛЮЧ`.
-
-## KK
-Құжаттама Definition of Done құрамына кіреді. Пайдаланушыға арналған әрбір өзгеріс сол pull request ішінде мыналарды жаңартуы тиіс:
-
 - `docs/PROJECT_PLAN_V0_2.md`;
 - `docs/PROJECT_PLAN_V0_2_KK.md`;
-- `docs/PROJECT_PLAN_V0_2_EN.md`;
-- `docs/USER_GUIDE_RU.md`;
-- `docs/USER_GUIDE_KK.md`;
-- `docs/USER_GUIDE_EN.md`;
-- Core Dataset manifest/schema, bundled snapshot, checksum/reference validation, install/status API/CLI, transaction, idempotence, rollback немесе compatibility policy өзгерсе, `docs/CORE_DATASET_RU.md`, `docs/CORE_DATASET_KK.md`, `docs/CORE_DATASET_EN.md`;
-- сыртқы API, API кілттері, secrets немесе integration setup өзгерсе, `docs/EXTERNAL_API_KEYS_RU.md`, `docs/EXTERNAL_API_KEYS_KK.md`, `docs/EXTERNAL_API_KEYS_EN.md`;
-- Kazakhstan Open Data API, `apiUri`, version, mapping, naming conventions, endpoints немесе ресурс қосу ережелері өзгерсе, `docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md`, `docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_KK.md`, `docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_EN.md`;
-- normalization/matching/review, link status немесе сыртқы жазбадан DRAFT объект жасау ережесі өзгерсе, `docs/KAZAKHSTAN_FIELD_REVIEW_RU.md`, `docs/KAZAKHSTAN_FIELD_REVIEW_KK.md`, `docs/KAZAKHSTAN_FIELD_REVIEW_EN.md`;
-- геологиялық зерттеу лицензиялары тізілімінің normalizer, record-level review, өрістері немесе processing ережелері өзгерсе, `docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_RU.md`, `docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_KK.md`, `docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_EN.md`;
-- review queue UI/view-model contract, action codes, action availability, pagination немесе action form өзгерсе, `docs/EXTERNAL_REVIEW_UI_CONTRACT_RU.md`, `docs/EXTERNAL_REVIEW_UI_CONTRACT_KK.md`, `docs/EXTERNAL_REVIEW_UI_CONTRACT_EN.md`;
-- scheduler, Update All, due/retry, parallel-run protection немесе per-source sync status өзгерсе, `docs/EXTERNAL_SYNC_SCHEDULER_RU.md`, `docs/EXTERNAL_SYNC_SCHEDULER_KK.md`, `docs/EXTERNAL_SYNC_SCHEDULER_EN.md`;
-- visual correlation view-model, depth axis selection, well columns, marker/horizon lines, renderability немесе warning codes өзгерсе, `docs/CROSS_SECTION_VIEW_CONTRACT_RU.md`, `docs/CROSS_SECTION_VIEW_CONTRACT_KK.md`, `docs/CROSS_SECTION_VIEW_CONTRACT_EN.md`;
-- synthetic demo dataset, coordinate→selection→cross-section flow, demo well filtering немесе selection validation өзгерсе, `docs/DEMO_CORRELATION_WORKFLOW_RU.md`, `docs/DEMO_CORRELATION_WORKFLOW_KK.md`, `docs/DEMO_CORRELATION_WORKFLOW_EN.md`;
-- өрістер, терминдер, ескертулер немесе workflow өзгерген жағдайда `ru/kk/en` контекстік көмектер;
-- деректер моделі немесе интеграциялар өзгерсе, архитектуралық/пәндік құжаттама.
+- `docs/PROJECT_PLAN_V0_2_EN.md`.
 
-Пайдаланушы нұсқаулығы немесе өзекті жоспар үш тілдің кемінде бірінде жоқ болса, функция аяқталды деп саналмайды. GeoKZ Core Dataset application және Alembic-тен бөлек version lifecycle қолдануы тиіс; documentation bundled/installed versions, manifest SHA-256, schema compatibility gate, transactional install/rollback, idempotence және `geokz-core:` namespace ережесін нақты көрсетуі керек. Baseline ойдан шығарылған geological facts-пен толтырылмайды; production geology тек дәлелді provenance арқылы қосылады. Авторизацияланған API интеграциялары үшін API кілтін алу және қауіпсіз сақтау жөніндегі үштілді нұсқаулық та міндетті. Сыртқы ресурс каталогтары үшін ресми ресурс идентификаторы, нұсқасы, field schema және GeoKZ ішкі naming rules бөлек құжатталады. Review құжаттамасы source link мәртебесін геологиялық объектінің verification status мәнінен нақты ажыратуы тиіс: verified ExternalEntityLink жаңа объектіні автоматты түрде VERIFIED етпейді. Лицензиялардың әкімшілік тізілімінде record-level `ACCEPTED` тек normalized upstream payload тексерілгенін білдіреді және автоматты түрде `ExternalEntityLink`, `GeologicalEntity` немесе geological fact жасамайды; upstream checksum өзгерсе, review қайта орындалады. UI backend business rules ережелерін қайталамауы керек; action availability және required fields backend action descriptor арқылы беріледі. Periodic scheduler әр FastAPI worker ішінде background loop ретінде іске қосылмайды; dedicated process/service және PostgreSQL parallel-run protection қолданылады. Visual cross-section жаңа geological interpretation жасамауы тиіс: ол existing correlation result-ты ғана көрсетеді, TVDSS/TVD/MD жүйелерін үнсіз араластырмайды және non-comparable data үшін line салмайды. Demo workflow synthetic dataset пен production wells арасында қатаң шекара сақтауы тиіс: coordinate немесе distance сәйкестігі кәдімгі well-ді demo selection-ға кіргізбейді.
+## Feature-specific contracts
 
-Нақты secrets құжаттамаға енгізілмейді. Мысалдарда тек бос мәндер немесе айқын placeholders қолданылады.
+При изменении соответствующей области обновляются все три языковые версии:
 
-## EN
-Documentation is part of the Definition of Done. Every user-facing feature change must update, in the same pull request:
+- Core Dataset: `docs/CORE_DATASET_RU.md`, `docs/CORE_DATASET_KK.md`, `docs/CORE_DATASET_EN.md`;
+- external API secrets: `docs/EXTERNAL_API_KEYS_RU.md`, `docs/EXTERNAL_API_KEYS_KK.md`, `docs/EXTERNAL_API_KEYS_EN.md`;
+- Kazakhstan Open Data: `docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md`, `docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_KK.md`, `docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_EN.md`;
+- oil/gas field review: `docs/KAZAKHSTAN_FIELD_REVIEW_RU.md`, `docs/KAZAKHSTAN_FIELD_REVIEW_KK.md`, `docs/KAZAKHSTAN_FIELD_REVIEW_EN.md`;
+- geological-study-license review: `docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_RU.md`, `docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_KK.md`, `docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_EN.md`;
+- backend review view-model: `docs/EXTERNAL_REVIEW_UI_CONTRACT_RU.md`, `docs/EXTERNAL_REVIEW_UI_CONTRACT_KK.md`, `docs/EXTERNAL_REVIEW_UI_CONTRACT_EN.md`;
+- external scheduler/Update All: `docs/EXTERNAL_SYNC_SCHEDULER_RU.md`, `docs/EXTERNAL_SYNC_SCHEDULER_KK.md`, `docs/EXTERNAL_SYNC_SCHEDULER_EN.md`;
+- visual correlation: `docs/CROSS_SECTION_VIEW_CONTRACT_RU.md`, `docs/CROSS_SECTION_VIEW_CONTRACT_KK.md`, `docs/CROSS_SECTION_VIEW_CONTRACT_EN.md`;
+- synthetic demo workflow: `docs/DEMO_CORRELATION_WORKFLOW_RU.md`, `docs/DEMO_CORRELATION_WORKFLOW_KK.md`, `docs/DEMO_CORRELATION_WORKFLOW_EN.md`;
+- authentication/RBAC/audit/revisions: `docs/AUTH_AUDIT_REVISIONS_RU.md`, `docs/AUTH_AUDIT_REVISIONS_KK.md`, `docs/AUTH_AUDIT_REVISIONS_EN.md`;
+- PySide6 desktop client: `docs/DESKTOP_CLIENT_RU.md`, `docs/DESKTOP_CLIENT_KK.md`, `docs/DESKTOP_CLIENT_EN.md`.
 
-- `docs/PROJECT_PLAN_V0_2.md`;
-- `docs/PROJECT_PLAN_V0_2_KK.md`;
-- `docs/PROJECT_PLAN_V0_2_EN.md`;
-- `docs/USER_GUIDE_RU.md`;
-- `docs/USER_GUIDE_KK.md`;
-- `docs/USER_GUIDE_EN.md`;
-- `docs/CORE_DATASET_RU.md`, `docs/CORE_DATASET_KK.md`, and `docs/CORE_DATASET_EN.md` when Core Dataset manifest/schema, bundled snapshots, checksum/reference validation, install/status API/CLI, transactions, idempotence, rollback, or compatibility policy changes;
-- `docs/EXTERNAL_API_KEYS_RU.md`, `docs/EXTERNAL_API_KEYS_KK.md`, and `docs/EXTERNAL_API_KEYS_EN.md` when external APIs, credentials, secrets or integration setup change;
-- `docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md`, `docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_KK.md`, and `docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_EN.md` when Kazakhstan Open Data API, `apiUri`, versions, mappings, naming conventions, endpoints or resource onboarding rules change;
-- `docs/KAZAKHSTAN_FIELD_REVIEW_RU.md`, `docs/KAZAKHSTAN_FIELD_REVIEW_KK.md`, and `docs/KAZAKHSTAN_FIELD_REVIEW_EN.md` when normalization/matching/review, link statuses, or DRAFT creation rules change;
-- `docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_RU.md`, `docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_KK.md`, and `docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_EN.md` when the geological-study license normalizer, record-level review, fields, or processing rules change;
-- `docs/EXTERNAL_REVIEW_UI_CONTRACT_RU.md`, `docs/EXTERNAL_REVIEW_UI_CONTRACT_KK.md`, and `docs/EXTERNAL_REVIEW_UI_CONTRACT_EN.md` when the review queue UI/view-model contract, action codes, action availability, pagination or action forms change;
-- `docs/EXTERNAL_SYNC_SCHEDULER_RU.md`, `docs/EXTERNAL_SYNC_SCHEDULER_KK.md`, and `docs/EXTERNAL_SYNC_SCHEDULER_EN.md` when scheduler behavior, Update All, due/retry policy, parallel-run protection or per-source sync status changes;
-- `docs/CROSS_SECTION_VIEW_CONTRACT_RU.md`, `docs/CROSS_SECTION_VIEW_CONTRACT_KK.md`, and `docs/CROSS_SECTION_VIEW_CONTRACT_EN.md` when the visual correlation view-model, depth-axis selection, well columns, marker/horizon lines, renderability, or warning codes change;
-- `docs/DEMO_CORRELATION_WORKFLOW_RU.md`, `docs/DEMO_CORRELATION_WORKFLOW_KK.md`, and `docs/DEMO_CORRELATION_WORKFLOW_EN.md` when the synthetic demo dataset, coordinate→selection→cross-section flow, demo-well filtering, or selection validation changes;
-- `ru/kk/en` contextual help when fields, terminology, warnings or workflows change;
-- architecture/domain documentation when data models or integrations change.
+## Непереговорные инварианты / Міндетті invariants / Non-negotiable invariants
 
-A user-facing feature is not complete if either the user instructions or the current roadmap are missing in any of the three supported languages. GeoKZ Core Dataset must have a lifecycle independent of the application and Alembic; documentation must explicitly cover bundled/installed versions, manifest SHA-256, the schema compatibility gate, transactional install/rollback, idempotence, and the `geokz-core:` namespace. A baseline must not be filled with invented geological facts: production geology requires defensible provenance. Integrations with authenticated APIs additionally require current trilingual instructions for obtaining and securely storing credentials. External resource catalogs must separately document the upstream resource identifier, version, field schema and GeoKZ internal naming rules. Review documentation must clearly separate source-link verification from geological-object verification: a verified `ExternalEntityLink` must never automatically make a newly created geological object `VERIFIED`. For the administrative license register, record-level `ACCEPTED` means only that the normalized upstream payload was reviewed; it must not automatically create an `ExternalEntityLink`, `GeologicalEntity`, or geological fact, and a changed upstream checksum requires fresh review. A client must not duplicate backend business rules; action availability and form requirements are exposed through stable action descriptors. The periodic scheduler must not run as a background loop inside every FastAPI worker; use a dedicated process/service and PostgreSQL parallel-run protection. A visual correlation section must not invent new geological interpretation: it renders only the existing correlation result, never silently mixes TVDSS/TVD/MD, and draws no lines for non-comparable data. The demo workflow must enforce a strict boundary between synthetic data and production wells: location or proximity alone never authorizes a normal well for demo selection.
+1. **Evidence-first.** RAW/source wording и provenance не уничтожаются нормализацией.
+2. **Human-in-the-loop.** External API/AI не повышают scientific verification status автоматически.
+3. **Link verification ≠ entity verification.** `ExternalEntityLink=VERIFIED` не делает `GeologicalEntity=VERIFIED`; external-derived entity создаётся как `DRAFT`.
+4. **License record review.** `ACCEPTED` для административной лицензии не создаёт `ExternalEntityLink`, `GeologicalEntity` или geological fact.
+5. **Depth safety.** TVDSS/TVD/MD не смешиваются молча; incompatible data не соединяются correlation line.
+6. **CRS safety.** Projected X/Y требует подтверждённой CRS/axis order; CRS не угадывается по числам.
+7. **Synthetic isolation.** Demo wells не смешиваются с production wells.
+8. **Scheduler isolation.** Periodic scheduler работает отдельным process/service, а не background loop в каждом FastAPI worker.
+9. **Independent versions.** Application version, Alembic schema revision, Core Dataset version/schema и provider versions документируются отдельно.
+10. **Authentication boundary.** Reviewer identity берётся из authenticated session; client-supplied reviewer string не является authority.
+11. **Append-only history.** AuditLog/revisions не перезаписываются и не удаляются обычными application paths.
+12. **Desktop HTTP boundary.** PySide6 не импортирует SQLAlchemy models и не подключается к PostgreSQL напрямую.
+13. **Backend-owned actions.** Desktop/UI исполняет server action descriptors (`enabled`, `required_fields`, `method`, `path`) и не дублирует review business rules.
+14. **Secret safety.** Реальные API keys, passwords и bearer tokens запрещено включать в Git, docs, issues, PRs, screenshots или examples.
+15. **RU/KK/EN parity.** Пользовательская функция не complete, если инструкция/подсказка отсутствует хотя бы на одном из трёх языков.
 
-Real secrets must never be placed in documentation. Examples may contain only empty values or explicit placeholders.
+## Core Dataset rules
+
+Документация Core Dataset обязана явно описывать:
+
+- bundled и installed version;
+- `schema_version`;
+- manifest SHA-256;
+- `geokz-core:` namespace;
+- compatibility gate;
+- transactional install/rollback;
+- idempotence (`changed=false`);
+- отсутствие вымышленных production geological facts в bootstrap.
+
+## Desktop rules
+
+Desktop documentation обязана содержать:
+
+```text
+POST /api/v1/auth/login
+GET  /api/v1/system/versions
+POST /api/v1/integrations/sync-all
+GET  /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view
+GET  /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/records
+GET  /api/v1/audit/logs
+GET  /api/v1/audit/revisions/{resource_type}/{resource_id}
+```
+
+и объяснять, что bearer token хранится только в памяти процесса, HTTP work не блокирует Qt event loop, а desktop не является security authority поверх backend RBAC.
+
+## CI contract
+
+`tests/test_documentation_contract.py` проверяет наличие и ключевые инварианты документации. Если API contract, version semantics, review semantics, desktop boundary или security policy меняются, CI contract обновляется в том же feature slice.
+
+## Definition of Done
+
+```text
+feature branch
+→ code/contracts/migrations
+→ unit tests
+→ PostgreSQL/PostGIS integration
+→ README + USER_GUIDE RU/KK/EN
+→ roadmap RU/KK/EN
+→ dedicated docs RU/KK/EN
+→ exact-head CI green
+→ PR
+→ PR-CI green on the same SHA
+→ squash merge main
+```
+
+Автор / Автор / Author: **Sarmuldin Rinat — ura07srr@gmail.com**.
