@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.api.routes import (
     about,
+    auth,
     core_dataset,
     correlation,
     entities,
@@ -26,6 +27,11 @@ api_router.include_router(
     about.router,
     prefix=f"{settings.api_prefix}/about",
     tags=["about"],
+)
+api_router.include_router(
+    auth.router,
+    prefix=f"{settings.api_prefix}/auth",
+    tags=["auth"],
 )
 api_router.include_router(
     help.router,
