@@ -27,4 +27,4 @@ def test_trilingual_domain_vocabulary_binding_docs_follow_safety_contract() -> N
         assert "AMBIGUOUS" in content
         assert "RAW" in content
         assert "commit()" in content
-        assert "atomic" in content.casefold()
+        assert "partial" in content.casefold()
