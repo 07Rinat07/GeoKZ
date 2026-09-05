@@ -155,6 +155,7 @@ class KazakhstanOilGasFieldReviewService:
         link_id: UUID,
         reviewer: str,
         comment: str | None,
+        commit: bool = True,
     ) -> FieldReviewActionResult:
         record, link, entity = await self._get_record_link_entity(record_id, link_id)
         await self._ensure_no_other_verified_link(record.id, except_link_id=link.id)
@@ -171,7 +172,8 @@ class KazakhstanOilGasFieldReviewService:
             reviewed_at=reviewed_at,
         )
         record.status = ExternalRecordStatus.ACCEPTED
-        await self.session.commit()
+        if commit:
+            await self.session.commit()
         return self._result(record, link, entity)
 
     async def reject_link(
@@ -181,6 +183,7 @@ class KazakhstanOilGasFieldReviewService:
         link_id: UUID,
         reviewer: str,
         comment: str,
+        commit: bool = True,
     ) -> FieldReviewActionResult:
         record, link, entity = await self._get_record_link_entity(record_id, link_id)
         if link.status == EntityLinkStatus.VERIFIED:
@@ -198,7 +201,8 @@ class KazakhstanOilGasFieldReviewService:
             if await self._has_verified_link(record.id)
             else ExternalRecordStatus.REVIEW_REQUIRED
         )
-        await self.session.commit()
+        if commit:
+            await self.session.commit()
         return self._result(record, link, entity)
 
     async def manual_link(
@@ -208,6 +212,7 @@ class KazakhstanOilGasFieldReviewService:
         entity_id: UUID,
         reviewer: str,
         comment: str | None,
+        commit: bool = True,
     ) -> FieldReviewActionResult:
         record = await self._get_record(record_id)
         entity = await self.session.get(GeologicalEntity, entity_id)
@@ -250,7 +255,8 @@ class KazakhstanOilGasFieldReviewService:
             reviewed_at=reviewed_at,
         )
         record.status = ExternalRecordStatus.ACCEPTED
-        await self.session.commit()
+        if commit:
+            await self.session.commit()
         return self._result(record, link, entity)
 
     async def create_draft_field(
@@ -262,6 +268,7 @@ class KazakhstanOilGasFieldReviewService:
         name_ru: str | None = None,
         name_kk: str | None = None,
         name_en: str | None = None,
+        commit: bool = True,
     ) -> FieldReviewActionResult:
         record = await self._get_record(record_id)
         await self._ensure_no_other_verified_link(record.id)
@@ -316,7 +323,8 @@ class KazakhstanOilGasFieldReviewService:
             reviewed_at=reviewed_at,
         )
         record.status = ExternalRecordStatus.ACCEPTED
-        await self.session.commit()
+        if commit:
+            await self.session.commit()
         return self._result(record, link, entity)
 
     async def _get_source(self) -> ExternalDataSource:
