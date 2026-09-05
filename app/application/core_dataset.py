@@ -156,7 +156,11 @@ class CoreDatasetImporter:
         *,
         dry_run: bool = False,
     ) -> CoreDatasetImportResult:
-        bundle = validate_core_dataset_bundle(manifest_path)
+        try:
+            bundle = validate_core_dataset_bundle(manifest_path)
+        except CoreDatasetManifestError as error:
+            raise CoreDatasetImportError(str(error)) from error
+
         parsed = self._parse_bundle(bundle)
         self._validate_namespace_and_references(bundle, parsed)
 
@@ -194,13 +198,9 @@ class CoreDatasetImporter:
 
         try:
             source_ids = await self._upsert_sources(parsed.sources)
-            region_ids = await self._upsert_regions(parsed.regions)
+            await self._upsert_regions(parsed.regions)
             entity_ids = await self._upsert_entities(parsed.entities, source_ids)
             await self._upsert_facts(parsed.facts, source_ids, entity_ids)
-
-            # Keep the local variables referenced: their construction is part of the
-            # referential-integrity validation performed by the importer.
-            _ = region_ids
 
             installed_at = datetime.now(UTC)
             if existing_state is None:
@@ -313,10 +313,18 @@ class CoreDatasetImporter:
         parsed: ParsedCoreDataset,
     ) -> None:
         prefix = bundle.manifest.external_id_prefix
-        source_ids = {row.external_id for row in parsed.sources}
-        region_ids = {row.external_id for row, _ in parsed.regions}
-        entity_ids = {row.external_id for row in parsed.entities}
-        fact_ids = {row.external_id for row in parsed.facts}
+        source_ids = CoreDatasetImporter._unique_ids(
+            "source", [row.external_id for row in parsed.sources]
+        )
+        region_ids = CoreDatasetImporter._unique_ids(
+            "region", [row.external_id for row, _ in parsed.regions]
+        )
+        entity_ids = CoreDatasetImporter._unique_ids(
+            "entity", [row.external_id for row in parsed.entities]
+        )
+        fact_ids = CoreDatasetImporter._unique_ids(
+            "fact", [row.external_id for row in parsed.facts]
+        )
 
         for kind, values in {
             "source": source_ids,
@@ -362,6 +370,17 @@ class CoreDatasetImporter:
             for related_id in row.related_fact_ids:
                 if related_id not in fact_ids:
                     raise CoreDatasetImportError(f"Unknown related fact external_id: {related_id}")
+
+    @staticmethod
+    def _unique_ids(kind: str, values: list[str]) -> set[str]:
+        seen: set[str] = set()
+        for external_id in values:
+            if external_id in seen:
+                raise CoreDatasetImportError(
+                    f"Duplicate {kind} external_id in Core Dataset: {external_id}"
+                )
+            seen.add(external_id)
+        return seen
 
     async def _upsert_sources(self, rows: list[CoreSourceRecord]) -> dict[str, Any]:
         ids: dict[str, Any] = {}
@@ -492,11 +511,13 @@ class CoreDatasetImporter:
 
 
 def validate_core_dataset(manifest_path: Path) -> CoreDatasetImportResult:
-    """Synchronous manifest/checksum/payload validation without database access."""
+    """Validate manifest, checksums, payloads and references without database access."""
 
-    bundle = validate_core_dataset_bundle(manifest_path)
-    # Use a lightweight parser instance without touching its session; only parsing and
-    # namespace/reference validation are exercised here.
+    try:
+        bundle = validate_core_dataset_bundle(manifest_path)
+    except CoreDatasetManifestError as error:
+        raise CoreDatasetImportError(str(error)) from error
+
     importer = object.__new__(CoreDatasetImporter)
     parsed = importer._parse_bundle(bundle)
     importer._validate_namespace_and_references(bundle, parsed)
