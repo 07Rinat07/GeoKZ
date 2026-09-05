@@ -1,5 +1,6 @@
 import hashlib
 import json
+import re
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
@@ -10,12 +11,14 @@ from app.core.project_info import SupportedLanguage
 from app.integrations.contracts import ExternalDataConnector, ExternalRecordEnvelope
 from app.integrations.errors import ConnectorConfigurationError, ExternalSourceProtocolError
 
+_VERSION_PATTERN = re.compile(r"^v(?P<number>\d+)$", flags=re.IGNORECASE)
+
 
 @dataclass(frozen=True, slots=True)
 class EgovDatasetConfig:
     source_code: str
     dataset: str
-    version: str
+    version: str | None
     record_type: str
     identity_fields: tuple[str, ...] = ()
     identity_alias_groups: tuple[tuple[str, ...], ...] = ()
@@ -29,6 +32,8 @@ class EgovDatasetConfig:
             raise ValueError("Use identity_fields or identity_alias_groups, not both")
         if any(not group for group in self.identity_alias_groups):
             raise ValueError("identity alias groups must not be empty")
+        if self.version is not None and not self.version.strip():
+            raise ValueError("version must be a non-empty string or None")
 
     @property
     def api_uri(self) -> str:
@@ -40,9 +45,20 @@ class EgovDatasetConfig:
 
         return self.dataset
 
+    @property
+    def version_policy(self) -> str:
+        return "PINNED" if self.version is not None else "LATEST_MAPPING"
+
 
 class EgovOpenDataConnector(ExternalDataConnector):
-    """Универсальный connector к API v4 портала data.egov.kz."""
+    """Универсальный connector к API v4 портала data.egov.kz.
+
+    Для стабильных интеграций можно зафиксировать ``version``. Для официальных наборов,
+    где паспорт портала не показывает версию в статическом HTML, ``version=None``
+    означает безопасное определение последней версии через официальный mapping endpoint.
+    Выбранная версия кешируется на время жизни connector и затем используется одинаково
+    для metadata, mapping и data requests.
+    """
 
     BASE_URL = "https://data.egov.kz"
 
@@ -58,27 +74,30 @@ class EgovOpenDataConnector(ExternalDataConnector):
         self._api_key = api_key.strip() if api_key else None
         self._timeout_seconds = timeout_seconds
         self._client = client
+        self._resolved_version: str | None = config.version
 
     @property
     def source_code(self) -> str:
         return self._config.source_code
 
     async def check_availability(self) -> bool:
+        version = await self._resolve_version()
         response = await self._request(
-            f"/meta/{self._config.api_uri}/{self._config.version}",
+            f"/meta/{self._config.api_uri}/{version}",
             params=None,
             requires_api_key=False,
         )
         return response.status_code == httpx.codes.OK
 
     async def get_dataset_version(self) -> str | None:
-        return self._config.version
+        return await self._resolve_version()
 
     async def get_metadata(self) -> dict[str, Any]:
         """Получить meta-информацию набора по официальному /meta контракту."""
 
+        version = await self._resolve_version()
         response = await self._request(
-            f"/meta/{self._config.api_uri}/{self._config.version}",
+            f"/meta/{self._config.api_uri}/{version}",
             params=None,
             requires_api_key=False,
         )
@@ -93,8 +112,9 @@ class EgovOpenDataConnector(ExternalDataConnector):
     async def get_mapping(self) -> dict[str, Any]:
         """Получить mapping-схему и типы полей набора data.egov.kz."""
 
+        version = await self._resolve_version()
         response = await self._request(
-            f"/api/v4/mapping/{self._config.api_uri}/{self._config.version}",
+            f"/api/v4/mapping/{self._config.api_uri}/{version}",
             params=None,
             requires_api_key=False,
         )
@@ -119,6 +139,7 @@ class EgovOpenDataConnector(ExternalDataConnector):
                 "Для синхронизации data.egov.kz требуется GEOKZ_EGOV_API_KEY"
             )
 
+        version = await self._resolve_version()
         offset = self._parse_cursor(cursor)
         while True:
             source_query = {
@@ -126,7 +147,7 @@ class EgovOpenDataConnector(ExternalDataConnector):
                 "size": self._config.page_size,
             }
             response = await self._request(
-                f"/api/v4/{self._config.api_uri}/{self._config.version}",
+                f"/api/v4/{self._config.api_uri}/{version}",
                 params={
                     "apiKey": self._api_key,
                     "source": json.dumps(
@@ -152,6 +173,58 @@ class EgovOpenDataConnector(ExternalDataConnector):
             if len(records) < self._config.page_size:
                 break
             offset += self._config.page_size
+
+    async def _resolve_version(self) -> str:
+        if self._resolved_version is not None:
+            return self._resolved_version
+
+        response = await self._request(
+            f"/api/v4/mapping/{self._config.api_uri}",
+            params=None,
+            requires_api_key=False,
+        )
+        response.raise_for_status()
+        try:
+            payload = response.json()
+        except ValueError as error:
+            raise ExternalSourceProtocolError(
+                "data.egov.kz mapping version discovery вернул невалидный JSON"
+            ) from error
+
+        versions = self._extract_mapping_versions(payload, self._config.api_uri)
+        if not versions:
+            raise ExternalSourceProtocolError(
+                "Не удалось определить опубликованную версию набора data.egov.kz "
+                f"{self._config.api_uri}; проверьте официальный mapping endpoint"
+            )
+
+        self._resolved_version = max(versions, key=self._version_sort_key)
+        return self._resolved_version
+
+    @staticmethod
+    def _extract_mapping_versions(payload: object, api_uri: str) -> tuple[str, ...]:
+        if not isinstance(payload, dict):
+            return ()
+        dataset = payload.get(api_uri)
+        if not isinstance(dataset, dict):
+            return ()
+        mappings = dataset.get("mappings")
+        if not isinstance(mappings, dict):
+            return ()
+        return tuple(
+            version
+            for version in mappings
+            if isinstance(version, str) and _VERSION_PATTERN.fullmatch(version)
+        )
+
+    @staticmethod
+    def _version_sort_key(version: str) -> int:
+        match = _VERSION_PATTERN.fullmatch(version)
+        if match is None:
+            raise ExternalSourceProtocolError(
+                f"Некорректная версия mapping data.egov.kz: {version}"
+            )
+        return int(match.group("number"))
 
     async def _request(
         self,
