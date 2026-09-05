@@ -35,6 +35,23 @@ class FactCreate(ORMModel):
     related_fact_ids: list[str] = Field(default_factory=list)
 
 
+class FactUpdate(ORMModel):
+    normalized_statement: str | None = Field(default=None, min_length=1)
+    page_number: int | None = Field(default=None, ge=1)
+    figure_number: str | None = None
+    table_number: str | None = None
+    section_title: str | None = None
+    methods: list[str] | None = None
+    valid_time_start: int | None = Field(default=None, ge=1500, le=2100)
+    valid_time_end: int | None = Field(default=None, ge=1500, le=2100)
+    confidence: ConfidenceLevel | None = None
+    needs_human_review: bool | None = None
+    review_reason: str | None = None
+    verification_status: VerificationStatus | None = None
+    related_fact_ids: list[str] | None = None
+    change_reason: str = Field(min_length=3, max_length=1000)
+
+
 class FactRead(FactCreate):
     id: UUID
     created_at: datetime
