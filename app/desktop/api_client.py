@@ -119,12 +119,15 @@ class GeoKZApiClient:
         return dict(payload)
 
     def about(self, language: str) -> JsonObject:
-        return self._request_json(
+        about = self._request_json(
             "GET",
             "/api/v1/about",
             params={"lang": language},
             authenticated=False,
         )
+        versions = self.system_versions()
+        about["database_schema_version"] = versions.get("database_schema_version")
+        return about
 
     def system_versions(self) -> JsonObject:
         return self._request_json(
