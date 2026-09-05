@@ -15,6 +15,7 @@ from app.api.routes import (
     integrations,
     sources,
     spatial,
+    system,
     vocabularies,
     wells,
 )
@@ -28,6 +29,11 @@ api_router.include_router(
     about.router,
     prefix=f"{settings.api_prefix}/about",
     tags=["about"],
+)
+api_router.include_router(
+    system.router,
+    prefix=f"{settings.api_prefix}/system",
+    tags=["system"],
 )
 api_router.include_router(
     auth.router,
