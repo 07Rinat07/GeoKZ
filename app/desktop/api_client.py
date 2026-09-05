@@ -143,6 +143,28 @@ class GeoKZApiClient:
             authenticated=False,
         )
 
+    def core_dataset_update_status(self) -> JsonObject:
+        return self._request_json("GET", "/api/v1/core-dataset/update/status")
+
+    def apply_core_dataset_update(
+        self,
+        *,
+        language: str,
+        dry_run: bool = False,
+    ) -> JsonObject:
+        return self._request_json(
+            "POST",
+            "/api/v1/core-dataset/update/apply",
+            params={"lang": language, "dry_run": dry_run},
+        )
+
+    def rollback_core_dataset_update(self, *, language: str) -> JsonObject:
+        return self._request_json(
+            "POST",
+            "/api/v1/core-dataset/update/rollback",
+            params={"lang": language},
+        )
+
     def list_external_sources(self, language: str) -> list[JsonObject]:
         payload = self._request_json_value(
             "GET",
