@@ -297,4 +297,5 @@ async def process_kazakhstan_open_dataset(
         unmatched=summary.unmatched,
         normalization_errors=summary.normalization_errors,
         reviewer_locked=summary.reviewer_locked,
+        review_required=getattr(summary, "review_required", 0),
     )
