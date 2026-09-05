@@ -67,6 +67,7 @@ async def update_source(
 
     try:
         await session.flush()
+        await session.refresh(source)
         after = _source_snapshot(source)
         await AuditRevisionService(session).audit_master_change(
             actor=AuditActor.from_user(principal.user),
