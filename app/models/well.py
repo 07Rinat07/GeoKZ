@@ -124,6 +124,12 @@ class WellInterval(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         server_default="[]",
         nullable=False,
     )
+    lithology_codes: Mapped[list[str]] = mapped_column(
+        JSONB,
+        default=list,
+        server_default="[]",
+        nullable=False,
+    )
     porosity_percent: Mapped[Decimal | None] = mapped_column(Numeric(7, 3))
     permeability_md: Mapped[Decimal | None] = mapped_column(Numeric(14, 4))
     net_pay_m: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
@@ -140,6 +146,7 @@ class WellInterval(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     test_result: Mapped[str | None] = mapped_column(Text)
     flow_rate: Mapped[Decimal | None] = mapped_column(Numeric(16, 4))
     flow_rate_unit: Mapped[str | None] = mapped_column(String(100))
+    flow_rate_unit_code: Mapped[str | None] = mapped_column(String(160), index=True)
     pressure_mpa: Mapped[Decimal | None] = mapped_column(Numeric(10, 4))
     temperature_c: Mapped[Decimal | None] = mapped_column(Numeric(10, 3))
     source_ids: Mapped[list[str]] = mapped_column(

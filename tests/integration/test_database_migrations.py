@@ -19,7 +19,7 @@ async def test_alembic_head_and_required_extensions() -> None:
     try:
         async with engine.connect() as connection:
             revision = await connection.scalar(text("SELECT version_num FROM alembic_version"))
-            assert revision == "20260905_0006"
+            assert revision == "20260905_0007"
 
             extensions = set(
                 (
@@ -77,6 +77,30 @@ async def test_alembic_head_and_required_extensions() -> None:
             assert vocabulary_constraint is not None
             assert "lithology" in vocabulary_constraint
             assert "marker_type" in vocabulary_constraint
+
+            columns = set(
+                (
+                    await connection.execute(
+                        text(
+                            "SELECT table_name, column_name FROM information_schema.columns "
+                            "WHERE table_schema = 'public' AND table_name IN "
+                            "('well_intervals', 'well_markers', 'well_log_curves', "
+                            "'well_tests', 'core_samples')"
+                        )
+                    )
+                ).tuples()
+            )
+            assert {
+                ("well_intervals", "lithology_codes"),
+                ("well_intervals", "flow_rate_unit_code"),
+                ("well_markers", "marker_type_code"),
+                ("well_log_curves", "property_kind_code"),
+                ("well_log_curves", "unit_code"),
+                ("well_tests", "oil_rate_unit_code"),
+                ("well_tests", "gas_rate_unit_code"),
+                ("well_tests", "water_rate_unit_code"),
+                ("core_samples", "lithology_codes"),
+            } <= columns
 
             postgis_version = await connection.scalar(text("SELECT PostGIS_Version()"))
             assert isinstance(postgis_version, str)

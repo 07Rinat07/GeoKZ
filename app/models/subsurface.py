@@ -139,9 +139,11 @@ class WellLogCurve(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     mnemonic_original: Mapped[str] = mapped_column(String(200), nullable=False)
     property_kind: Mapped[str | None] = mapped_column(String(300), index=True)
+    property_kind_code: Mapped[str | None] = mapped_column(String(160), index=True)
     description: Mapped[str | None] = mapped_column(Text)
     unit_original: Mapped[str | None] = mapped_column(String(100))
     canonical_unit: Mapped[str | None] = mapped_column(String(100))
+    unit_code: Mapped[str | None] = mapped_column(String(160), index=True)
     sample_count: Mapped[int | None] = mapped_column(Integer)
     min_value: Mapped[Decimal | None] = mapped_column(Numeric(24, 8))
     max_value: Mapped[Decimal | None] = mapped_column(Numeric(24, 8))
@@ -190,10 +192,13 @@ class WellTest(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     temperature_c: Mapped[Decimal | None] = mapped_column(Numeric(10, 3))
     oil_rate: Mapped[Decimal | None] = mapped_column(Numeric(20, 5))
     oil_rate_unit: Mapped[str | None] = mapped_column(String(100))
+    oil_rate_unit_code: Mapped[str | None] = mapped_column(String(160))
     gas_rate: Mapped[Decimal | None] = mapped_column(Numeric(20, 5))
     gas_rate_unit: Mapped[str | None] = mapped_column(String(100))
+    gas_rate_unit_code: Mapped[str | None] = mapped_column(String(160))
     water_rate: Mapped[Decimal | None] = mapped_column(Numeric(20, 5))
     water_rate_unit: Mapped[str | None] = mapped_column(String(100))
+    water_rate_unit_code: Mapped[str | None] = mapped_column(String(160))
     result_text: Mapped[str | None] = mapped_column(Text)
     interpretation_text: Mapped[str | None] = mapped_column(Text)
     source_id: Mapped[UUID | None] = mapped_column(
@@ -271,6 +276,12 @@ class CoreSample(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     depth_m: Mapped[Decimal] = mapped_column(Numeric(12, 3), nullable=False)
     sample_type: Mapped[str | None] = mapped_column(String(100), index=True)
     lithologies: Mapped[list[str]] = mapped_column(
+        JSONB,
+        default=list,
+        server_default="[]",
+        nullable=False,
+    )
+    lithology_codes: Mapped[list[str]] = mapped_column(
         JSONB,
         default=list,
         server_default="[]",
