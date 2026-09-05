@@ -19,7 +19,7 @@ async def test_alembic_head_and_required_extensions() -> None:
     try:
         async with engine.connect() as connection:
             revision = await connection.scalar(text("SELECT version_num FROM alembic_version"))
-            assert revision == "20260905_0010"
+            assert revision == "20260905_0011"
 
             extensions = set(
                 (
@@ -117,6 +117,15 @@ async def test_alembic_head_and_required_extensions() -> None:
                 ("core_dataset_states", "installed_at"),
                 ("core_dataset_states", "file_checksums"),
                 ("core_dataset_states", "item_counts"),
+                ("core_dataset_states", "previous_dataset_version"),
+                ("core_dataset_states", "previous_schema_version"),
+                ("core_dataset_states", "previous_manifest_sha256"),
+                ("core_dataset_states", "previous_source_path"),
+                ("core_dataset_states", "previous_file_checksums"),
+                ("core_dataset_states", "previous_item_counts"),
+                ("core_dataset_states", "last_update_source_url"),
+                ("core_dataset_states", "last_update_bundle_sha256"),
+                ("core_dataset_states", "last_update_key_id"),
                 ("user_accounts", "username"),
                 ("user_accounts", "role"),
                 ("user_accounts", "password_hash"),
