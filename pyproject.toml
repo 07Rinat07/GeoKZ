@@ -36,6 +36,9 @@ windows-build = [
     "pyinstaller>=6.13,<7.0",
 ]
 
+[project.scripts]
+geokz-desktop = "scripts.desktop:main"
+
 [project.urls]
 Repository = "https://github.com/07Rinat07/GeoKZ"
 

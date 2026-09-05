@@ -2,106 +2,60 @@
 
 Version: `0.3-dev`.
 
-## Purpose
-GeoKZ is an evidence-based geological workspace for Kazakhstan. It combines territory, field, structure, well, subsurface, seismic, document, and provenance information from the local GeoKZ database and permitted external sources.
+GeoKZ is an evidence-based geological information system for Kazakhstan. The main workflow is: territory or coordinate → fields, structures, wells and seismic → passports → intervals/logs/core/tests → correlation → primary sources, provenance and expert review.
 
-Primary workflow: territory or coordinate → nearby fields/structures/wells/seismic → object passport → well passport → lithology, logs, core, tests, oil/gas/water → neighboring-well correlation → source and evidence.
+## Core data rule
+
+An external API, importer or AI does not silently overwrite verified master data. GeoKZ preserves RAW/source wording, normalized values, source, version, checksum and review status. Verifying a link to an external record does not automatically verify the geological entity itself.
 
 ## Languages
-The user interface, help, labels, and user documentation are maintained in Russian, Kazakh, and English.
 
-## Coordinate search
-Geographic input example: `43.652341 / 51.168420`. A comma decimal separator is also accepted.
+The user interface and documentation are supported in Russian, Kazakh and English: `ru`, `kk`, `en`.
 
-Projected input example: `X=5085125.325`, `Y=711157.665`; `5085125,325 / 711157,665` is also accepted.
+## Coordinate and CRS search
 
-Large X/Y values require an explicit source CRS and axis order. GeoKZ never guesses a CRS solely from the numbers. WGS84/UTM helpers are available, while organization-local CRS definitions are stored persistently only after confirmation through EPSG/WKT/PROJ.
+GeoKZ accepts WGS84 latitude/longitude and projected X/Y. Projected coordinates require a confirmed CRS and axis order. Large X/Y values are never used to guess a CRS. WGS84, UTM 38N–45N and persistent organization-local CRS definitions via EPSG/WKT/PROJ are supported.
+
+PostGIS nearby search measures distances in meters and can return geological objects, fields, wells, intervals and seismic data.
 
 ## Well Passport and correlation
-Well Passport includes coordinates, MD/TVD/TVDSS trajectory, intervals, stratigraphy, lithology, reservoirs, oil/gas/water, porosity/permeability, logs, tests, core, and source/evidence information.
 
-For neighboring wells, the correlation module compares markers, horizons, and reservoirs. The visual API contract is:
+Well Passport combines coordinates, MD/TVD/TVDSS trajectory, stratigraphy, lithology, reservoirs, fluids, porosity/permeability, logs, tests, core and seismic links.
+
+Visual correlation:
 
 ```text
 POST /api/v1/correlation/wells/view
 ```
 
-The backend selects one depth axis with priority `TVDSS → TVD → MD`. Non-comparable values are returned as `renderable=false`; the client must not invent correlation lines.
+The backend selects a compatible depth reference in the order `TVDSS → TVD → MD`. Incompatible depth systems are not connected automatically.
 
-Synthetic end-to-end demo:
+Synthetic end-to-end workflow:
 
 ```text
 POST /api/v1/correlation/demo/workflow
 ```
 
-Dataset `synthetic-correlation-demo-v1` is strictly isolated from production wells and follows `DISCOVERY` → selection → `CROSS_SECTION_READY`.
+Demo wells are explicitly synthetic and remain isolated from production data.
 
 ## GeoKZ Core Dataset
 
-GeoKZ ships an independently versioned baseline dataset. Its version is separate from both the application version and the Alembic database revision.
-
-Current bundled snapshot:
+The bundled baseline is versioned independently from the application and Alembic.
 
 ```text
-dataset_code:    geokz-core
-dataset_version: 2026.09.0-bootstrap
-schema_version:  1
-```
-
-Inspect the bundled version and the state installed in the current database:
-
-```text
-GET /api/v1/core-dataset/status
-```
-
-`update_available=true` means the bundled manifest differs from the installed state or Core Dataset has not yet been installed.
-
-Validate without writing to the database:
-
-```text
+GET  /api/v1/core-dataset/status
 POST /api/v1/core-dataset/install?dry_run=true&lang=en
-```
-
-Install the bundled snapshot:
-
-```text
 POST /api/v1/core-dataset/install?lang=en
 ```
 
-Before any database write, GeoKZ validates manifest schema, `schema_version`, required files, SHA-256 checksums, path-traversal protection, payload types, duplicate `external_id` values, the `geokz-core:` namespace, and bundle-internal references. All upserts run in one transaction. A failure causes rollback and no installed state is recorded.
+The current bundled snapshot is `2026.09.0-bootstrap`, `schema_version=1`. Manifest schema, SHA-256, path traversal, `geokz-core:` namespace, duplicate IDs and internal references are validated before installation. Installation is transactional; reinstalling the same snapshot returns `changed=false`.
 
-Reinstalling the same manifest is idempotent and returns `changed=false`.
+## External sources and synchronization
 
-The first bootstrap is deliberately minimal: it contains internal metadata and a country-level Republic of Kazakhstan navigation record without asserting a boundary geometry. Geological `entities` and `facts` are not invented without defensible sources.
+The built-in Kazakhstan Open Data datasets are:
 
-Administrative CLI:
-
-```text
-python -m scripts.core_dataset validate
-python -m scripts.core_dataset install --dry-run
-python -m scripts.core_dataset install
-python -m scripts.core_dataset status
-```
-
-Detailed guide: `docs/CORE_DATASET_EN.md`.
-
-## External sources and updates
-External rows never overwrite verified master data directly. General pipeline:
-
-```text
-external API → RAW → checksum/diff → normalization → matching/review → verified master view
-```
-
-Two official Kazakhstan Open Data resources are registered:
-
-1. `kz-egov-oil-gas-fields`, `apiUri=stat_kgn_117`, `v10`;
-2. `kz-egov-geological-study-licenses`, `apiUri=zher_koinauyn_geologiyalyk_zer2`, `v6`.
-
-Inspect the current upstream resource schema before production import:
-
-```text
-GET /api/v1/integrations/kazakhstan/{code}/schema
-```
+- `kz-egov-oil-gas-fields` → `stat_kgn_117/v10`;
+- `kz-egov-geological-study-licenses` → `zher_koinauyn_geologiyalyk_zer2/v6`.
 
 Manual Update All:
 
@@ -109,109 +63,131 @@ Manual Update All:
 POST /api/v1/integrations/sync-all
 ```
 
-Scheduler status:
+Scheduler state:
 
 ```text
-GET /api/v1/integrations/scheduler/status
-```
-
-Run due sources once:
-
-```text
+GET  /api/v1/integrations/scheduler/status
 POST /api/v1/integrations/scheduler/run-due
 ```
 
-The periodic scheduler is a dedicated process, not a loop in FastAPI workers, and PostgreSQL prevents duplicate concurrent runs.
+The scheduler runs as a dedicated process/service, not inside every FastAPI worker. PostgreSQL locking prevents parallel `RUNNING` executions for the same source.
 
-## Oil/gas field processing and review
-For synchronized field RAW records:
+## Oil and gas fields: normalize → match → review
+
+After RAW synchronization:
 
 ```text
 POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process
 ```
 
-The processing step compares the field name deterministically with existing `GeologicalEntity(object_type="field")` names and aliases. It never auto-verifies a match.
-
-Technical queue:
+Technical review queue:
 
 ```text
 GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review
 ```
 
-UI/view-model queue:
+UI view contract:
 
 ```text
-GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view
+GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view?lang=en&limit=100&offset=0
 ```
 
-Stable actions include `CONFIRM_LINK`, `REJECT_LINK`, `MANUAL_LINK`, and `CREATE_DRAFT_FIELD`. A verified `ExternalEntityLink` does not automatically make the geological object VERIFIED; a newly created object starts as `DRAFT`.
+The backend provides `enabled`, `disabled_reason`, `required_fields`, `optional_fields`, `method`, and `path` for `CONFIRM_LINK`, `REJECT_LINK`, `MANUAL_LINK`, and `CREATE_DRAFT_FIELD`. Clients do not duplicate these business rules.
 
-## Geological study license record-level review
+`ExternalEntityLink=VERIFIED` verifies only the relationship to the official external record; it does not make `GeologicalEntity=VERIFIED`. A new entity from an `UNMATCHED` record is created only as `DRAFT`.
 
-`kz-egov-geological-study-licenses` is an administrative license register. The verified `v6` dataset card does not expose a stable deposit/geological-object identifier or geometry sufficient for deterministic linking, so GeoKZ deliberately does not create an automatic deposit link from this source.
+## Geological study licenses
 
-After RAW sync run:
+Normalizer:
 
 ```text
 POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/process
 ```
 
-The normalizer preserves `raw_payload` and separately derives license number/date, license type, term, basis, issuing authority, holder, BIN, and `source_fields`. The record becomes `REVIEW_REQUIRED` and `review.entity_matching=NOT_APPLICABLE`.
-
-Review queue:
+Queue:
 
 ```text
 GET /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/records
 ```
 
-Accept:
+`ACCEPTED` means only that a normalized administrative record was reviewed against its RAW/upstream payload. It does not create an `ExternalEntityLink`, `GeologicalEntity`, or geological fact.
+
+## Authentication, roles and audit
+
+Sign in:
 
 ```text
-POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/records/{record_id}/accept
+POST /api/v1/auth/login
+GET  /api/v1/auth/me
+POST /api/v1/auth/logout
 ```
 
-Reject:
+Roles are `editor`, `expert`, and `admin`. Scientific review decisions require `expert/admin`; `admin` also manages users and can read the complete audit log.
+
+Reviewer identity is derived from the authenticated server session instead of trusting a client-supplied `reviewer` string.
+
+History:
 
 ```text
-POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/records/{record_id}/reject
+GET /api/v1/audit/logs
+GET /api/v1/audit/revisions/{resource_type}/{resource_id}
 ```
 
-`ACCEPTED` means only that a reviewer checked the normalized administrative record against the available upstream payload. It does not create an `ExternalEntityLink`, does not create a `GeologicalEntity`, does not publish a geological fact, and does not upgrade `VerificationStatus`. If the upstream checksum changes, previous `reviewed_by`, `reviewed_at`, and `review_comment` are invalidated and fresh review is required.
+AuditLog and revisions are protected as append-only history at the PostgreSQL layer.
 
-Detailed guide: `docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_EN.md`.
+## Production PySide6 Desktop
 
-## API key
-Actual `data.egov.kz` API v4 retrieval requires a developer key:
+The desktop client uses the HTTP API only and does not import SQLAlchemy models.
+
+Installation:
+
+```powershell
+python -m pip install -e ".[desktop]"
+```
+
+Start:
+
+```powershell
+geokz-desktop --api-url http://127.0.0.1:8000 --lang en
+```
+
+or:
+
+```powershell
+python -m scripts.desktop --api-url http://127.0.0.1:8000 --lang en
+```
+
+The Data Sources screen consumes the independent version contract:
+
+```text
+GET /api/v1/system/versions
+```
+
+It displays application version, database/Alembic schema revision, bundled/installed Core Dataset, provider versions, due/running/error state, and last success/error.
+
+Desktop currently includes:
+
+- login/logout with the bearer token kept only in process memory;
+- Data Sources + Update All;
+- field review driven by server-owned action descriptors;
+- license ACCEPT/REJECT;
+- RAW/normalized provenance;
+- AuditLog/revision viewer;
+- contextual help in RU/KK/EN;
+- HTTP work through `QThreadPool/QRunnable` so the Qt event loop is not blocked.
+
+See `docs/DESKTOP_CLIENT_EN.md` and `docs/AUTH_AUDIT_REVISIONS_EN.md` for details.
+
+## data.egov.kz API key
+
+A developer API key is required for real API v4 downloads. Store it only in the local environment:
 
 ```env
 GEOKZ_EGOV_API_KEY=YOUR_REAL_KEY
 ```
 
-Never store the key in Git, README examples with real values, issues, pull requests, screenshots, or chat. Setup instructions: `docs/EXTERNAL_API_KEYS_EN.md`.
+Do not commit or publish the secret in Git, issues/PRs, documentation, screenshots, or chat. GeoKZ core remains usable without this key.
 
-## REST API quick reference
+## Author
 
-- `GET /api/v1/about` — application and bundled Core Dataset version;
-- `GET /api/v1/core-dataset/status` — bundled/installed Core Dataset state;
-- `POST /api/v1/core-dataset/install` — dry-run or transactional bundled install;
-- `GET /api/v1/integrations/sources` — external source registry;
-- `GET /api/v1/integrations/scheduler/status` — scheduler state;
-- `POST /api/v1/integrations/sync-all` — Update All;
-- `POST /api/v1/integrations/scheduler/run-due` — run due;
-- `GET /api/v1/integrations/kazakhstan/catalog` — official Kazakhstan datasets;
-- `GET /api/v1/integrations/kazakhstan/{code}/schema` — metadata + mapping;
-- `POST /api/v1/integrations/kazakhstan/{code}/sync` — selected source sync;
-- `POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process` — field processing;
-- `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review` — field review;
-- `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view` — field review UI contract;
-- `POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/process` — license normalization;
-- `GET /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/records` — license review queue;
-- `POST /api/v1/correlation/wells/view` — visual cross-section;
-- `POST /api/v1/correlation/demo/workflow` — complete synthetic demo.
-
-## Help and safety
-The client should show contextual hints/wizards for CRS, axis order, MD/TVD/TVDSS, Core Dataset, external-data review, and correlation. RAW source wording and provenance remain preserved, and automation must never silently replace a reviewer decision.
-
-Detailed Core Dataset policy: `docs/CORE_DATASET_EN.md`.
-
-Current roadmap: `docs/PROJECT_PLAN_V0_2_EN.md`.
+**Sarmuldin Rinat — ura07srr@gmail.com**

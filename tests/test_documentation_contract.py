@@ -3,83 +3,55 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / "docs"
 
-TRILINGUAL_USER_GUIDES = (
-    DOCS / "USER_GUIDE_RU.md",
-    DOCS / "USER_GUIDE_KK.md",
-    DOCS / "USER_GUIDE_EN.md",
-)
-
+TRILINGUAL_USER_GUIDES = tuple(DOCS / f"USER_GUIDE_{lang}.md" for lang in ("RU", "KK", "EN"))
 TRILINGUAL_ROADMAPS = (
     DOCS / "PROJECT_PLAN_V0_2.md",
     DOCS / "PROJECT_PLAN_V0_2_KK.md",
     DOCS / "PROJECT_PLAN_V0_2_EN.md",
 )
-
-TRILINGUAL_CORE_DATASET_GUIDES = (
-    DOCS / "CORE_DATASET_RU.md",
-    DOCS / "CORE_DATASET_KK.md",
-    DOCS / "CORE_DATASET_EN.md",
+TRILINGUAL_CORE_DATASET_GUIDES = tuple(
+    DOCS / f"CORE_DATASET_{lang}.md" for lang in ("RU", "KK", "EN")
 )
-
-TRILINGUAL_API_KEY_GUIDES = (
-    DOCS / "EXTERNAL_API_KEYS_RU.md",
-    DOCS / "EXTERNAL_API_KEYS_KK.md",
-    DOCS / "EXTERNAL_API_KEYS_EN.md",
+TRILINGUAL_API_KEY_GUIDES = tuple(
+    DOCS / f"EXTERNAL_API_KEYS_{lang}.md" for lang in ("RU", "KK", "EN")
 )
-
-TRILINGUAL_KZ_OPEN_DATA_GUIDES = (
-    DOCS / "KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md",
-    DOCS / "KAZAKHSTAN_OPEN_DATA_INTEGRATION_KK.md",
-    DOCS / "KAZAKHSTAN_OPEN_DATA_INTEGRATION_EN.md",
+TRILINGUAL_KZ_OPEN_DATA_GUIDES = tuple(
+    DOCS / f"KAZAKHSTAN_OPEN_DATA_INTEGRATION_{lang}.md" for lang in ("RU", "KK", "EN")
 )
-
-TRILINGUAL_FIELD_REVIEW_GUIDES = (
-    DOCS / "KAZAKHSTAN_FIELD_REVIEW_RU.md",
-    DOCS / "KAZAKHSTAN_FIELD_REVIEW_KK.md",
-    DOCS / "KAZAKHSTAN_FIELD_REVIEW_EN.md",
+TRILINGUAL_FIELD_REVIEW_GUIDES = tuple(
+    DOCS / f"KAZAKHSTAN_FIELD_REVIEW_{lang}.md" for lang in ("RU", "KK", "EN")
 )
-
-TRILINGUAL_LICENSE_REVIEW_GUIDES = (
-    DOCS / "KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_RU.md",
-    DOCS / "KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_KK.md",
-    DOCS / "KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_EN.md",
+TRILINGUAL_LICENSE_REVIEW_GUIDES = tuple(
+    DOCS / f"KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_{lang}.md"
+    for lang in ("RU", "KK", "EN")
 )
-
-TRILINGUAL_REVIEW_UI_CONTRACTS = (
-    DOCS / "EXTERNAL_REVIEW_UI_CONTRACT_RU.md",
-    DOCS / "EXTERNAL_REVIEW_UI_CONTRACT_KK.md",
-    DOCS / "EXTERNAL_REVIEW_UI_CONTRACT_EN.md",
+TRILINGUAL_REVIEW_UI_CONTRACTS = tuple(
+    DOCS / f"EXTERNAL_REVIEW_UI_CONTRACT_{lang}.md" for lang in ("RU", "KK", "EN")
 )
-
-TRILINGUAL_SYNC_SCHEDULER_GUIDES = (
-    DOCS / "EXTERNAL_SYNC_SCHEDULER_RU.md",
-    DOCS / "EXTERNAL_SYNC_SCHEDULER_KK.md",
-    DOCS / "EXTERNAL_SYNC_SCHEDULER_EN.md",
+TRILINGUAL_SYNC_SCHEDULER_GUIDES = tuple(
+    DOCS / f"EXTERNAL_SYNC_SCHEDULER_{lang}.md" for lang in ("RU", "KK", "EN")
 )
-
-TRILINGUAL_CROSS_SECTION_CONTRACTS = (
-    DOCS / "CROSS_SECTION_VIEW_CONTRACT_RU.md",
-    DOCS / "CROSS_SECTION_VIEW_CONTRACT_KK.md",
-    DOCS / "CROSS_SECTION_VIEW_CONTRACT_EN.md",
+TRILINGUAL_CROSS_SECTION_CONTRACTS = tuple(
+    DOCS / f"CROSS_SECTION_VIEW_CONTRACT_{lang}.md" for lang in ("RU", "KK", "EN")
 )
-
-TRILINGUAL_DEMO_WORKFLOW_GUIDES = (
-    DOCS / "DEMO_CORRELATION_WORKFLOW_RU.md",
-    DOCS / "DEMO_CORRELATION_WORKFLOW_KK.md",
-    DOCS / "DEMO_CORRELATION_WORKFLOW_EN.md",
+TRILINGUAL_DEMO_WORKFLOW_GUIDES = tuple(
+    DOCS / f"DEMO_CORRELATION_WORKFLOW_{lang}.md" for lang in ("RU", "KK", "EN")
+)
+TRILINGUAL_AUTH_GUIDES = tuple(
+    DOCS / f"AUTH_AUDIT_REVISIONS_{lang}.md" for lang in ("RU", "KK", "EN")
+)
+TRILINGUAL_DESKTOP_GUIDES = tuple(
+    DOCS / f"DESKTOP_CLIENT_{lang}.md" for lang in ("RU", "KK", "EN")
 )
 
 PROCESS_ENDPOINT = "/api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process"
 REVIEW_ENDPOINT = "/api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review"
-REVIEW_VIEW_ENDPOINT = (
-    "/api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view"
-)
+REVIEW_VIEW_ENDPOINT = "/api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view"
 LICENSE_PROCESS_ENDPOINT = (
     "/api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/process"
 )
 LICENSE_REVIEW_ENDPOINT = (
-    "/api/v1/integrations/kazakhstan/"
-    "kz-egov-geological-study-licenses/review/records"
+    "/api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/records"
 )
 SYNC_ALL_ENDPOINT = "/api/v1/integrations/sync-all"
 SCHEDULER_STATUS_ENDPOINT = "/api/v1/integrations/scheduler/status"
@@ -88,223 +60,286 @@ CROSS_SECTION_ENDPOINT = "/api/v1/correlation/wells/view"
 DEMO_WORKFLOW_ENDPOINT = "/api/v1/correlation/demo/workflow"
 CORE_DATASET_STATUS_ENDPOINT = "/api/v1/core-dataset/status"
 CORE_DATASET_INSTALL_ENDPOINT = "/api/v1/core-dataset/install"
+AUTH_LOGIN_ENDPOINT = "/api/v1/auth/login"
+AUTH_ME_ENDPOINT = "/api/v1/auth/me"
+AUDIT_LOGS_ENDPOINT = "/api/v1/audit/logs"
+AUDIT_REVISIONS_ENDPOINT = "/api/v1/audit/revisions/{resource_type}/{resource_id}"
+SYSTEM_VERSIONS_ENDPOINT = "/api/v1/system/versions"
 
 
-def test_trilingual_user_guides_exist_and_are_not_empty() -> None:
+def _content(path: Path, *, minimum: int) -> str:
+    assert path.is_file(), f"Missing documentation file: {path.name}"
+    content = path.read_text(encoding="utf-8").strip()
+    assert len(content) > minimum, f"Documentation file is too small: {path.name}"
+    return content
+
+
+def test_trilingual_user_guides_follow_current_product_contract() -> None:
+    required = (
+        PROCESS_ENDPOINT,
+        REVIEW_ENDPOINT,
+        REVIEW_VIEW_ENDPOINT,
+        SYNC_ALL_ENDPOINT,
+        SCHEDULER_STATUS_ENDPOINT,
+        CROSS_SECTION_ENDPOINT,
+        DEMO_WORKFLOW_ENDPOINT,
+        LICENSE_PROCESS_ENDPOINT,
+        LICENSE_REVIEW_ENDPOINT,
+        CORE_DATASET_STATUS_ENDPOINT,
+        CORE_DATASET_INSTALL_ENDPOINT,
+        AUTH_LOGIN_ENDPOINT,
+        AUTH_ME_ENDPOINT,
+        AUDIT_LOGS_ENDPOINT,
+        AUDIT_REVISIONS_ENDPOINT,
+        SYSTEM_VERSIONS_ENDPOINT,
+        "geokz-desktop",
+        "ExternalEntityLink=VERIFIED",
+        "GeologicalEntity=VERIFIED",
+    )
     for path in TRILINGUAL_USER_GUIDES:
-        assert path.is_file(), f"Missing user guide: {path.name}"
-        content = path.read_text(encoding="utf-8").strip()
-        assert len(content) > 500
-        assert PROCESS_ENDPOINT in content
-        assert REVIEW_ENDPOINT in content
-        assert REVIEW_VIEW_ENDPOINT in content
-        assert SYNC_ALL_ENDPOINT in content
-        assert SCHEDULER_STATUS_ENDPOINT in content
-        assert CROSS_SECTION_ENDPOINT in content
-        assert DEMO_WORKFLOW_ENDPOINT in content
-        assert LICENSE_PROCESS_ENDPOINT in content
-        assert LICENSE_REVIEW_ENDPOINT in content
-        assert CORE_DATASET_STATUS_ENDPOINT in content
-        assert CORE_DATASET_INSTALL_ENDPOINT in content
+        content = _content(path, minimum=2500)
+        for value in required:
+            assert value in content, f"Missing {value!r} in {path.name}"
 
 
-def test_trilingual_roadmaps_exist_and_are_not_empty() -> None:
+def test_trilingual_roadmaps_follow_current_delivery_contract() -> None:
+    required = (
+        PROCESS_ENDPOINT,
+        REVIEW_ENDPOINT,
+        REVIEW_VIEW_ENDPOINT,
+        SYNC_ALL_ENDPOINT,
+        SCHEDULER_STATUS_ENDPOINT,
+        RUN_DUE_ENDPOINT,
+        CROSS_SECTION_ENDPOINT,
+        DEMO_WORKFLOW_ENDPOINT,
+        LICENSE_PROCESS_ENDPOINT,
+        LICENSE_REVIEW_ENDPOINT,
+        CORE_DATASET_STATUS_ENDPOINT,
+        CORE_DATASET_INSTALL_ENDPOINT,
+        AUTH_LOGIN_ENDPOINT,
+        AUDIT_LOGS_ENDPOINT,
+        SYSTEM_VERSIONS_ENDPOINT,
+        "feature/pyside6-data-review-client-v0.3",
+        "Core Dataset update channel",
+        "exact-head CI green",
+    )
     for path in TRILINGUAL_ROADMAPS:
-        assert path.is_file(), f"Missing roadmap: {path.name}"
-        content = path.read_text(encoding="utf-8").strip()
-        assert len(content) > 1000
-        assert PROCESS_ENDPOINT in content
-        assert REVIEW_ENDPOINT in content
-        assert REVIEW_VIEW_ENDPOINT in content
-        assert SYNC_ALL_ENDPOINT in content
-        assert RUN_DUE_ENDPOINT in content
-        assert CROSS_SECTION_ENDPOINT in content
-        assert DEMO_WORKFLOW_ENDPOINT in content
-        assert LICENSE_PROCESS_ENDPOINT in content
-        assert LICENSE_REVIEW_ENDPOINT in content
-        assert CORE_DATASET_STATUS_ENDPOINT in content
-        assert CORE_DATASET_INSTALL_ENDPOINT in content
+        content = _content(path, minimum=3000)
+        for value in required:
+            assert value in content, f"Missing {value!r} in {path.name}"
 
 
 def test_trilingual_core_dataset_guides_follow_install_safety_contract() -> None:
     for path in TRILINGUAL_CORE_DATASET_GUIDES:
-        assert path.is_file(), f"Missing Core Dataset guide: {path.name}"
-        content = path.read_text(encoding="utf-8").strip()
-        assert len(content) > 2500
-        assert "2026.09.0-bootstrap" in content
-        assert "schema_version" in content
-        assert "SHA-256" in content
-        assert "geokz-core:" in content
-        assert CORE_DATASET_STATUS_ENDPOINT in content
-        assert CORE_DATASET_INSTALL_ENDPOINT in content
-        assert "dry_run" in content
-        assert "changed=false" in content
-        assert "manifest.json" in content
-        assert "CoreDatasetState" in content
-        assert "minimum_app_version" in content
-        assert "python -m scripts.core_dataset validate" in content
+        content = _content(path, minimum=2500)
+        for value in (
+            "2026.09.0-bootstrap",
+            "schema_version",
+            "SHA-256",
+            "geokz-core:",
+            CORE_DATASET_STATUS_ENDPOINT,
+            CORE_DATASET_INSTALL_ENDPOINT,
+            "dry_run",
+            "changed=false",
+            "manifest.json",
+            "CoreDatasetState",
+            "minimum_app_version",
+            "python -m scripts.core_dataset validate",
+        ):
+            assert value in content
 
 
 def test_trilingual_api_key_guides_exist_and_are_not_empty() -> None:
     for path in TRILINGUAL_API_KEY_GUIDES:
-        assert path.is_file(), f"Missing API key guide: {path.name}"
-        content = path.read_text(encoding="utf-8").strip()
-        assert len(content) > 1500
+        content = _content(path, minimum=1500)
         assert "GEOKZ_EGOV_API_KEY" in content
         assert "data.egov.kz" in content
 
 
-def test_trilingual_kazakhstan_open_data_guides_exist_and_follow_contract() -> None:
+def test_trilingual_kazakhstan_open_data_guides_follow_contract() -> None:
     for path in TRILINGUAL_KZ_OPEN_DATA_GUIDES:
-        assert path.is_file(), f"Missing Kazakhstan Open Data guide: {path.name}"
-        content = path.read_text(encoding="utf-8").strip()
-        assert len(content) > 2500
-        assert "apiUri" in content
-        assert "record_type" in content
-        assert "/api/v4/mapping/{apiUri}/{version}" in content
-        assert "/api/v1/integrations/kazakhstan/{code}/schema" in content
-        assert PROCESS_ENDPOINT in content
-        assert "REVIEW_REQUIRED" in content
+        content = _content(path, minimum=2500)
+        for value in (
+            "apiUri",
+            "record_type",
+            "/api/v4/mapping/{apiUri}/{version}",
+            "/api/v1/integrations/kazakhstan/{code}/schema",
+            PROCESS_ENDPOINT,
+            "REVIEW_REQUIRED",
+        ):
+            assert value in content
 
 
-def test_trilingual_field_review_guides_exist_and_follow_safety_contract() -> None:
+def test_trilingual_field_review_guides_follow_safety_contract() -> None:
     for path in TRILINGUAL_FIELD_REVIEW_GUIDES:
-        assert path.is_file(), f"Missing field review guide: {path.name}"
-        content = path.read_text(encoding="utf-8").strip()
-        assert len(content) > 2000
-        assert REVIEW_ENDPOINT in content
-        assert "REVIEW_REQUIRED" in content
-        assert "DRAFT" in content
-        assert "VERIFIED" in content
-        assert "manual-link" in content
-        assert "create-draft-field" in content
+        content = _content(path, minimum=2000)
+        for value in (
+            REVIEW_ENDPOINT,
+            "REVIEW_REQUIRED",
+            "DRAFT",
+            "VERIFIED",
+            "manual-link",
+            "create-draft-field",
+        ):
+            assert value in content
 
 
 def test_trilingual_license_review_guides_follow_record_review_contract() -> None:
     for path in TRILINGUAL_LICENSE_REVIEW_GUIDES:
-        assert path.is_file(), f"Missing geological license review guide: {path.name}"
-        content = path.read_text(encoding="utf-8").strip()
-        assert len(content) > 2500
-        assert "zher_koinauyn_geologiyalyk_zer2" in content
-        assert "v6" in content
-        assert "geological_study_license" in content
-        assert LICENSE_PROCESS_ENDPOINT in content
-        assert LICENSE_REVIEW_ENDPOINT in content
-        assert "REVIEW_REQUIRED" in content
-        assert "ACCEPTED" in content
-        assert "ExternalEntityLink" in content
-        assert "NOT_APPLICABLE" in content
-        assert "raw_payload" in content
-        assert "reviewed_by" in content
-        assert "reviewed_at" in content
-        assert "review_comment" in content
-        assert "GEOKZ_EGOV_API_KEY" in content
-        assert "20260905_0008" in content
+        content = _content(path, minimum=2500)
+        for value in (
+            "zher_koinauyn_geologiyalyk_zer2",
+            "v6",
+            "geological_study_license",
+            LICENSE_PROCESS_ENDPOINT,
+            LICENSE_REVIEW_ENDPOINT,
+            "REVIEW_REQUIRED",
+            "ACCEPTED",
+            "ExternalEntityLink",
+            "NOT_APPLICABLE",
+            "raw_payload",
+            "reviewed_by",
+            "reviewed_at",
+            "review_comment",
+            "GEOKZ_EGOV_API_KEY",
+            "20260905_0008",
+        ):
+            assert value in content
 
 
-def test_trilingual_review_ui_contracts_exist_and_follow_action_contract() -> None:
+def test_trilingual_review_ui_contracts_follow_action_contract() -> None:
     for path in TRILINGUAL_REVIEW_UI_CONTRACTS:
-        assert path.is_file(), f"Missing review UI contract: {path.name}"
-        content = path.read_text(encoding="utf-8").strip()
-        assert len(content) > 2500
-        assert REVIEW_VIEW_ENDPOINT in content
-        assert "CONFIRM_LINK" in content
-        assert "REJECT_LINK" in content
-        assert "MANUAL_LINK" in content
-        assert "CREATE_DRAFT_FIELD" in content
-        assert "required_fields" in content
-        assert "optional_fields" in content
-        assert "enabled" in content
-        assert "DRAFT" in content
-        assert "VERIFIED" in content
+        content = _content(path, minimum=2500)
+        for value in (
+            REVIEW_VIEW_ENDPOINT,
+            "CONFIRM_LINK",
+            "REJECT_LINK",
+            "MANUAL_LINK",
+            "CREATE_DRAFT_FIELD",
+            "required_fields",
+            "optional_fields",
+            "enabled",
+            "DRAFT",
+            "VERIFIED",
+        ):
+            assert value in content
 
 
-def test_trilingual_sync_scheduler_guides_exist_and_follow_safety_contract() -> None:
+def test_trilingual_sync_scheduler_guides_follow_safety_contract() -> None:
     for path in TRILINGUAL_SYNC_SCHEDULER_GUIDES:
-        assert path.is_file(), f"Missing sync scheduler guide: {path.name}"
-        content = path.read_text(encoding="utf-8").strip()
-        assert len(content) > 2500
-        assert SYNC_ALL_ENDPOINT in content
-        assert SCHEDULER_STATUS_ENDPOINT in content
-        assert RUN_DUE_ENDPOINT in content
-        assert "ALREADY_RUNNING" in content
-        assert "SKIPPED_NOT_DUE" in content
-        assert "GEOKZ_EXTERNAL_SCHEDULER_POLL_SECONDS" in content
-        assert "GEOKZ_EXTERNAL_SYNC_RUNNING_TIMEOUT_HOURS" in content
-        assert "python -m scripts.external_sync_scheduler" in content
-        assert "RUNNING" in content
-        assert "FAILED" in content
+        content = _content(path, minimum=2500)
+        for value in (
+            SYNC_ALL_ENDPOINT,
+            SCHEDULER_STATUS_ENDPOINT,
+            RUN_DUE_ENDPOINT,
+            "ALREADY_RUNNING",
+            "SKIPPED_NOT_DUE",
+            "GEOKZ_EXTERNAL_SCHEDULER_POLL_SECONDS",
+            "GEOKZ_EXTERNAL_SYNC_RUNNING_TIMEOUT_HOURS",
+            "python -m scripts.external_sync_scheduler",
+            "RUNNING",
+            "FAILED",
+        ):
+            assert value in content
 
 
-def test_trilingual_cross_section_contracts_exist_and_follow_depth_safety() -> None:
+def test_trilingual_cross_section_contracts_follow_depth_safety() -> None:
     for path in TRILINGUAL_CROSS_SECTION_CONTRACTS:
-        assert path.is_file(), f"Missing cross-section contract: {path.name}"
-        content = path.read_text(encoding="utf-8").strip()
-        assert len(content) > 2500
-        assert CROSS_SECTION_ENDPOINT in content
-        assert "TVDSS" in content
-        assert "TVD" in content
-        assert "MD" in content
-        assert "renderable" in content
-        assert "MARKER" in content
-        assert "HORIZON" in content
-        assert "DEPTH_REFERENCE_MISMATCH" in content
-        assert "NO_RENDERABLE_DATA" in content
-        assert "NO_CORRELATION_LINES" in content
-        assert "VerificationStatus" in content
+        content = _content(path, minimum=2500)
+        for value in (
+            CROSS_SECTION_ENDPOINT,
+            "TVDSS",
+            "TVD",
+            "MD",
+            "renderable",
+            "MARKER",
+            "HORIZON",
+            "DEPTH_REFERENCE_MISMATCH",
+            "NO_RENDERABLE_DATA",
+            "NO_CORRELATION_LINES",
+            "VerificationStatus",
+        ):
+            assert value in content
 
 
-def test_trilingual_demo_workflow_guides_exist_and_follow_safety_contract() -> None:
+def test_trilingual_demo_workflow_guides_follow_safety_contract() -> None:
     for path in TRILINGUAL_DEMO_WORKFLOW_GUIDES:
-        assert path.is_file(), f"Missing demo workflow guide: {path.name}"
-        content = path.read_text(encoding="utf-8").strip()
-        assert len(content) > 2500
-        assert DEMO_WORKFLOW_ENDPOINT in content
-        assert "synthetic-correlation-demo-v1" in content
-        assert "synthetic=true" in content
-        assert "DISCOVERY" in content
-        assert "CROSS_SECTION_READY" in content
-        assert "reference_well_id" in content
-        assert "well_ids" in content
-        assert "TVDSS" in content
-        assert "production" in content
-        assert "422" in content
-        assert "python -m scripts.seed_correlation_demo" in content
+        content = _content(path, minimum=2500)
+        for value in (
+            DEMO_WORKFLOW_ENDPOINT,
+            "synthetic-correlation-demo-v1",
+            "synthetic=true",
+            "DISCOVERY",
+            "CROSS_SECTION_READY",
+            "reference_well_id",
+            "well_ids",
+            "TVDSS",
+            "production",
+            "422",
+            "python -m scripts.seed_correlation_demo",
+        ):
+            assert value in content
 
 
-def test_documentation_policy_exists() -> None:
-    policy = DOCS / "DOCUMENTATION_POLICY.md"
-    assert policy.is_file()
-    content = policy.read_text(encoding="utf-8")
-    assert "USER_GUIDE_RU.md" in content
-    assert "USER_GUIDE_KK.md" in content
-    assert "USER_GUIDE_EN.md" in content
-    assert "PROJECT_PLAN_V0_2_KK.md" in content
-    assert "PROJECT_PLAN_V0_2_EN.md" in content
-    assert "CORE_DATASET_RU.md" in content
-    assert "CORE_DATASET_KK.md" in content
-    assert "CORE_DATASET_EN.md" in content
-    assert "EXTERNAL_API_KEYS_RU.md" in content
-    assert "EXTERNAL_API_KEYS_KK.md" in content
-    assert "EXTERNAL_API_KEYS_EN.md" in content
-    assert "KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md" in content
-    assert "KAZAKHSTAN_OPEN_DATA_INTEGRATION_KK.md" in content
-    assert "KAZAKHSTAN_OPEN_DATA_INTEGRATION_EN.md" in content
-    assert "KAZAKHSTAN_FIELD_REVIEW_RU.md" in content
-    assert "KAZAKHSTAN_FIELD_REVIEW_KK.md" in content
-    assert "KAZAKHSTAN_FIELD_REVIEW_EN.md" in content
-    assert "KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_RU.md" in content
-    assert "KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_KK.md" in content
-    assert "KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_EN.md" in content
-    assert "EXTERNAL_REVIEW_UI_CONTRACT_RU.md" in content
-    assert "EXTERNAL_REVIEW_UI_CONTRACT_KK.md" in content
-    assert "EXTERNAL_REVIEW_UI_CONTRACT_EN.md" in content
-    assert "EXTERNAL_SYNC_SCHEDULER_RU.md" in content
-    assert "EXTERNAL_SYNC_SCHEDULER_KK.md" in content
-    assert "EXTERNAL_SYNC_SCHEDULER_EN.md" in content
-    assert "CROSS_SECTION_VIEW_CONTRACT_RU.md" in content
-    assert "CROSS_SECTION_VIEW_CONTRACT_KK.md" in content
-    assert "CROSS_SECTION_VIEW_CONTRACT_EN.md" in content
-    assert "DEMO_CORRELATION_WORKFLOW_RU.md" in content
-    assert "DEMO_CORRELATION_WORKFLOW_KK.md" in content
-    assert "DEMO_CORRELATION_WORKFLOW_EN.md" in content
+def test_trilingual_auth_guides_follow_identity_and_audit_contract() -> None:
+    for path in TRILINGUAL_AUTH_GUIDES:
+        content = _content(path, minimum=2500)
+        for value in (
+            AUTH_LOGIN_ENDPOINT,
+            AUTH_ME_ENDPOINT,
+            "/api/v1/auth/logout",
+            AUDIT_LOGS_ENDPOINT,
+            "editor",
+            "expert",
+            "admin",
+            "DRAFT",
+            "AuditLog",
+            "master_data_revisions",
+            "authenticated",
+        ):
+            assert value in content
+
+
+def test_trilingual_desktop_guides_follow_http_boundary_contract() -> None:
+    for path in TRILINGUAL_DESKTOP_GUIDES:
+        content = _content(path, minimum=2500)
+        for value in (
+            "PySide6",
+            "GeoKZApiClient",
+            "httpx",
+            "geokz-desktop",
+            AUTH_LOGIN_ENDPOINT,
+            SYSTEM_VERSIONS_ENDPOINT,
+            SYNC_ALL_ENDPOINT,
+            REVIEW_VIEW_ENDPOINT,
+            LICENSE_REVIEW_ENDPOINT,
+            AUDIT_LOGS_ENDPOINT,
+            AUDIT_REVISIONS_ENDPOINT,
+            "QThreadPool/QRunnable",
+            "ExternalEntityLink=VERIFIED",
+            "GeologicalEntity=VERIFIED",
+        ):
+            assert value in content, f"Missing {value!r} in {path.name}"
+
+
+def test_documentation_policy_lists_all_trilingual_feature_contracts() -> None:
+    content = _content(DOCS / "DOCUMENTATION_POLICY.md", minimum=2500)
+    required_names = [
+        *(path.name for path in TRILINGUAL_USER_GUIDES),
+        *(path.name for path in TRILINGUAL_ROADMAPS),
+        *(path.name for path in TRILINGUAL_CORE_DATASET_GUIDES),
+        *(path.name for path in TRILINGUAL_API_KEY_GUIDES),
+        *(path.name for path in TRILINGUAL_KZ_OPEN_DATA_GUIDES),
+        *(path.name for path in TRILINGUAL_FIELD_REVIEW_GUIDES),
+        *(path.name for path in TRILINGUAL_LICENSE_REVIEW_GUIDES),
+        *(path.name for path in TRILINGUAL_REVIEW_UI_CONTRACTS),
+        *(path.name for path in TRILINGUAL_SYNC_SCHEDULER_GUIDES),
+        *(path.name for path in TRILINGUAL_CROSS_SECTION_CONTRACTS),
+        *(path.name for path in TRILINGUAL_DEMO_WORKFLOW_GUIDES),
+        *(path.name for path in TRILINGUAL_AUTH_GUIDES),
+        *(path.name for path in TRILINGUAL_DESKTOP_GUIDES),
+    ]
+    for name in required_names:
+        assert name in content, f"Documentation policy does not mention {name}"
+    assert "Desktop HTTP boundary" in content
+    assert "Append-only history" in content

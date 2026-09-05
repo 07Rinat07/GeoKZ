@@ -1,40 +1,38 @@
 # GeoKZ — актуальный план развития v0.3+
 
-Статус: `2026-09-05`, текущий feature-срез `feature/core-dataset-manifest-importer-v0.3`.
+Статус: `2026-09-05`. Текущий feature-срез: `feature/pyside6-data-review-client-v0.3`.
 
 ## Цель
 
-GeoKZ должен быть единым evidence-based геологическим рабочим окном Казахстана: территория/координата → ближайшие месторождения, структуры, скважины и сейсмика → паспорта → глубинные интервалы, литология, коллекторы, ГИС, керн и испытания → корреляция соседних скважин → первичные источники, provenance, конфликты и экспертная проверка.
+GeoKZ — evidence-based геологическое рабочее окно Казахстана: территория/координата → объекты/месторождения/скважины/сейсмика → паспорта → глубинные данные → корреляция → источники/provenance → экспертная проверка.
 
-Приложение и пользовательская документация поддерживаются на RU/KK/EN. Внешние API обогащают локальную базу, но не являются обязательной runtime-зависимостью и не переписывают verified master data автоматически.
+Базовая система работает без внешних сервисов. Интернет безопасно обогащает локальную БД, но не переписывает verified master data автоматически.
 
-## Реализовано и слито в main
+## Уже слито в main
 
 - FastAPI + PostgreSQL 17/PostGIS 3.5 + async SQLAlchemy + Alembic;
-- real PostgreSQL/PostGIS CI с миграциями до head;
-- territory explorer, Geological Entity Passport и Well Passport;
-- географический и projected X/Y ввод, точка/запятая, WGS84/UTM helper;
-- persistent organization-local CRS registry с EPSG/WKT/PROJ и confirmation;
+- Territory Explorer, Geological Entity Passport, Well Passport;
+- WGS84/projected X/Y, UTM 38N–45N, organization-local CRS registry;
 - PostGIS nearby search;
-- WellTrajectoryPoint, WellLogRun/Curve, WellTest, CoreRun/CoreSample, SeismicSurvey/Line/Volume;
-- WellMarker и безопасная корреляция TVDSS/TVD/MD;
-- visual cross-section backend view-model: `POST /api/v1/correlation/wells/view`;
-- synthetic end-to-end demo: `POST /api/v1/correlation/demo/workflow`;
-- официальный Kazakhstan Open Data connector с metadata/mapping/schema inspection;
-- scheduler + Update All;
-- `kz-egov-oil-gas-fields` (`stat_kgn_117/v10`) RAW → normalization → deterministic field matching → review;
-- localized field-review UI/view-model;
-- controlled vocabulary registry (`lithology`, `marker_type`, `property_kind`, `unit`) и canonical bindings;
-- исправлен cartesian-product warning в correlation distance query;
-- `kz-egov-geological-study-licenses` (`zher_koinauyn_geologiyalyk_zer2/v6`) RAW → typed administrative normalization → record-level `REVIEW_REQUIRED → ACCEPTED/REJECTED` без недоказуемого entity matching;
-- Alembic `20260905_0008` с generic external-record reviewer metadata;
-- license review unit + PostgreSQL/PostGIS HTTP integration tests и RU/KK/EN documentation.
+- trajectory, logs, tests, core, seismic, markers;
+- safe well correlation и visual cross-section view-model;
+- synthetic demo correlation workflow;
+- Kazakhstan Open Data connector + schema inspection;
+- external scheduler + Update All;
+- oil/gas field normalization/matching/review;
+- geological study license normalization + record-level review;
+- controlled geological vocabularies;
+- independently versioned Core Dataset manifest/importer;
+- Authentication + RBAC + server-owned reviewer identity;
+- append-only `AuditLog` + `MasterDataRevision`;
+- Alembic head `20260905_0010`;
+- PR #13 `GeoKZ v0.3: authentication, RBAC, audit trail and revisions` squash-merged в `main` как `5d605a3f034343f3349e1fcf1c0b35aa4a153e2d` после green Python + PostgreSQL/PostGIS CI.
 
-Последний merged baseline main: PR #11, merge SHA `f70675699aaae53b89eca23f29fefc61bdf78101`.
-
-## Стабильные реализованные API-контракты
+## Стабильные backend-контракты
 
 ```text
+GET  /api/v1/core-dataset/status
+POST /api/v1/core-dataset/install
 POST /api/v1/integrations/sync-all
 GET  /api/v1/integrations/scheduler/status
 POST /api/v1/integrations/scheduler/run-due
@@ -45,116 +43,120 @@ POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/process
 GET  /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/records
 POST /api/v1/correlation/wells/view
 POST /api/v1/correlation/demo/workflow
-GET  /api/v1/core-dataset/status
-POST /api/v1/core-dataset/install
+POST /api/v1/auth/login
+GET  /api/v1/auth/me
+POST /api/v1/auth/logout
+GET  /api/v1/audit/logs
+GET  /api/v1/audit/revisions/{resource_type}/{resource_id}
 ```
 
-## Текущий P0 — GeoKZ Core Dataset manifest/importer
+## Текущий P0 — Production PySide6 review/data-source client
 
-Цель: versioned baseline, который поставляется вместе с приложением и обновляется независимо от Alembic schema migrations и provider sync versions.
+Цель: первый production-oriented Windows/desktop слой без прямого доступа к ORM/БД.
 
-В текущей feature-ветке реализованы:
+В текущей feature-ветке реализуется:
 
-- Alembic `20260905_0009` и `CoreDatasetState` для installed dataset state;
-- manifest schema v1 с `dataset_code`, `dataset_version`, `schema_version`, `created_at`, namespace, dependencies и per-file SHA-256;
-- защита от absolute/path traversal;
-- required-file и checksum validation до DB write;
-- typed parser для sources, regions, entities и facts;
-- duplicate `external_id` validation;
-- `geokz-core:` namespace policy;
-- bundle-internal reference validation;
-- transactional upsert + rollback;
-- idempotence по manifest SHA-256 (`changed=false` при повторном импорте);
-- bundled snapshot `2026.09.0-bootstrap`;
-- intentionally minimal bootstrap: internal metadata source + country-level Kazakhstan navigation record без утверждения boundary geometry, без вымышленных geological entities/facts;
-- REST status/install API;
-- CLI validate/install/status;
-- bundled Core Dataset version в About;
-- unit tests checksum/path traversal/schema/duplicate/reference;
-- PostgreSQL/PostGIS integration на install/idempotence и rollback;
-- отдельная документация `CORE_DATASET_RU/KK/EN.md`.
-
-API:
+- `GeoKZApiClient` поверх HTTP API;
+- bearer token только в памяти процесса;
+- login/logout и отображение текущей role;
+- PySide6 shell с `QThreadPool/QRunnable`, без блокировки event loop;
+- экран «Источники данных» + «Обновить всё»;
+- независимый version endpoint:
 
 ```text
-GET  /api/v1/core-dataset/status
-POST /api/v1/core-dataset/install?dry_run=true&lang=ru
-POST /api/v1/core-dataset/install?lang=ru
+GET /api/v1/system/versions
 ```
 
-CLI:
+- отображение Application / Alembic DB schema / bundled Core Dataset / installed Core Dataset / provider version;
+- due/running/error/last-success state источников;
+- field-review queue только по server-owned action descriptors;
+- license record ACCEPT/REJECT;
+- RAW + normalized provenance;
+- AuditLog/revision viewer;
+- contextual help RU/KK/EN;
+- `geokz-desktop` entry point;
+- unit tests desktop API client/localization;
+- PostgreSQL/PostGIS integration test system version contract;
+- `DESKTOP_CLIENT_RU/KK/EN.md`.
+
+### Инварианты desktop
+
+- PySide6 не импортирует SQLAlchemy models;
+- UI не дублирует `CONFIRM_LINK/REJECT_LINK/MANUAL_LINK/CREATE_DRAFT_FIELD` business rules;
+- reviewer identity приходит из authenticated session;
+- `ExternalEntityLink=VERIFIED` не делает `GeologicalEntity=VERIFIED`;
+- token/password не пишутся в файлы/log/settings;
+- network failure не создаёт локальный «успешный» scientific state.
+
+### Merge gate текущего P0
 
 ```text
-python -m scripts.core_dataset validate
-python -m scripts.core_dataset install --dry-run
-python -m scripts.core_dataset install
-python -m scripts.core_dataset status
+compileall
+→ Ruff
+→ unit tests
+→ PostgreSQL/PostGIS integration
+→ README
+→ USER_GUIDE RU/KK/EN
+→ roadmap RU/KK/EN
+→ DESKTOP_CLIENT RU/KK/EN
+→ exact-head CI green
+→ PR
+→ PR-CI green на том же SHA
+→ squash merge в main
 ```
 
-Schema v1 использует `schema_version` как фактический compatibility gate. `minimum_app_version` пока informational metadata; строгая SemVer-policy не имитируется самодельным сравнением версий.
+## Следующий P0 после desktop merge — Core Dataset update channel
 
-Merge gate текущего P0: README + USER_GUIDE + roadmap + documentation policy RU/KK/EN, final exact-head `compileall + Ruff + pytest`, PostgreSQL/PostGIS integration, затем PR-CI на том же exact head и squash-merge в `main`.
+1. Signed manifest/bundle format и verification policy.
+2. HTTP download/update channel без arbitrary filesystem import.
+3. Download → checksum/signature verify → staging → transactional activation.
+4. Сохранение предыдущего installed snapshot для rollback.
+5. Явная compatibility policy: application version / Alembic schema / Core Dataset schema/version.
+6. Audit каждой install/update/rollback операции через authenticated actor.
+7. Не запускать update, если signature/checksum/compatibility не подтверждены.
+8. RU/KK/EN UI status для available/current/failed/rollback.
 
-## Следующий P0 после merge
+## После Core Dataset update channel
 
-### 1. Authentication + AuditLog/Revision
+### Расширение официальных Kazakhstan connectors
 
-- users/roles: expert/editor/admin;
-- audit trail для review и изменения scientific master data;
-- revision history для Fact/Entity/geometry/interpretation;
-- verified данные нельзя silently overwrite;
-- административные write API только через авторизацию и аудит.
+Каждый новый provider/dataset подключается только после проверки metadata/mapping/license/terms и получает RAW, checksum/diff, typed normalizer, review policy и contract tests.
 
-### 2. Production PySide6 review/data-source screens
-
-- «Источники данных» + «Обновить всё»;
-- отдельное отображение Application / DB schema / Core Dataset / provider versions;
-- Core Dataset installed/update state;
-- due/running/error/status/version;
-- field review queue по server-owned action descriptors;
-- license record review ACCEPT/REJECT;
-- provenance panel;
-- contextual help RU/KK/EN.
-
-### 3. Core Dataset update channel
-
-После безопасного локального manifest/importer:
-
-- signed bundle manifest;
-- download/update channel;
-- staging до активации;
-- rollback на предыдущую установленную snapshot version;
-- policy совместимости app/schema/dataset;
-- audit каждой установки/rollback.
-
-### 4. Расширение официальных Kazakhstan connectors
-
-Подключать следующие datasets через общий provider SDK только после проверки current metadata/mapping/license/terms. Каждый source должен иметь RAW, checksum/diff, typed normalizer, review rules и contract tests.
-
-### 5. Global/open geology context
+### Global/open geology context
 
 - USGS Mineral Resources;
 - Macrostrat;
 - OneGeology/OGC;
 - Copernicus observation assets.
 
-Все внешние данные сохраняют source/version/retrieved_at/license/attribution. Authority не означает truth: конфликтующие значения хранятся параллельно и разрешаются экспертно.
+Эти sources дополняют контекст, но не получают право молча переписывать master data.
 
-## Definition of Done для каждого следующего среза
+### Следующие desktop domain screens
+
+- Territory Explorer/map;
+- Geological Entity Passport;
+- Well Passport;
+- visual correlation renderer;
+- document/evidence viewer;
+- позже read-only offline cache.
+
+## Definition of Done
+
+Каждый feature slice проходит:
 
 ```text
 feature branch
-→ code + migrations
+→ code + migrations/contracts
 → unit tests
 → PostgreSQL/PostGIS integration
 → README + USER_GUIDE RU/KK/EN
 → roadmap RU/KK/EN
-→ dedicated feature docs RU/KK/EN при необходимости
+→ dedicated docs RU/KK/EN
 → exact-head CI green
 → PR
-→ PR-CI green на том же head
+→ PR-CI green на том же exact head
 → squash merge в main
 → следующая задача
 ```
 
-Главное правило остаётся неизменным: GeoKZ работает без внешних сервисов, а интернет безопасно обогащает локальную evidence-based базу.
+Автор: **Sarmuldin Rinat — ura07srr@gmail.com**.

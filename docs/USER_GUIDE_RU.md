@@ -2,170 +2,107 @@
 
 Версия: `0.3-dev`.
 
-## Назначение
-GeoKZ объединяет геологическую информацию по территории, месторождению, структуре и скважине из собственной базы и разрешённых внешних источников.
+GeoKZ — evidence-based геологическая информационная система Казахстана. Основной путь: территория или координата → месторождения, структуры, скважины и сейсмика → паспорта → интервалы/ГИС/керн/испытания → корреляция → первичные источники, provenance и экспертная проверка.
 
-Основной путь: территория или координата → месторождения/структуры/скважины/сейсмика → паспорт объекта → паспорт скважины → интервалы, литология, ГИС, керн, испытания, нефть/газ/вода → корреляция соседних скважин → источник и доказательство.
+## Главное правило данных
+
+Внешний API, импорт или ИИ не переписывает verified master data автоматически. GeoKZ сохраняет RAW/source wording, нормализованные значения, источник, версию, checksum и review status. Подтверждение связи с внешней записью не означает автоматическую верификацию самого геологического объекта.
 
 ## Языки
-Интерфейс, справочники, названия, подсказки и пользовательская документация поддерживаются на русском, казахском и английском.
 
-## Поиск по координатам
-Географический ввод: `43.652341 / 51.168420`. Запятая также принимается.
+Пользовательский интерфейс и документация поддерживаются на русском, казахском и английском: `ru`, `kk`, `en`.
 
-Проекционный ввод: `X=5085125.325`, `Y=711157.665`. Также принимается `5085125,325 / 711157,665`.
+## Поиск по координатам и CRS
 
-Для больших X/Y необходимо указать исходную систему координат: EPSG, UTM-зону, СК-42/Гаусса–Крюгера либо настроенную локальную CRS. Также указывается порядок осей: X=Easting/Y=Northing или X=Northing/Y=Easting. GeoKZ не угадывает CRS только по числам.
+GeoKZ принимает WGS84 latitude/longitude и projected X/Y. Для projected coordinates пользователь обязан указать подтверждённую CRS и порядок осей. Большие X/Y не используются для угадывания системы координат. Поддерживаются WGS84, UTM 38N–45N и persistent organization-local CRS через EPSG/WKT/PROJ.
 
-CRS-помощник предлагает WGS84 и UTM-зоны 38N–45N, покрывающие диапазон долгот Казахстана. Подсказка по долготе помогает сузить выбор, но не подтверждает систему исходного документа. СК-42/Гаусса–Крюгера и локальная система предприятия должны задаваться по подтверждённому EPSG/WKT/PROJ-описанию.
+Поиск ближайших объектов выполняется PostGIS в метрах. Результат может включать геологические объекты, месторождения, скважины, интервалы и сейсмику.
 
-После ввода GeoKZ преобразует рабочую точку в WGS84 и выполняет поиск в выбранном радиусе. Результат содержит административный контекст, ближайшие месторождения/геологические объекты, пробурённые скважины с расстоянием и интервалами, а также сейсмические исследования. По найденной скважине можно открыть полный паспорт.
+## Паспорт скважины и корреляция
 
-## Паспорт скважины
-Содержит координаты, тип/оператора/статус, даты, глубину, траекторию MD/TVD/TVDSS, интервалы, стратиграфию, литологию, нефть/газ/воду, пористость/проницаемость, ГИС/каротаж, испытания, дебиты, давление/температуру, керн/образцы и связанные документы.
+Well Passport объединяет координаты, trajectory MD/TVD/TVDSS, стратиграфию, литологию, коллекторы, флюиды, porosity/permeability, logs, tests, core и seismic links.
 
-## Корреляция разрезов соседних скважин
-После координатного поиска пользователь отмечает нужные скважины, назначает одну опорной и запускает сопоставление. GeoKZ сравнивает реперы, литологию, коллекторы, нефть/газ/воду, глубины, мощности, net pay, пористость и проницаемость визуально и текстом.
+Корреляция соседних скважин:
 
-Для сопоставления предпочтительно используется TVDSS. Несовместимые системы глубин не соединяются автоматической линией. Каждая корреляционная отметка должна иметь источник, метод интерпретации и статус проверки.
+```text
+POST /api/v1/correlation/wells/view
+```
 
-Демонстрационный набор GeoKZ содержит только явно маркированные synthetic/demo скважины и предназначен для проверки интерфейса; он не является производственной геологической информацией.
+Backend выбирает совместимую depth reference `TVDSS → TVD → MD`. Несовместимые глубины не соединяются автоматически.
+
+Synthetic end-to-end workflow:
+
+```text
+POST /api/v1/correlation/demo/workflow
+```
+
+Demo wells помечены как synthetic и не смешиваются с production data.
 
 ## GeoKZ Core Dataset
 
-GeoKZ поставляет независимо версионируемый базовый набор данных. Его версия не равна версии приложения и не равна Alembic revision.
-
-Текущий bundled snapshot:
+Bundled baseline версионируется независимо от приложения и Alembic.
 
 ```text
-dataset_code:    geokz-core
-dataset_version: 2026.09.0-bootstrap
-schema_version:  1
-```
-
-Проверить, какая версия вложена в приложение и какая установлена в текущую БД:
-
-```text
-GET /api/v1/core-dataset/status
-```
-
-`update_available=true` означает, что bundled manifest отличается от установленного состояния или Core Dataset ещё не установлен.
-
-Перед записью можно выполнить dry-run:
-
-```text
+GET  /api/v1/core-dataset/status
 POST /api/v1/core-dataset/install?dry_run=true&lang=ru
-```
-
-Установить bundled snapshot:
-
-```text
 POST /api/v1/core-dataset/install?lang=ru
 ```
 
-Перед изменением БД GeoKZ проверяет manifest schema, `schema_version`, required files, SHA-256, защиту от path traversal, типы payload, duplicate `external_id`, namespace `geokz-core:` и внутренние ссылки. Все upsert-операции выполняются одной транзакцией. При ошибке происходит rollback; состояние установки фиксируется только после полного успеха.
+Текущий bundled snapshot: `2026.09.0-bootstrap`, `schema_version=1`. Перед установкой проверяются manifest schema, SHA-256, path traversal, namespace `geokz-core:`, duplicate IDs и ссылки. Установка transactional; повтор той же версии возвращает `changed=false`.
 
-Повторная установка того же manifest идемпотентна и возвращает `changed=false`.
+## Внешние источники и синхронизация
 
-Первый bootstrap намеренно минимален: содержит внутреннюю metadata-запись и country-level запись «Республика Казахстан» без утверждения boundary geometry. Геологические `entities` и `facts` не добавляются без доказуемых источников.
+Сейчас встроены Kazakhstan Open Data datasets:
 
-Для администратора доступны CLI-команды:
+- `kz-egov-oil-gas-fields` → `stat_kgn_117/v10`;
+- `kz-egov-geological-study-licenses` → `zher_koinauyn_geologiyalyk_zer2/v6`.
 
-```text
-python -m scripts.core_dataset validate
-python -m scripts.core_dataset install --dry-run
-python -m scripts.core_dataset install
-python -m scripts.core_dataset status
-```
-
-Подробно: `docs/CORE_DATASET_RU.md`.
-
-## Источники и обновление
-Внешние данные не перезаписывают проверенные значения автоматически. GeoKZ хранит полученные записи в RAW/staging-слое, после чего они могут проходить нормализацию, сопоставление с объектами GeoKZ и экспертную проверку.
-
-В текущей версии подключён официальный портал открытых данных Казахстана `data.egov.kz` через API v4. Зарегистрированы два геологических набора:
-
-1. `kz-egov-oil-gas-fields` — перечень нефтегазовых месторождений Республики Казахстан (`apiUri=stat_kgn_117`, версия `v10`).
-2. `kz-egov-geological-study-licenses` — реестр лицензий на геологическое изучение недр (`apiUri=zher_koinauyn_geologiyalyk_zer2`, версия `v6`).
-
-GeoKZ сохраняет официальные `apiUri` и `version` отдельно. Перед подключением или обновлением ресурса схема полей проверяется через metadata и mapping портала. Технические имена RAW-полей не переименовываются; нормализованные поля GeoKZ создаются отдельно.
-
-Источники регистрируются с автоматическим интервалом обновления 168 часов (раз в неделю), при этом ручное обновление доступно в любое время.
-
-### «Обновить всё» и плановая синхронизация
-
-Для ручного обновления всех включённых источников используется:
+Ручное обновление всех источников:
 
 ```text
 POST /api/v1/integrations/sync-all
 ```
 
-GeoKZ возвращает общий batch summary и отдельный результат для каждого source. Ошибка одного provider не отменяет остальные обновления. Возможны `SUCCESS`, `FAILED`, `ALREADY_RUNNING`, `SKIPPED_DISABLED` и `SKIPPED_UNSUPPORTED`.
-
-Состояние периодической синхронизации:
+Состояние scheduler:
 
 ```text
-GET /api/v1/integrations/scheduler/status
-```
-
-Поля `next_due_at`, `due` и `running_run_id` позволяют будущему PySide6 UI показать, когда источник будет проверен снова и выполняется ли обновление сейчас.
-
-Отдельный scheduler process выполняет только просроченные `AUTOMATIC` источники:
-
-```text
+GET  /api/v1/integrations/scheduler/status
 POST /api/v1/integrations/scheduler/run-due
 ```
 
-В Docker он запускается как `geokz-external-sync-scheduler`; background loop внутри FastAPI workers не используется. PostgreSQL row lock защищает источник от двух параллельных `RUNNING` run. Слишком старый `RUNNING` после configurable timeout переводится в `FAILED`, после чего источник можно синхронизировать снова.
+Scheduler работает отдельным process/service, не внутри каждого FastAPI worker. Параллельный `RUNNING` защищается PostgreSQL locking.
 
-После синхронизации `kz-egov-oil-gas-fields` можно запустить обработку `process`. GeoKZ извлекает название месторождения и ищет совпадение среди уже существующих месторождений и их алиасов. Совпадение не считается подтверждённым автоматически: создаётся кандидат со статусом `REVIEW_REQUIRED`. Неоднозначные и ненайденные записи остаются для последующей экспертной проверки.
+## Нефтегазовые месторождения: normalize → match → review
 
-## Экспертная проверка месторождений из внешнего источника
-Техническая очередь кандидатов доступна через:
+После RAW sync:
+
+```text
+POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process
+```
+
+Техническая очередь:
 
 ```text
 GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review
 ```
 
-Для пользовательского интерфейса добавлена отдельная локализованная view-model:
+UI-owned view contract:
 
 ```text
 GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view?lang=ru&limit=100&offset=0
 ```
 
-Она возвращает общее число pending-записей, пагинацию, отображаемые названия, кандидатов, `entity_verification_status` и готовые action descriptors (`CONFIRM_LINK`, `REJECT_LINK`, `MANUAL_LINK`, `CREATE_DRAFT_FIELD`). UI получает `enabled`, `disabled_reason`, `required_fields`, `optional_fields` и точный `path`, поэтому не должен повторять бизнес-правила backend.
+Backend отдаёт `enabled`, `disabled_reason`, `required_fields`, `optional_fields`, `method`, `path` для `CONFIRM_LINK`, `REJECT_LINK`, `MANUAL_LINK`, `CREATE_DRAFT_FIELD`. Клиент не дублирует эти business rules.
 
-Для записи можно выполнить одно из явных действий:
+`ExternalEntityLink=VERIFIED` подтверждает связь с официальной записью, но не делает `GeologicalEntity=VERIFIED`. Новый объект из `UNMATCHED` создаётся только как `DRAFT`.
 
-- подтвердить предложенную связь с существующим месторождением;
-- отклонить кандидата с обязательным комментарием;
-- вручную связать запись с другим существующим `GeologicalEntity(object_type="field")`;
-- создать новое месторождение только из `matching.status=UNMATCHED`.
+## Лицензии на геологическое изучение недр
 
-Подтверждение связи переводит `ExternalEntityLink` в `VERIFIED`, но **не меняет автоматически `verification_status` самого `GeologicalEntity`**. Если создаётся новый объект, он всегда создаётся как `DRAFT` и должен отдельно пройти геологическую проверку по источникам, координатам, скважинам, стратиграфии и другим данным.
-
-Основные действия API:
-
-```text
-POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/links/{link_id}/confirm
-POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/links/{link_id}/reject
-POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/manual-link
-POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/{record_id}/create-draft-field
-```
-
-Повторный `process` не должен молча изменять reviewer-locked решения (`VERIFIED`, `REJECTED`, `MANUAL`, `verified_by` или review comment).
-
-## Экспертная проверка реестра лицензий на геологическое изучение недр
-
-Для `kz-egov-geological-study-licenses` используется другой, record-level workflow. Официальная карточка `v6` содержит административные сведения о лицензии, но не даёт проверяемого стабильного идентификатора месторождения/геологического объекта и geometry, поэтому GeoKZ не создаёт `ExternalEntityLink` автоматически.
-
-После RAW-sync выполните:
+Нормализация административного реестра:
 
 ```text
 POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/process
 ```
-
-Normalizer сохраняет исходный `raw_payload` и отдельно извлекает номер/дату лицензии, вид, срок, основание, issuing authority, holder и БИН. Запись получает `REVIEW_REQUIRED`, а `review.entity_matching=NOT_APPLICABLE`.
 
 Очередь:
 
@@ -173,73 +110,84 @@ Normalizer сохраняет исходный `raw_payload` и отдельно
 GET /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/records
 ```
 
-Решения:
+`ACCEPTED` означает только review normalized administrative record относительно RAW upstream payload. Это не создаёт `ExternalEntityLink`, `GeologicalEntity` или geological fact.
+
+## Аутентификация, роли и аудит
+
+Вход:
 
 ```text
-POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/records/{record_id}/accept
-POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/records/{record_id}/reject
+POST /api/v1/auth/login
+GET  /api/v1/auth/me
+POST /api/v1/auth/logout
 ```
 
-`ACCEPTED` означает только, что административная normalized-запись проверена относительно upstream payload. Это не создаёт `GeologicalEntity`, не подтверждает геологические данные и не повышает `VerificationStatus`. Если upstream checksum изменился, прежние `reviewed_by`, `reviewed_at`, `review_comment` сбрасываются и требуется новая проверка.
+Роли: `editor`, `expert`, `admin`. Scientific review decision выполняет `expert/admin`; `admin` также управляет пользователями и читает полный audit log.
 
-Подробно: `docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_RU.md`.
+Reviewer identity определяется authenticated session на сервере, а не строкой `reviewer` от клиента.
 
-## REST API GeoKZ
-
-- `GET /api/v1/about` — сведения о приложении и bundled Core Dataset version;
-- `GET /api/v1/core-dataset/status` — bundled/installed Core Dataset state и `update_available`;
-- `POST /api/v1/core-dataset/install` — dry-run или транзакционная установка bundled Core Dataset;
-- `GET /api/v1/integrations/sources` — зарегистрированные внешние источники и последнее состояние;
-- `GET /api/v1/integrations/scheduler/status` — due/running/error состояние scheduler;
-- `POST /api/v1/integrations/sync-all` — ручное «Обновить всё»;
-- `POST /api/v1/integrations/scheduler/run-due` — выполнить scheduled due алгоритм один раз;
-- `GET /api/v1/integrations/kazakhstan/catalog` — показать доступные официальные ресурсы, их `api_uri`, версию и endpoint-ы;
-- `GET /api/v1/integrations/kazakhstan/{code}/schema` — получить официальные metadata и mapping ресурса до импорта;
-- `POST /api/v1/integrations/kazakhstan/register` — зарегистрировать их в локальной БД GeoKZ;
-- `POST /api/v1/integrations/kazakhstan/{code}/sync` — выполнить ручную синхронизацию выбранного ресурса;
-- `POST /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/process` — нормализовать и сопоставить RAW-записи месторождений с объектами GeoKZ, не публикуя совпадения автоматически;
-- `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review` — показать техническую очередь экспертной проверки;
-- `GET /api/v1/integrations/kazakhstan/kz-egov-oil-gas-fields/review/view` — получить локализованный UI/view-model contract очереди review;
-- `POST /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/process` — нормализовать RAW-записи лицензий без автоматического entity matching;
-- `GET /api/v1/integrations/kazakhstan/kz-egov-geological-study-licenses/review/records` — очередь record-level review лицензий.
-
-Для загрузки данных портал требует API-ключ разработчика. Ключ задаётся только через переменную окружения `GEOKZ_EGOV_API_KEY` и не должен сохраняться в Git. Без ключа GeoKZ продолжает полностью работать с локальной базой, а scheduler фиксирует ошибку конкретного source без остановки приложения.
-
-Подробно:
-
-- `docs/CORE_DATASET_RU.md` — versioned baseline, manifest, checksum, install/status и rollback policy;
-- `docs/EXTERNAL_API_KEYS_RU.md` — получение и настройка ключа;
-- `docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md` — официальные `apiUri`, mapping, endpoint-ы, processing и правила именования ресурсов GeoKZ;
-- `docs/KAZAKHSTAN_FIELD_REVIEW_RU.md` — confirm/reject/manual-link/create-draft-field и правила безопасности review;
-- `docs/KAZAKHSTAN_GEOLOGICAL_LICENSE_REVIEW_RU.md` — normalizer и record-level review лицензий;
-- `docs/EXTERNAL_REVIEW_UI_CONTRACT_RU.md` — стабильная схема review queue для PySide6/web UI;
-- `docs/EXTERNAL_SYNC_SCHEDULER_RU.md` — scheduler, Update All, due/retry и защита от параллельных run.
-
-## Подсказки и помощники
-Для сложных полей используются короткая подсказка, расширенное объяснение, пошаговый мастер и диагностическое предупреждение. Особенно важны подсказки для CRS, порядка X/Y, MD/TVD/TVDSS, ГИС, корреляции, Core Dataset и настройки внешних источников.
-
-Актуальный статус реализации: `docs/PROJECT_PLAN_V0_2.md`.
-
-## Визуальный корреляционный разрез
-Для UI добавлен backend-owned view-model, который строится поверх уже рассчитанной корреляции, а не повторяет геологическую логику на клиенте:
+История:
 
 ```text
-POST /api/v1/correlation/wells/view
+GET /api/v1/audit/logs
+GET /api/v1/audit/revisions/{resource_type}/{resource_id}
 ```
 
-Backend выбирает одну общую шкалу глубин с приоритетом `TVDSS → TVD → MD`. Реперы и интервалы, которые нельзя безопасно представить на выбранной шкале, возвращаются с `renderable=false` и не соединяются линиями автоматически. `correlation_lines` содержит готовые сегменты типов `MARKER` и `HORIZON`, а `warnings` — стабильные коды `DEPTH_REFERENCE_MISMATCH`, `NO_RENDERABLE_DATA`, `NO_CORRELATION_LINES` и другие диагностические состояния.
+AuditLog и revisions защищены append-only правилами PostgreSQL.
 
-Клиент должен отображать `VerificationStatus` и предупреждения, но не должен самостоятельно пересчитывать глубины или создавать новые корреляционные связи. Полный контракт: `docs/CROSS_SECTION_VIEW_CONTRACT_RU.md`.
+## Production PySide6 Desktop
 
-## Полный demo workflow корреляции
-Для проверки интерфейса без смешивания с production data используется единый сценарий:
+Desktop-клиент использует только HTTP API и не импортирует SQLAlchemy models.
+
+Установка:
+
+```powershell
+python -m pip install -e ".[desktop]"
+```
+
+Запуск:
+
+```powershell
+geokz-desktop --api-url http://127.0.0.1:8000 --lang ru
+```
+
+или:
+
+```powershell
+python -m scripts.desktop --api-url http://127.0.0.1:8000 --lang ru
+```
+
+Экран «Источники данных» получает независимые версии через:
 
 ```text
-POST /api/v1/correlation/demo/workflow
+GET /api/v1/system/versions
 ```
 
-Первый запрос содержит координату/radius и возвращает `stage=DISCOVERY`, `nearby_demo_wells`, `suggested_reference_well_id`, `can_build_cross_section` и обязательное `synthetic=true`. Затем UI выбирает одну reference well и 1–20 compared wells только из текущего `nearby_demo_wells` и повторяет тот же endpoint с `reference_well_id` и `well_ids`. При успешном выборе response имеет `stage=CROSS_SECTION_READY` и содержит готовый `cross_section`.
+и показывает Application version, database/Alembic schema revision, bundled/installed Core Dataset, provider versions, due/running/error status и last success/error.
 
-Dataset `synthetic-correlation-demo-v1` отделён от обычных скважин: даже production well в той же точке не попадает в demo selection. Неполный выбор, дубликаты, reference well внутри `well_ids` или UUID вне текущего discovery отклоняются HTTP `422`. Demo-набор создаётся командой `python -m scripts.seed_correlation_demo` и не является источником производственных фактов.
+Desktop включает:
 
-Подробный контракт и пошаговые примеры: `docs/DEMO_CORRELATION_WORKFLOW_RU.md`.
+- login/logout с bearer token только в памяти процесса;
+- «Источники данных» + «Обновить всё»;
+- field review по server-owned action descriptors;
+- license ACCEPT/REJECT;
+- RAW/normalized provenance;
+- AuditLog/revision viewer;
+- контекстные подсказки RU/KK/EN;
+- HTTP work через `QThreadPool/QRunnable`, чтобы не блокировать Qt event loop.
+
+Подробно: `docs/DESKTOP_CLIENT_RU.md` и `docs/AUTH_AUDIT_REVISIONS_RU.md`.
+
+## API key data.egov.kz
+
+Для реального API v4 download нужен developer API key. Он хранится только локально:
+
+```env
+GEOKZ_EGOV_API_KEY=ВАШ_РЕАЛЬНЫЙ_КЛЮЧ
+```
+
+Ключ нельзя коммитить, публиковать в issue/PR, документации или скриншотах. GeoKZ core работает и без него.
+
+## Автор
+
+**Sarmuldin Rinat — ura07srr@gmail.com**
