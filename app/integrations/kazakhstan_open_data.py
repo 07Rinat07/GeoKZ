@@ -5,6 +5,7 @@ from app.integrations.providers.egov_open_data import (
     EgovDatasetConfig,
     EgovOpenDataConnector,
 )
+from app.integrations.types import SyncMode
 
 
 @dataclass(frozen=True, slots=True)
@@ -17,7 +18,7 @@ class KazakhstanOpenDataDataset:
     description_kk: str
     description_en: str
     api_uri: str
-    version: str
+    version: str | None
     record_type: str
     identity_alias_groups: tuple[tuple[str, ...], ...]
     official_url: str
@@ -26,6 +27,14 @@ class KazakhstanOpenDataDataset:
     data_url_template: str
     detailed_url_template: str
     sync_interval_hours: int = 168
+    enabled_by_default: bool = True
+    sync_mode: SyncMode = SyncMode.AUTOMATIC
+    sync_supported: bool = True
+    processing_supported: bool = True
+
+    @property
+    def version_policy(self) -> str:
+        return "PINNED" if self.version is not None else "LATEST_MAPPING"
 
     def connector_config(self) -> EgovDatasetConfig:
         return EgovDatasetConfig(
@@ -127,6 +136,101 @@ KAZAKHSTAN_OPEN_DATASETS: tuple[KazakhstanOpenDataDataset, ...] = (
             "https://data.egov.kz/api/detailed/"
             "zher_koinauyn_geologiyalyk_zer2/v6?source={source}"
         ),
+    ),
+    KazakhstanOpenDataDataset(
+        code="kz-egov-solid-mineral-fields",
+        name_ru="Твердые полезные ископаемые Республики Казахстан",
+        name_kk="Қазақстан Республикасының қатты пайдалы қазбалары",
+        name_en="Solid mineral deposits of the Republic of Kazakhstan",
+        description_ru=(
+            "Официальный ежегодно актуализируемый перечень месторождений твердых "
+            "полезных ископаемых Комитета геологии. Версия API определяется через "
+            "официальный mapping endpoint, поскольку паспорт набора не публикует её "
+            "в статическом представлении."
+        ),
+        description_kk=(
+            "Геология комитетінің жыл сайын жаңартылатын қатты пайдалы қазбалар кен "
+            "орындарының ресми тізбесі. API нұсқасы ресми mapping endpoint арқылы "
+            "анықталады."
+        ),
+        description_en=(
+            "Official annually updated list of solid-mineral deposits published by the "
+            "Committee of Geology. The API version is resolved through the official "
+            "mapping endpoint."
+        ),
+        api_uri="stat_kgn_118",
+        version=None,
+        record_type="solid_mineral_field",
+        identity_alias_groups=(
+            (
+                "Наименование месторождения",
+                "наименование месторождения",
+                "field_name",
+                "deposit_name",
+                "name",
+                "name_ru",
+            ),
+        ),
+        official_url="https://data.egov.kz/datasets/view?index=stat_kgn_118",
+        metadata_url="https://data.egov.kz/meta/stat_kgn_118/{version}",
+        mapping_url="https://data.egov.kz/api/v4/mapping/stat_kgn_118/{version}",
+        data_url_template=(
+            "https://data.egov.kz/api/v4/stat_kgn_118/{version}?source={source}"
+        ),
+        detailed_url_template=(
+            "https://data.egov.kz/api/detailed/stat_kgn_118/{version}?source={source}"
+        ),
+        enabled_by_default=False,
+        sync_mode=SyncMode.MANUAL,
+        sync_supported=False,
+        processing_supported=False,
+    ),
+    KazakhstanOpenDataDataset(
+        code="kz-egov-groundwater-fields",
+        name_ru="Месторождения подземных вод Республики Казахстан",
+        name_kk="Қазақстан Республикасының жерасты сулары кен орындары",
+        name_en="Groundwater deposits of the Republic of Kazakhstan",
+        description_ru=(
+            "Официальный ежегодно актуализируемый перечень месторождений подземных вод "
+            "Комитета геологии. Версия API определяется через официальный mapping "
+            "endpoint до включения синхронизации."
+        ),
+        description_kk=(
+            "Геология комитетінің жыл сайын жаңартылатын жерасты сулары кен орындарының "
+            "ресми тізбесі. Синхрондауды қоспас бұрын API нұсқасы ресми mapping endpoint "
+            "арқылы анықталады."
+        ),
+        description_en=(
+            "Official annually updated groundwater-deposit list published by the Committee "
+            "of Geology. Its API version is resolved through the official mapping endpoint "
+            "before synchronization is enabled."
+        ),
+        api_uri="stat_kgn_120",
+        version=None,
+        record_type="groundwater_field",
+        identity_alias_groups=(
+            (
+                "Наименование месторождения",
+                "наименование месторождения",
+                "field_name",
+                "deposit_name",
+                "name",
+                "name_ru",
+            ),
+        ),
+        official_url="https://data.egov.kz/datasets/view?index=stat_kgn_120",
+        metadata_url="https://data.egov.kz/meta/stat_kgn_120/{version}",
+        mapping_url="https://data.egov.kz/api/v4/mapping/stat_kgn_120/{version}",
+        data_url_template=(
+            "https://data.egov.kz/api/v4/stat_kgn_120/{version}?source={source}"
+        ),
+        detailed_url_template=(
+            "https://data.egov.kz/api/detailed/stat_kgn_120/{version}?source={source}"
+        ),
+        enabled_by_default=False,
+        sync_mode=SyncMode.MANUAL,
+        sync_supported=False,
+        processing_supported=False,
     ),
 )
 
