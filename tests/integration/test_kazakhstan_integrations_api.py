@@ -22,11 +22,30 @@ async def test_kazakhstan_catalog_registers_official_sources() -> None:
         )
         assert register_response.status_code == 200, register_response.text
         registered = register_response.json()
-        registered_codes = {item["code"] for item in registered}
-        assert "kz-egov-oil-gas-fields" in registered_codes
-        assert "kz-egov-geological-study-licenses" in registered_codes
-        assert all(item["sync_mode"] == "AUTOMATIC" for item in registered)
-        assert all(item["sync_interval_hours"] == 168 for item in registered)
+        by_registered_code = {item["code"]: item for item in registered}
+        assert {
+            "kz-egov-oil-gas-fields",
+            "kz-egov-geological-study-licenses",
+            "kz-egov-solid-mineral-fields",
+            "kz-egov-groundwater-fields",
+        } <= set(by_registered_code)
+
+        for code in (
+            "kz-egov-oil-gas-fields",
+            "kz-egov-geological-study-licenses",
+        ):
+            assert by_registered_code[code]["enabled"] is True
+            assert by_registered_code[code]["sync_mode"] == "AUTOMATIC"
+            assert by_registered_code[code]["sync_interval_hours"] == 168
+
+        for code in (
+            "kz-egov-solid-mineral-fields",
+            "kz-egov-groundwater-fields",
+        ):
+            assert by_registered_code[code]["enabled"] is False
+            assert by_registered_code[code]["sync_mode"] == "MANUAL"
+            assert by_registered_code[code]["dataset_version"] is None
+            assert by_registered_code[code]["sync_interval_hours"] == 168
 
         catalog_response = await client.get(
             "/api/v1/integrations/kazakhstan/catalog?lang=ru"
@@ -48,3 +67,29 @@ async def test_kazakhstan_catalog_registers_official_sources() -> None:
         assert licenses["registered"] is True
         assert "/api/v4/" in licenses["data_url_template"]
         assert "/api/detailed/" in licenses["detailed_url_template"]
+
+        solid = by_code["kz-egov-solid-mineral-fields"]
+        assert solid["api_uri"] == "stat_kgn_118"
+        assert solid["version"] == "LATEST_MAPPING"
+        assert solid["registered"] is True
+        assert solid["official_url"].endswith("index=stat_kgn_118")
+        assert "{version}" in solid["mapping_url"]
+
+        groundwater = by_code["kz-egov-groundwater-fields"]
+        assert groundwater["api_uri"] == "stat_kgn_120"
+        assert groundwater["version"] == "LATEST_MAPPING"
+        assert groundwater["registered"] is True
+        assert groundwater["official_url"].endswith("index=stat_kgn_120")
+        assert "{version}" in groundwater["mapping_url"]
+
+
+@pytest.mark.asyncio
+async def test_catalog_only_kazakhstan_dataset_sync_fails_closed() -> None:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post(
+            "/api/v1/integrations/kazakhstan/kz-egov-solid-mineral-fields/sync"
+        )
+
+    assert response.status_code == 503, response.text
+    assert "typed normalizer" in response.json()["detail"]
