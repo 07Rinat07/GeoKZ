@@ -10,6 +10,11 @@ from app.application.kazakhstan_field_processing import (
     KazakhstanOilGasFieldProcessingService,
     OilGasFieldProcessingSummary,
 )
+from app.application.kazakhstan_license_processing import (
+    GEOLOGICAL_STUDY_LICENSES_SOURCE_CODE,
+    GeologicalStudyLicenseProcessingSummary,
+    KazakhstanGeologicalStudyLicenseProcessingService,
+)
 from app.core.config import Settings
 from app.integrations.kazakhstan_open_data import (
     KAZAKHSTAN_OPEN_DATASETS,
@@ -120,9 +125,16 @@ class KazakhstanOpenDataService:
         connector = build_kazakhstan_connector(dataset, self.settings)
         return await ExternalSyncService(self.session).sync(source.id, connector)
 
-    async def process(self, code: str) -> OilGasFieldProcessingSummary:
+    async def process(
+        self,
+        code: str,
+    ) -> OilGasFieldProcessingSummary | GeologicalStudyLicenseProcessingSummary:
         if get_kazakhstan_dataset(code) is None:
             raise KazakhstanDatasetNotFoundError(code)
-        if code != OIL_GAS_FIELDS_SOURCE_CODE:
-            raise KazakhstanDatasetProcessingNotSupportedError(code)
-        return await KazakhstanOilGasFieldProcessingService(self.session).process()
+        if code == OIL_GAS_FIELDS_SOURCE_CODE:
+            return await KazakhstanOilGasFieldProcessingService(self.session).process()
+        if code == GEOLOGICAL_STUDY_LICENSES_SOURCE_CODE:
+            return await KazakhstanGeologicalStudyLicenseProcessingService(
+                self.session
+            ).process()
+        raise KazakhstanDatasetProcessingNotSupportedError(code)
