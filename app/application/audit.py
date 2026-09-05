@@ -8,14 +8,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.audit import AuditLog, MasterDataRevision
 from app.models.auth import UserAccount
-from app.models.enums import AuditAction
+from app.models.enums import AuditAction, UserRole
 
 
 @dataclass(frozen=True, slots=True)
 class AuditActor:
     user_id: UUID
     username: str
-    role: object
+    role: UserRole
 
     @classmethod
     def from_user(cls, user: UserAccount) -> "AuditActor":
