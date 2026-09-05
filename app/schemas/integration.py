@@ -230,23 +230,24 @@ class FieldReviewQueueViewRead(BaseModel):
 
 
 class FieldReviewDecisionRequest(BaseModel):
-    reviewer: str = Field(min_length=2, max_length=300)
+    # Legacy compatibility only. The authenticated principal is the authoritative reviewer.
+    reviewer: str | None = Field(default=None, min_length=2, max_length=300)
     comment: str | None = Field(default=None, max_length=2000)
 
 
 class FieldReviewRejectRequest(BaseModel):
-    reviewer: str = Field(min_length=2, max_length=300)
+    reviewer: str | None = Field(default=None, min_length=2, max_length=300)
     comment: str = Field(min_length=2, max_length=2000)
 
 
 class FieldReviewManualLinkRequest(BaseModel):
     entity_id: UUID
-    reviewer: str = Field(min_length=2, max_length=300)
+    reviewer: str | None = Field(default=None, min_length=2, max_length=300)
     comment: str | None = Field(default=None, max_length=2000)
 
 
 class FieldReviewCreateDraftRequest(BaseModel):
-    reviewer: str = Field(min_length=2, max_length=300)
+    reviewer: str | None = Field(default=None, min_length=2, max_length=300)
     comment: str | None = Field(default=None, max_length=2000)
     name_ru: str | None = Field(default=None, min_length=1, max_length=500)
     name_kk: str | None = Field(default=None, min_length=1, max_length=500)
