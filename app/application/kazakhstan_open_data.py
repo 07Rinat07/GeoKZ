@@ -16,13 +16,13 @@ from app.application.kazakhstan_license_processing import (
     KazakhstanGeologicalStudyLicenseProcessingService,
 )
 from app.core.config import Settings
+from app.integrations.errors import ExternalConnectorNotSupportedError
 from app.integrations.kazakhstan_open_data import (
     KAZAKHSTAN_OPEN_DATASETS,
     KazakhstanOpenDataDataset,
     build_kazakhstan_connector,
     get_kazakhstan_dataset,
 )
-from app.integrations.types import SyncMode
 from app.models.integration import ExternalDataSource
 
 
@@ -69,8 +69,8 @@ class KazakhstanOpenDataService:
                 name_kk=dataset.name_kk,
                 name_en=dataset.name_en,
                 base_url="https://data.egov.kz",
-                enabled=True,
-                sync_mode=SyncMode.AUTOMATIC,
+                enabled=dataset.enabled_by_default,
+                sync_mode=dataset.sync_mode,
                 sync_interval_hours=dataset.sync_interval_hours,
                 dataset_version=dataset.version,
                 source_config={},
@@ -81,13 +81,14 @@ class KazakhstanOpenDataService:
         source.name_kk = dataset.name_kk
         source.name_en = dataset.name_en
         source.base_url = "https://data.egov.kz"
-        source.sync_mode = SyncMode.AUTOMATIC
         source.sync_interval_hours = dataset.sync_interval_hours
-        source.dataset_version = dataset.version
+        if dataset.version is not None:
+            source.dataset_version = dataset.version
         source.source_config = {
             "provider": "data.egov.kz",
             "api_uri": dataset.api_uri,
             "version": dataset.version,
+            "version_policy": dataset.version_policy,
             "record_type": dataset.record_type,
             "official_url": dataset.official_url,
             "metadata_url": dataset.metadata_url,
@@ -95,6 +96,8 @@ class KazakhstanOpenDataService:
             "data_url_template": dataset.data_url_template,
             "detailed_url_template": dataset.detailed_url_template,
             "api_key_env": "GEOKZ_EGOV_API_KEY",
+            "sync_supported": dataset.sync_supported,
+            "processing_supported": dataset.processing_supported,
         }
         await self.session.flush()
         return source
@@ -105,12 +108,17 @@ class KazakhstanOpenDataService:
             raise KazakhstanDatasetNotFoundError(code)
 
         connector = build_kazakhstan_connector(dataset, self.settings)
+        version = await connector.get_dataset_version()
+        if version is None:
+            raise ExternalConnectorNotSupportedError(
+                f"Не удалось определить версию набора {dataset.code}"
+            )
         metadata = await connector.get_metadata()
         mapping = await connector.get_mapping()
         return KazakhstanDatasetInspection(
             code=dataset.code,
             api_uri=dataset.api_uri,
-            version=dataset.version,
+            version=version,
             metadata=metadata,
             mapping=mapping,
         )
@@ -119,6 +127,11 @@ class KazakhstanOpenDataService:
         dataset = get_kazakhstan_dataset(code)
         if dataset is None:
             raise KazakhstanDatasetNotFoundError(code)
+        if not dataset.sync_supported:
+            raise ExternalConnectorNotSupportedError(
+                f"Синхронизация {code} пока отключена: сначала требуется typed normalizer "
+                "и review policy"
+            )
 
         source = await self.ensure_registered(dataset)
         await self.session.commit()
@@ -129,8 +142,11 @@ class KazakhstanOpenDataService:
         self,
         code: str,
     ) -> OilGasFieldProcessingSummary | GeologicalStudyLicenseProcessingSummary:
-        if get_kazakhstan_dataset(code) is None:
+        dataset = get_kazakhstan_dataset(code)
+        if dataset is None:
             raise KazakhstanDatasetNotFoundError(code)
+        if not dataset.processing_supported:
+            raise KazakhstanDatasetProcessingNotSupportedError(code)
         if code == OIL_GAS_FIELDS_SOURCE_CODE:
             return await KazakhstanOilGasFieldProcessingService(self.session).process()
         if code == GEOLOGICAL_STUDY_LICENSES_SOURCE_CODE:
