@@ -22,7 +22,7 @@ async def test_system_versions_reports_database_and_core_dataset_versions() -> N
     assert response.status_code == 200, response.text
     payload = response.json()
     assert payload["application_version"]
-    assert payload["database_schema_version"] == "20260905_0010"
+    assert payload["database_schema_version"] == "20260905_0011"
     assert payload["bundled_core_dataset_version"] == "2026.09.0-bootstrap"
     assert payload["bundled_core_dataset_schema_version"] == 1
     assert "installed_core_dataset_version" in payload
