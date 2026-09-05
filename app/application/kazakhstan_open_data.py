@@ -16,7 +16,7 @@ from app.application.kazakhstan_license_processing import (
     KazakhstanGeologicalStudyLicenseProcessingService,
 )
 from app.core.config import Settings
-from app.integrations.errors import ExternalConnectorNotSupportedError
+from app.integrations.errors import ConnectorConfigurationError, ExternalSourceProtocolError
 from app.integrations.kazakhstan_open_data import (
     KAZAKHSTAN_OPEN_DATASETS,
     KazakhstanOpenDataDataset,
@@ -72,7 +72,7 @@ class KazakhstanOpenDataService:
                 enabled=dataset.enabled_by_default,
                 sync_mode=dataset.sync_mode,
                 sync_interval_hours=dataset.sync_interval_hours,
-                dataset_version=dataset.version,
+                dataset_version=dataset.pinned_version,
                 source_config={},
             )
             self.session.add(source)
@@ -82,12 +82,12 @@ class KazakhstanOpenDataService:
         source.name_en = dataset.name_en
         source.base_url = "https://data.egov.kz"
         source.sync_interval_hours = dataset.sync_interval_hours
-        if dataset.version is not None:
-            source.dataset_version = dataset.version
+        if dataset.pinned_version is not None:
+            source.dataset_version = dataset.pinned_version
         source.source_config = {
             "provider": "data.egov.kz",
             "api_uri": dataset.api_uri,
-            "version": dataset.version,
+            "version": dataset.pinned_version,
             "version_policy": dataset.version_policy,
             "record_type": dataset.record_type,
             "official_url": dataset.official_url,
@@ -110,8 +110,8 @@ class KazakhstanOpenDataService:
         connector = build_kazakhstan_connector(dataset, self.settings)
         version = await connector.get_dataset_version()
         if version is None:
-            raise ExternalConnectorNotSupportedError(
-                f"Не удалось определить версию набора {dataset.code}"
+            raise ExternalSourceProtocolError(
+                f"Не удалось определить опубликованную версию набора {dataset.code}"
             )
         metadata = await connector.get_metadata()
         mapping = await connector.get_mapping()
@@ -128,7 +128,7 @@ class KazakhstanOpenDataService:
         if dataset is None:
             raise KazakhstanDatasetNotFoundError(code)
         if not dataset.sync_supported:
-            raise ExternalConnectorNotSupportedError(
+            raise ConnectorConfigurationError(
                 f"Синхронизация {code} пока отключена: сначала требуется typed normalizer "
                 "и review policy"
             )
