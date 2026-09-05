@@ -175,8 +175,36 @@ def upgrade() -> None:
         unique=False,
     )
 
+    op.execute(
+        """
+        CREATE FUNCTION geokz_reject_immutable_mutation() RETURNS trigger AS $$
+        BEGIN
+            RAISE EXCEPTION '% is append-only and cannot be updated or deleted', TG_TABLE_NAME;
+        END;
+        $$ LANGUAGE plpgsql;
+        """
+    )
+    op.execute(
+        """
+        CREATE TRIGGER trg_audit_logs_append_only
+        BEFORE UPDATE OR DELETE ON audit_logs
+        FOR EACH ROW EXECUTE FUNCTION geokz_reject_immutable_mutation();
+        """
+    )
+    op.execute(
+        """
+        CREATE TRIGGER trg_master_data_revisions_append_only
+        BEFORE UPDATE OR DELETE ON master_data_revisions
+        FOR EACH ROW EXECUTE FUNCTION geokz_reject_immutable_mutation();
+        """
+    )
+
 
 def downgrade() -> None:
+    op.execute("DROP TRIGGER IF EXISTS trg_master_data_revisions_append_only ON master_data_revisions")
+    op.execute("DROP TRIGGER IF EXISTS trg_audit_logs_append_only ON audit_logs")
+    op.execute("DROP FUNCTION IF EXISTS geokz_reject_immutable_mutation()")
+
     op.drop_index(op.f("ix_master_data_revisions_created_at"), table_name="master_data_revisions")
     op.drop_index(op.f("ix_master_data_revisions_actor_user_id"), table_name="master_data_revisions")
     op.drop_index(op.f("ix_master_data_revisions_resource_id"), table_name="master_data_revisions")
