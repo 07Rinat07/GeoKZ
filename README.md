@@ -27,6 +27,7 @@ GeoKZ — доказательная геологическая информац
 - **Evidence-first:** факт и интерпретация прослеживаются до источника.
 - **Human-in-the-loop:** внешние API и ИИ не переписывают verified master data автоматически.
 - **Offline-capable core:** базовая информация работает без обязательного интернета.
+- **Independent data lifecycle:** версия GeoKZ Core Dataset отделена от версии приложения и Alembic schema revision.
 - **Data provenance:** сохраняются source, upstream version, retrieved_at, checksum и RAW payload.
 - **Safe depth/CRS:** MD/TVD/TVDSS и разные CRS не смешиваются молча.
 - **Server-owned UI contracts:** клиент не дублирует review/correlation business rules.
@@ -61,6 +62,51 @@ docker compose up --build
 
 Swagger: `http://localhost:8000/docs`  
 ReDoc: `http://localhost:8000/redoc`
+
+## GeoKZ Core Dataset
+
+GeoKZ Core Dataset — versioned baseline, который поставляется вместе с приложением, но устанавливается и обновляется отдельно от Alembic schema migrations.
+
+Текущий bundled snapshot:
+
+```text
+dataset_code:    geokz-core
+dataset_version: 2026.09.0-bootstrap
+schema_version:  1
+namespace:       geokz-core:
+```
+
+Bundle находится в `data/bootstrap/core_dataset/`. `manifest.json` хранит независимую версию набора, SHA-256 файлов, schema version, namespace и зависимости. Перед записью в БД проверяются manifest schema, path traversal, required files, checksums, payload types, duplicate `external_id` и внутренние references.
+
+Установка выполняется одной транзакцией. Ошибка вызывает rollback; `CoreDatasetState` фиксируется только после полного успеха. Повторная установка того же manifest SHA-256 идемпотентна и возвращает `changed=false`.
+
+Первый bootstrap намеренно не содержит вымышленных production geological facts: он включает внутреннюю metadata-запись и country-level navigation record «Республика Казахстан» без утверждения boundary geometry; `entities.jsonl` и `facts.jsonl` пока пусты.
+
+API:
+
+```text
+GET  /api/v1/core-dataset/status
+POST /api/v1/core-dataset/install?dry_run=true&lang=ru
+POST /api/v1/core-dataset/install?lang=ru
+```
+
+HTTP install работает только с доверенным bundled manifest и не принимает arbitrary filesystem path.
+
+CLI:
+
+```text
+python -m scripts.core_dataset validate
+python -m scripts.core_dataset install --dry-run
+python -m scripts.core_dataset install
+python -m scripts.core_dataset status
+```
+
+`GET /api/v1/about` отдельно показывает bundled `core_dataset_version` и `core_dataset_schema_version`; фактическое installed state берётся из `/api/v1/core-dataset/status`.
+
+Документация:
+- RU: [`docs/CORE_DATASET_RU.md`](docs/CORE_DATASET_RU.md)
+- KK: [`docs/CORE_DATASET_KK.md`](docs/CORE_DATASET_KK.md)
+- EN: [`docs/CORE_DATASET_EN.md`](docs/CORE_DATASET_EN.md)
 
 ## Внешние источники
 
@@ -295,6 +341,8 @@ python -m scripts.seed_correlation_demo
 - health live: `/health/live`
 - health ready/PostGIS: `/health/ready`
 - about: `/api/v1/about?lang=ru`
+- Core Dataset status: `/api/v1/core-dataset/status`
+- Core Dataset install/dry-run: `/api/v1/core-dataset/install`
 - help: `/api/v1/help/topics?lang=ru`
 - external sources: `/api/v1/integrations/sources`
 - scheduler: `/api/v1/integrations/scheduler/status`
@@ -317,6 +365,11 @@ python -m scripts.seed_correlation_demo
 - RU: [`docs/USER_GUIDE_RU.md`](docs/USER_GUIDE_RU.md)
 - KK: [`docs/USER_GUIDE_KK.md`](docs/USER_GUIDE_KK.md)
 - EN: [`docs/USER_GUIDE_EN.md`](docs/USER_GUIDE_EN.md)
+
+### GeoKZ Core Dataset
+- RU: [`docs/CORE_DATASET_RU.md`](docs/CORE_DATASET_RU.md)
+- KK: [`docs/CORE_DATASET_KK.md`](docs/CORE_DATASET_KK.md)
+- EN: [`docs/CORE_DATASET_EN.md`](docs/CORE_DATASET_EN.md)
 
 ### Kazakhstan Open Data
 - RU: [`docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md`](docs/KAZAKHSTAN_OPEN_DATA_INTEGRATION_RU.md)
